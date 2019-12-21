@@ -1,10 +1,18 @@
 import React from 'react';
 import ReactDOM from 'react-dom';
 import './index.css';
-import App from './App';
+import ATerminal from './Terminal/index';
 import * as serviceWorker from './serviceWorker';
 
-ReactDOM.render(<App />, document.getElementById('root'));
+function Main() {
+    document.title = "Terminal Front-end";
+    return (
+        <div>
+            Hello World
+        </div>
+    );
+  }
+ReactDOM.render(<Main/>, document.getElementById('top-root'));
 
 // If you want your app to work offline and load faster, you can change
 // unregister() to register() below. Note this comes with some pitfalls.
