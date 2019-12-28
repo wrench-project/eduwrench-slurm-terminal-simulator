@@ -24,7 +24,7 @@ function processInput(term) {
 function arrowKeys(term, keyCode) {
     if(keyCode === 38) {
         if(pastInputIndex > 0) {
-            for(let c in input) {
+            for(let i = 0; i < input.length; input++) {
                 term.write('\b \b');
             }
             input = pastInputs[--pastInputIndex];
@@ -38,14 +38,14 @@ function arrowKeys(term, keyCode) {
         pastInputIndex++;
         console.log(pastInputIndex)
         if(pastInputIndex < pastInputs.length) {
-            for(let c in input) {
+            for(let i = 0; i < input.length; input++) {
                 term.write('\b \b');
             }
             input = pastInputs[pastInputIndex];
             term.write(input);
         }
         if(pastInputIndex >= pastInputs.length) {
-            for(let c in input) {
+            for(let i = 0; i < input.length; input++) {
                 term.write('\b \b');
             }
             pastInputIndex = pastInputs.length;

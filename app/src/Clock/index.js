@@ -2,11 +2,22 @@ import React from 'react';
 import ReactDOM from 'react-dom';
 import Clock from 'react-clock'
 
+let elapsedTime = 0;
+
+function getElapsedTime() {
+    return elapsedTime;
+}
+
+function addTime(seconds) {
+    elapsedTime += seconds;
+}
+
 class Timer extends React.Component {
 
     addTime() {
         let time = new Date(document.getElementsByClassName('react-clock')[0].dateTime);
         time.setSeconds(time.getSeconds() + 1);
+        elapsedTime++;
         const clockElement = (
             <Clock id="clock" value={time}/>
         );
@@ -29,4 +40,4 @@ class Timer extends React.Component {
     }
   }
 
-export default Timer;
+export {Timer, getElapsedTime, addTime};
