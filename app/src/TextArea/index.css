@@ -1,0 +1,14 @@
+#textbuttons {
+    margin-top: 25px;
+    margin-bottom: 25px;
+    padding-top: 25px;
+    text-align: center;
+    border-top: 1px solid #bdbdbd;
+}
+
+#textarea {
+    resize: none;
+    margin-left: 15%;
+    margin-bottom: 50px;
+    width: 70%;
+}

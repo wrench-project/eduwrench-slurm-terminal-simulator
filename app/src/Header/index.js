@@ -2,6 +2,7 @@ import React from 'react';
 import ReactDOM from 'react-dom';
 import {addTime} from '../Clock'
 import Clock from 'react-clock'
+import './index.css'
 
 function add1() {
     addTime(60);
@@ -37,10 +38,10 @@ class Header extends React.Component {
 
     render() {
         return (
-            <div>
-                <button onClick={add1} type="button">Skip 1 minute</button>
-                <button onClick={add10} type="button">Skip 10 minutes</button>
-                <button onClick={add60} type="button">Skip 60 minutes</button>
+            <div id="header">
+                <button class="timeButton" onClick={add1} type="button">Skip 1 minute</button>
+                <button class="timeButton" onClick={add10} type="button">Skip 10 minutes</button>
+                <button class="timeButton" onClick={add60} type="button">Skip 60 minutes</button>
             </div>
         )
     }
