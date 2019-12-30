@@ -2,12 +2,21 @@ import {Terminal} from 'xterm';
 import {FitAddon} from 'xterm-addon-fit'
 import 'xterm/css/xterm.css'
 import './index.css'
+import { ConfigFile } from '../TextArea';
 
 let input = '';
 let extension = '';
 let pastInputs = [];
 let pastInputIndex = 0;
 let fakeFileSystem = {};
+
+function showTextArea() {
+    let textArea = document.getElementById('textarea');
+    let textButton = document.getElementById('textbutton');
+    textButton.hidden = false;
+    textArea.hidden = false;
+    textArea.value = ConfigFile;
+}
 
 function processInput(term) {
     term.write('\r\n');
@@ -18,6 +27,11 @@ function processInput(term) {
     if(parts.length === 1) {
         term.write(parts[0]);
         term.write('\r\n');
+    }
+    if(parts.length === 2) {
+        if((parts[0] === 'nano' || parts[0] === 'vim') && parts[1] === 'config') {
+            showTextArea();
+        }
     }
 }
 
@@ -73,14 +87,6 @@ function runTerminal() {
     term.onKey(dat => {
         let key = dat.key;
         let keyCode = dat.domEvent.keyCode;
-        //console.log(keyCode);
-
-        if(keyCode === 67) {
-            term.write(`^C\r\nTerminal:~${extension}$ `);
-            pastInputIndex = pastInputs.length;
-            input = '';
-            return;
-        }
 
         if(arrowKeys(term, keyCode)) {
             return;

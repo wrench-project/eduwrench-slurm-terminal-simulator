@@ -39,9 +39,9 @@ class Header extends React.Component {
     render() {
         return (
             <div id="header">
-                <button class="timeButton" onClick={add1} type="button">Skip 1 minute</button>
-                <button class="timeButton" onClick={add10} type="button">Skip 10 minutes</button>
-                <button class="timeButton" onClick={add60} type="button">Skip 60 minutes</button>
+                <button className="timeButton" onClick={add1} type="button">Skip 1 minute</button>
+                <button className="timeButton" onClick={add10} type="button">Skip 10 minutes</button>
+                <button className="timeButton" onClick={add60} type="button">Skip 60 minutes</button>
             </div>
         )
     }

@@ -1,20 +1,28 @@
 import React from 'react';
 import './index.css';
 
+let ConfigFile = "";
+
+function onSave() {
+    let textArea = document.getElementById('textarea');
+    let textButton = document.getElementById('textbutton');
+    ConfigFile = textArea.value;
+    textArea.hidden = true;
+    textButton.hidden = true;
+    console.log(ConfigFile);
+}
+
 class TextArea extends React.Component {
     render() {
         return (
-            <div>
-                <div id="textbuttons">
-                    <button type="button">Skip 1 minute</button>
-                    <button type="button">Skip 10 minutes</button>
+            <div >
+                <div id="textbutton" type="hidden">
+                    <button onClick={onSave}>Save</button>
                 </div>
-                 <textarea id="textarea" rows="20">
-                    Some text
-                </textarea> 
+                <textarea id="textarea" rows="20"></textarea> 
             </div>
         )
     }
 }
 
-export default TextArea;
+export {TextArea, ConfigFile};

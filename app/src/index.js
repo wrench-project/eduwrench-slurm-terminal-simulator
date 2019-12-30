@@ -6,7 +6,7 @@ import './index.css';
 import Header from './Header/index';
 import {Timer} from './Clock/index';
 import runTerminal from './Terminal/index';
-import TextArea from './TextArea/index';
+import {TextArea} from './TextArea/index';
 
 ReactDOM.render(<Timer />, document.getElementById('clock-area'));
 ReactDOM.render(<Header/>, document.getElementById('top-root'));
