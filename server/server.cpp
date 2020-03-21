@@ -1,4 +1,6 @@
-﻿#include <boost/beast/core.hpp>
+﻿// Code from this has been heavily modified and simplified from the boost beast example for synchronous server.
+
+#include <boost/beast/core.hpp>
 #include <boost/beast/http.hpp>
 #include <boost/beast/version.hpp>
 #include <boost/asio/ip/tcp.hpp>
@@ -20,8 +22,10 @@ namespace net = boost::asio;
 using json = nlohmann::json;
 using tcp = boost::asio::ip::tcp;
 
+// Currently just using a global variable to make things simple.
 Router* router;
 
+// Handles the request and sends error messages for incorrect requests before sending it to router.
 void handle_request(http::request<http::string_body>&& req, tcp::socket& socket, bool& close)
 {
     json body;

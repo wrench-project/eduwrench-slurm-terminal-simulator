@@ -3,10 +3,12 @@
 
 #include <chrono>
 
+// Define a long function which is used multiple times
 #define get_time() (chrono::duration_cast<chrono::milliseconds>(chrono::system_clock::now().time_since_epoch()).count())
 
 namespace chrono = std::chrono;
 
+// Parsing json but might remove because possibly no reason for abstraction
 void Router::parse_json(http::request<http::string_body>& req, json& j)
 {
     try
@@ -19,6 +21,8 @@ void Router::parse_json(http::request<http::string_body>& req, json& j)
     }
 }
 
+// Currently gets the last part of the url string. Can change it into a vector
+// containing the exact path it takes.
 void process_path(std::string& path)
 {
     if (path.size() == 1)
@@ -47,6 +51,7 @@ void process_path(std::string& path)
     path = path.substr(slash_loc, length);
 }
 
+// Handles all get calls through if and else statments.
 void Router::get(
     std::string& path,
     http::request<http::string_body>& req,
@@ -67,10 +72,18 @@ void Router::get(
         send_response(res, socket, close, req);
         return;
     }
+    else if (path.compare("query") == 0)
+    {
+        res["time"] = get_time() - time_start;
+        res["query"] = "A query to the server was made.";
+        send_response(res, socket, close, req);
+        return;
+    }
 
     send_notfound_response(socket, close, req);
 }
 
+// Handles all post calls with if and else statements.
 void Router::post(
     std::string& path,
     http::request<http::string_body>& req,

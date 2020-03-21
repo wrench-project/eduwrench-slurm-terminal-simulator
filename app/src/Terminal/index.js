@@ -18,6 +18,8 @@ function showTextArea() {
     textArea.value = ConfigFile;
 }
 
+// Executes server call in order for each implemented call
+// If not, it just echos what was written.
 async function makeServerCall(input, term) {
     if(input === "time") {
         fetch('http://localhost:8080/time', {
@@ -30,6 +32,18 @@ async function makeServerCall(input, term) {
             term.write('\r\n');
             term.write(`Terminal:~${extension}$ `);
         });
+    } else if(input === "query") {
+        fetch('http://localhost:8080/query', {
+            method: 'GET'
+        })
+        .then((response) => response.json())
+        .then((res) => {
+            let date = new Date(res['time']);
+            let query = res['query'];
+            term.write(date.toISOString() + `: ${query}`);
+            term.write('\r\n');
+            term.write(`Terminal:~${extension}$ `);
+        });
     } else {
         term.write(input);
         term.write('\r\n');
@@ -37,6 +51,7 @@ async function makeServerCall(input, term) {
     }
 }
 
+// Processes input to see what processing needs to be done.
 async function processInput(term) {
     term.write('\r\n');
     if(input === '') {
@@ -53,6 +68,8 @@ async function processInput(term) {
     }
 }
 
+// Handles the arrow key functionality, preventing arrow key movement
+// and retaining history of past commands through up and down keys.
 function arrowKeys(term, keyCode) {
     if(keyCode === 38) {
         if(pastInputIndex > 0) {
@@ -94,6 +111,7 @@ function arrowKeys(term, keyCode) {
     return false;
 }
 
+// Sets up and runs the terminal while managing the keystroke inputs.
 function runTerminal() {
     let term = new Terminal();
     let fitAddOn = new FitAddon();
