@@ -18,15 +18,33 @@ function showTextArea() {
     textArea.value = ConfigFile;
 }
 
-function processInput(term) {
+async function makeServerCall(input, term) {
+    if(input === "time") {
+        fetch('http://localhost:8080/time', {
+            method: 'GET'
+        })
+        .then((response) => response.json())
+        .then((res) => {
+            let date = new Date(res['time']);
+            term.write(date.toISOString());
+            term.write('\r\n');
+            term.write(`Terminal:~${extension}$ `);
+        });
+    } else {
+        term.write(input);
+        term.write('\r\n');
+        term.write(`Terminal:~${extension}$ `);
+    }
+}
+
+async function processInput(term) {
     term.write('\r\n');
     if(input === '') {
         return;
     }
     let parts = input.split(' ');
     if(parts.length === 1) {
-        term.write(parts[0]);
-        term.write('\r\n');
+        makeServerCall(parts[0], term);
     }
     if(parts.length === 2) {
         if((parts[0] === 'nano' || parts[0] === 'vim') && parts[1] === 'config') {
@@ -38,7 +56,8 @@ function processInput(term) {
 function arrowKeys(term, keyCode) {
     if(keyCode === 38) {
         if(pastInputIndex > 0) {
-            for(let i = 0; i < input.length; input++) {
+            for(let i = 0; i < input.length; i++) {
+                console.log('b')
                 term.write('\b \b');
             }
             input = pastInputs[--pastInputIndex];
@@ -52,14 +71,14 @@ function arrowKeys(term, keyCode) {
         pastInputIndex++;
         console.log(pastInputIndex)
         if(pastInputIndex < pastInputs.length) {
-            for(let i = 0; i < input.length; input++) {
+            for(let i = 0; i < input.length; i++) {
                 term.write('\b \b');
             }
             input = pastInputs[pastInputIndex];
             term.write(input);
         }
         if(pastInputIndex >= pastInputs.length) {
-            for(let i = 0; i < input.length; input++) {
+            for(let i = 0; i < input.length; i++) {
                 term.write('\b \b');
             }
             pastInputIndex = pastInputs.length;
@@ -94,7 +113,6 @@ function runTerminal() {
 
         if(key === '\r') {
             processInput(term);
-            term.write(`Terminal:~${extension}$ `);
             pastInputs.push(input);
             pastInputIndex = pastInputs.length;
             input = '';

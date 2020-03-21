@@ -1,37 +1,37 @@
 import React from 'react';
 import ReactDOM from 'react-dom';
-import {addTime} from '../Clock'
+import {setTime} from '../Clock'
 import Clock from 'react-clock'
 import './index.css'
 
 function add1() {
-    addTime(60);
-    let time = new Date(document.getElementsByClassName('react-clock')[0].dateTime);
-    time.setSeconds(time.getSeconds() + 60);
-    const clockElement = (
-        <Clock id="clock" value={time}/>
-    );
-    ReactDOM.render( clockElement, document.getElementById('clock-area'));
+    fetch('http://localhost:8080/add1', {
+        method: 'POST'
+    })
+    .then((response) => response.json())
+    .then((res) => {
+        setTime(res['time']);
+    });
 }
 
 function add10() {
-    addTime(600);
-    let time = new Date(document.getElementsByClassName('react-clock')[0].dateTime);
-    time.setSeconds(time.getSeconds() + 600);
-    const clockElement = (
-        <Clock id="clock" value={time}/>
-    );
-    ReactDOM.render( clockElement, document.getElementById('clock-area'));
+    fetch('http://localhost:8080/add10', {
+        method: 'POST'
+    })
+    .then((response) => response.json())
+    .then((res) => {
+        setTime(res['time']);
+    });
 }
 
 function add60() {
-    addTime(3600);
-    let time = new Date(document.getElementsByClassName('react-clock')[0].dateTime);
-    time.setSeconds(time.getSeconds() + 3600);
-    const clockElement = (
-        <Clock id="clock" value={time}/>
-    );
-    ReactDOM.render( clockElement, document.getElementById('clock-area'));
+    fetch('http://localhost:8080/add60', {
+        method: 'POST'
+    })
+    .then((response) => response.json())
+    .then((res) => {
+        setTime(res['time']);
+    });
 }
 
 class Header extends React.Component {
