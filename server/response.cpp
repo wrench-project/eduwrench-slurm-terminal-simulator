@@ -6,14 +6,15 @@ void send_response(
     bool& close,
     http::request<http::string_body>& req)
 {
-    http::response<http::string_body> res{ http::status::bad_request, req.version() };
+    http::response<http::string_body> res{ http::status::ok, req.version() };
     res.set(http::field::server, BOOST_BEAST_VERSION_STRING);
+    res.set(http::field::access_control_allow_origin, "*");
     res.keep_alive(req.keep_alive());
-
-    res.prepare_payload();
 
     json response;
     response["data"] = *text;
+    res.body() = response.dump();
+    res.prepare_payload();
 
     close = res.need_eof();
     http::write(socket, res);
@@ -26,8 +27,9 @@ void send_response(
     bool& close,
     http::request<http::string_body>& req)
 {
-    http::response<http::string_body> res{ http::status::bad_request, req.version() };
+    http::response<http::string_body> res{ http::status::ok, req.version() };
     res.set(http::field::server, BOOST_BEAST_VERSION_STRING);
+    res.set(http::field::access_control_allow_origin, "*");
     res.keep_alive(req.keep_alive());
     res.body() = text.dump();
     res.prepare_payload();
@@ -45,6 +47,7 @@ void send_response(
 {
     res->set(http::field::server, BOOST_BEAST_VERSION_STRING);
     res->set(http::field::content_type, "application/json");
+    res->set(http::field::access_control_allow_origin, "*");
     res->keep_alive(req.keep_alive());
 
     res->prepare_payload();
@@ -64,6 +67,7 @@ void send_bad_response(
     http::response<http::string_body> res{ http::status::bad_request, req.version() };
     res.set(http::field::server, BOOST_BEAST_VERSION_STRING);
     res.set(http::field::content_type, "application/json");
+    res.set(http::field::access_control_allow_origin, "*");
     res.keep_alive(req.keep_alive());
 
     json response;
@@ -84,8 +88,11 @@ void send_error_response(
     http::response<http::string_body> res{ http::status::internal_server_error, req.version() };
     res.set(http::field::server, BOOST_BEAST_VERSION_STRING);
     res.set(http::field::content_type, "application/json");
+    res.set(http::field::access_control_allow_origin, "*");
     res.keep_alive(req.keep_alive());
-    res.body() = std::string("Server Error");
+    json response;
+    response["error"] = "Server Error";
+    res.body() = response.dump();
     res.prepare_payload();
 
     close = res.need_eof();
@@ -100,8 +107,12 @@ void send_notfound_response(
     http::response<http::string_body> res{ http::status::not_found, req.version() };
     res.set(http::field::server, BOOST_BEAST_VERSION_STRING);
     res.set(http::field::content_type, "application/json");
+    res.set(http::field::access_control_allow_origin, "*");
     res.keep_alive(req.keep_alive());
-    res.body() = std::string("Page not found");
+    json response;
+    response["error"] = "Page not found";
+
+    res.body() = response.dump();
     res.prepare_payload();
 
     close = res.need_eof();

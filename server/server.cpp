@@ -30,27 +30,19 @@ void handle_request(http::request<http::string_body>&& req, tcp::socket& socket,
     {
         return send_bad_response("Not a GET or POST Request", socket, close, req);
     }
-
-    if (req.base()["Content-Type"].compare("application/json") != 0)
+    std::string content_type = std::string(req.base()["Content-Type"]);
+    if (content_type.compare("application/json") != 0)
     {
-        return send_bad_response("Not JSON formatted request", socket, close, req);
+        if(content_type != "")
+            return send_bad_response("Not correctly formatted request", socket, close, req);
     }
     
     std::string path(req.target());
 
-    try
-    {
-        body = json::parse(req.body());
-    }
-    catch (...)
-    {
-        send_bad_response("Invalid JSON", socket, close, req);
-    }
-
     if (method == http::verb::get)
-        router->get(path, body, req, socket, close);
+        router->get(path, req, socket, close);
     else
-        router->post(path, body, req, socket, close);
+        router->post(path, req, socket, close);
 }
 
 // Report a failure
