@@ -1,5 +1,6 @@
 import {Terminal} from 'xterm';
 import {FitAddon} from 'xterm-addon-fit'
+import {setTime} from '../Clock'
 import 'xterm/css/xterm.css'
 import './index.css'
 import { ConfigFile } from '../TextArea';
@@ -28,6 +29,7 @@ async function makeServerCall(input, term) {
         .then((response) => response.json())
         .then((res) => {
             let date = new Date(res['time']);
+            setTime(res['time']);
             term.write(date.toISOString());
             term.write('\r\n');
             term.write(`Terminal:~${extension}$ `);
@@ -40,6 +42,7 @@ async function makeServerCall(input, term) {
         .then((res) => {
             let date = new Date(res['time']);
             let query = res['query'];
+            setTime(res['time']);
             term.write(date.toISOString() + `: ${query}`);
             term.write('\r\n');
             term.write(`Terminal:~${extension}$ `);

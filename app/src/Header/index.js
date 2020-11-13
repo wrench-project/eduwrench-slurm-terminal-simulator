@@ -1,7 +1,5 @@
 import React from 'react';
-import ReactDOM from 'react-dom';
 import {setTime} from '../Clock'
-import Clock from 'react-clock'
 import './index.css'
 
 function add1() {
