@@ -16,11 +16,12 @@ namespace wrench {
             const std::string &hostname
         );
 
-        void addJob(const std::string& job);
-        void getJobStatus(std::string& status, const time_t& time);
+        void addTask(const wrench::WorkflowTask& task);
+        void getTaskStatus(std::string& status, const time_t& time);
 
     private:
         int main() override;
+        time_t last_query_time = 0;
     };
 }
 

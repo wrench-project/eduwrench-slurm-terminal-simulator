@@ -1,6 +1,7 @@
 #include "workflow_manager.h"
 
 #include <random>
+#include <iostream>
 
 namespace wrench {
 
@@ -28,24 +29,27 @@ namespace wrench {
 
         while(true)
         {
-            auto tasks = this->getWorkflow()->getReadyTasks();
-            int index = dist(rng) % tasks.size();
-            auto task1 = tasks.at(index);
-            auto task2 = tasks.at((index + 1) & tasks.size());
+            //rench::StandardJob
+            // auto tasks = this->getWorkflow()->getReadyTasks();
+            // int index = dist(rng) % tasks.size();
+            // auto task1 = tasks.at(index);
+            // auto task2 = tasks.at((index + 1) & tasks.size());
 
-            auto event = this->waitForNextEvent(0.01);
+            //auto event = this->waitForNextEvent(0.01);
 
         }
     }
 
-    void WorkflowManager::addJob(const std::string& job)
+    void WorkflowManager::addTask(const wrench::WorkflowTask& task)
     {
-
+        std::cout << "Task added\n";
     }
 
-    void WorkflowManager::getJobStatus(std::string& status, const time_t& time)
+    void WorkflowManager::getTaskStatus(std::string& status, const time_t& time)
     {
-        
+        std::printf("Queried\n");
+        auto event = this->waitForNextEvent(time - last_query_time);
+        last_query_time = time;
     }
 }
 

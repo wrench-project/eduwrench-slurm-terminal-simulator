@@ -5,6 +5,7 @@
 #include <cstdio>
 #include <string>
 #include <vector>
+#include <thread>
 
 #include <nlohmann/json.hpp>
 #include <wrench.h>
@@ -103,11 +104,14 @@ void getTime(const Request& req, Response& res)
 void getQuery(const Request& req, Response& res)
 {
     std::printf("Path: %s\n\n", req.path.c_str());
+    std::string status = "";
+
+    wms->getTaskStatus(status, get_time() - time_start);
 
     json body;
 
     body["time"] = get_time() - time_start;
-    body["query"] = "A query to the server was made.";
+    body["jobStatus"] = "A query to the server was made.";
     res.set_header("access-control-allow-origin", "*");
     res.set_content(body.dump(), "application/json");
 }
@@ -181,7 +185,7 @@ void addTask(const Request& req, Response& res)
     json req_body = req.body;
     std::printf("Path: %s\nBody: %s\n\n", req.path.c_str(), req.body.c_str());
     std::string file = req_body["file"].get<std::string>();
-    wms->addJob(file);
+    //wms->addTask(file);
 
     json body;
     body["time"] = get_time() - time_start;
@@ -202,6 +206,12 @@ void error_handling(const Request& req, Response& res)
     std::printf("%d\n", res.status);
 }
 
+void init_server(int port_number)
+{
+    std::printf("Listening on port: %d\n", port_number);
+    server.listen("localhost", port_number);
+}
+
 /**
  * @brief 
  * @return 
@@ -215,11 +225,11 @@ int main(int argc, char **argv)
     // Initialize WRENCH
     simulation.init(&argc, argv);
     simulation.instantiatePlatform(simgrid_config);
-    std::vector<std::string> nodes = {"Node1", "Node2"};
+    std::vector<std::string> nodes = {"BatchNode1", "BatchNode2"};
     auto storage_service = simulation.add(new wrench::SimpleStorageService(
-        "mainstorage", {"/"}, {{wrench::SimpleStorageServiceProperty::BUFFER_SIZE, "10000000"}}, {}));
-    auto batch_service = simulation.add(new wrench::BatchComputeService("mainbatch", nodes, {}, {}));
-    wms = simulation.add(new wrench::WorkflowManager({batch_service}, {storage_service}, "WMS"));
+        "WMSHost", {"/"}, {{wrench::SimpleStorageServiceProperty::BUFFER_SIZE, "10000000"}}, {}));
+    auto batch_service = simulation.add(new wrench::BatchComputeService("BatchHeadNode", nodes, {}, {}));
+    wms = simulation.add(new wrench::WorkflowManager({batch_service}, {storage_service}, "WMSHost"));
 
     // Add workflow to wms
     wms->addWorkflow(&workflow);
@@ -235,10 +245,14 @@ int main(int argc, char **argv)
     server.Post("/add1", add1);
     server.Post("/add10", add10);
     server.Post("/add60", add60);
-
-    std::printf("Listening on port: %d\n", port_number);
+    server.Post("/addTask", addTask);
 
     server.set_error_handler(error_handling);
-    server.listen("localhost", port_number);
+
+    // Initialize server on a separate thread
+    std::thread server_thread(init_server, port_number);
+
+    // Start the simulation
+    simulation.launch();
     return 0;
 }
