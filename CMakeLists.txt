@@ -6,4 +6,4 @@ cmake_minimum_required (VERSION 3.8)
 project ("server")
 
 # Include sub-projects.
-add_subdirectory ("serverV2")
+add_subdirectory ("serverV")
