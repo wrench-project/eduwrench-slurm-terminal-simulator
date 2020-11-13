@@ -1,131 +1,258 @@
-﻿// Code from this has been heavily modified and simplified from the boost beast example for synchronous server.
+#include "httplib.h"
+#include "workflow_manager.h"
 
-#include <boost/beast/core.hpp>
-#include <boost/beast/http.hpp>
-#include <boost/beast/version.hpp>
-#include <boost/asio/ip/tcp.hpp>
-#include <boost/config.hpp>
-
-#include <nlohmann/json.hpp>
-
-#include <iostream>
-#include <memory>
+#include <chrono>
+#include <cstdio>
 #include <string>
+#include <vector>
 #include <thread>
 
-#include "router.h"
-#include "response.h"
+#include <nlohmann/json.hpp>
+#include <wrench.h>
 
-namespace beast = boost::beast;
-namespace http = beast::http;
-namespace net = boost::asio;
+
+// Define a long function which is used multiple times
+#define get_time() (std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count())
+
+using httplib::Request;
+using httplib::Response;
 using json = nlohmann::json;
-using tcp = boost::asio::ip::tcp;
 
-// Currently just using a global variable to make things simple.
-Router* router;
+/**
+ * @brief 
+ */
+httplib::Server server;
 
-// Handles the request and sends error messages for incorrect requests before sending it to router.
-void handle_request(http::request<http::string_body>&& req, tcp::socket& socket, bool& close)
+/**
+ * @brief 
+ */
+time_t time_start = 0;
+
+/**
+ * @brief
+ */
+wrench::Simulation simulation;
+
+/**
+ * @brief
+ */
+wrench::Workflow workflow;
+
+/**
+ * @brief
+ */
+std::shared_ptr<wrench::WorkflowManager> wms;
+
+// TEST PATHS
+
+/**
+ * @brief 
+ * @param req 
+ * @param res 
+ */
+void testGet(const Request& req, Response& res)
 {
+    std::printf("Path: %s\n\n", req.path.c_str());
+
+    res.set_header("access-control-allow-origin", "*");
+    res.set_content("Hello World!", "text/plain");
+}
+
+/**
+ * @brief 
+ * @param req 
+ * @param res 
+ */
+void testPost(const Request& req, Response& res)
+{
+    std::printf("Path: %s\nBody: %s\n\n", req.path.c_str(), req.body.c_str());
+
+    res.set_header("access-control-allow-origin", "*");
+    res.set_content("Hello World!", "text/plain");
+}
+
+
+// GET PATHS
+
+/**
+ * @brief 
+ * @param req 
+ * @param res 
+ */
+void getTime(const Request& req, Response& res)
+{
+    std::printf("Path: %s\n\n", req.path.c_str());
+
     json body;
-    auto const method = req.method();
-    if (method != http::verb::get && method != http::verb::post)
-    {
-        return send_bad_response("Not a GET or POST Request", socket, close, req);
-    }
-    std::string content_type = std::string(req.base()["Content-Type"]);
-    if (content_type.compare("application/json") != 0)
-    {
-        if(content_type != "")
-            return send_bad_response("Not correctly formatted request", socket, close, req);
-    }
-    
-    std::string path(req.target());
 
-    if (method == http::verb::get)
-        router->get(path, req, socket, close);
-    else
-        router->post(path, req, socket, close);
+    if (time_start == 0)
+    {
+        res.status = 400;
+        return;
+    }
+
+    body["time"] = get_time() - time_start;
+    res.set_header("access-control-allow-origin", "*");
+    res.set_content(body.dump(), "application/json");
 }
 
-// Report a failure
-void fail(beast::error_code ec, char const* what)
+/**
+ * @brief
+ * @param req
+ * @param res
+ */
+void getQuery(const Request& req, Response& res)
 {
-    std::cerr << what << ": " << ec.message() << "\n";
+    std::printf("Path: %s\n\n", req.path.c_str());
+    std::string status = "";
+
+    wms->getTaskStatus(status, get_time() - time_start);
+
+    json body;
+
+    body["time"] = get_time() - time_start;
+    body["jobStatus"] = "A query to the server was made.";
+    res.set_header("access-control-allow-origin", "*");
+    res.set_content(body.dump(), "application/json");
 }
 
-// Handles an HTTP server connection
-void do_session(tcp::socket* socket)
+// POST PATHS
+
+/**
+ * @brief 
+ * @param req 
+ * @param res 
+ */
+void start(const Request& req, Response& res)
 {
-    bool close = false;
-    beast::error_code ec;
+    std::printf("Path: %s\nBody: %s\n\n", req.path.c_str(), req.body.c_str());
 
-    // This buffer is required to persist across reads
-    beast::flat_buffer buffer;
-
-    while(true)
-    {
-        // Read a request
-        http::request<http::string_body> req;
-        http::read(*socket, buffer, req, ec);
-        if (ec == http::error::end_of_stream)
-            break;
-        if (ec)
-            return fail(ec, "read");
-
-        // Send the response
-        handle_request(std::move(req), *socket, close);
-        if (ec)
-            return fail(ec, "write");
-        if (close)
-        {
-            // This means we should close the connection, usually because
-            // the response indicated the "Connection: close" semantic.
-            break;
-        }
-    }
-
-    // Send a TCP shutdown
-    socket->shutdown(tcp::socket::shutdown_send, ec);
-    delete socket;
-
-    // At this point the connection is closed gracefully
+    time_start = get_time();
+    res.set_header("access-control-allow-origin", "*");
+    //res.set_content("", "application/json");
 }
 
-int main()
+/**
+ * @brief 
+ * @param req 
+ * @param res 
+ */
+void add1(const Request& req, Response& res)
 {
-    try
-    {
-        auto const address = net::ip::make_address("127.0.0.1");
-        unsigned short const port = 8080;
-        auto const doc_root = std::make_shared<std::string>(".");
+    std::printf("Path: %s\nBody: %s\n\n", req.path.c_str(), req.body.c_str());
 
-        router = new Router();
+    json body;
+    time_start -= 60000;
+    body["time"] = get_time() - time_start;
+    res.set_header("access-control-allow-origin", "*");
+    res.set_content(body.dump(), "application/json");
+}
 
-        // The io_context is required for all I/O
-        net::io_context ioc{ 1 };
+/**
+ * @brief 
+ * @param req 
+ * @param res 
+ */
+void add10(const Request& req, Response& res)
+{
+    std::printf("Path: %s\nBody: %s\n\n", req.path.c_str(), req.body.c_str());
 
-        // The acceptor receives incoming connections
-        tcp::acceptor acceptor{ ioc, {address, port} };
+    json body;
+    time_start -= 60000 * 10;
+    body["time"] = get_time() - time_start;
+    res.set_header("access-control-allow-origin", "*");
+    res.set_content(body.dump(), "application/json");
+}
 
-        std::cout << "Server started\n";
-        while(true)
-        {
-            // This will receive the new connection
-            tcp::socket* socket = new tcp::socket(ioc);
+/**
+ * @brief 
+ * @param req 
+ * @param res 
+ */
+void add60(const Request& req, Response& res)
+{
+    std::printf("Path: %s\nBody: %s\n\n", req.path.c_str(), req.body.c_str());
 
-            // Block until we get a connection
-            acceptor.accept(*socket);
+    json body;
+    time_start -= 60000 * 60;
+    body["time"] = get_time() - time_start;
+    res.set_header("access-control-allow-origin", "*");
+    res.set_content(body.dump(), "application/json");
+}
 
-            std::thread session(do_session, socket);
-            session.detach();
-            std::cout << "Request received\n";
-        }
-    }
-    catch (const std::exception & e)
-    {
-        std::cerr << "Error: " << e.what() << std::endl;
-        return EXIT_FAILURE;
-    }
+void addTask(const Request& req, Response& res)
+{
+    json req_body = req.body;
+    std::printf("Path: %s\nBody: %s\n\n", req.path.c_str(), req.body.c_str());
+    std::string file = req_body["file"].get<std::string>();
+    //wms->addTask(file);
+
+    json body;
+    body["time"] = get_time() - time_start;
+    body["success"] = true;
+    res.set_header("access-control-allow-origin", "*");
+    res.set_content(body.dump(), "application/json");
+}
+
+// ERROR HANDLING
+
+/**
+ * @brief 
+ * @param req 
+ * @param res 
+ */
+void error_handling(const Request& req, Response& res)
+{
+    std::printf("%d\n", res.status);
+}
+
+void init_server(int port_number)
+{
+    std::printf("Listening on port: %d\n", port_number);
+    server.listen("localhost", port_number);
+}
+
+/**
+ * @brief 
+ * @return 
+ */
+int main(int argc, char **argv)
+{
+    int port_number = 8080;
+    // XML config file copied from batch-bag-of-tasks example
+    std::string simgrid_config = "../four_hosts.xml";
+
+    // Initialize WRENCH
+    simulation.init(&argc, argv);
+    simulation.instantiatePlatform(simgrid_config);
+    std::vector<std::string> nodes = {"BatchNode1", "BatchNode2"};
+    auto storage_service = simulation.add(new wrench::SimpleStorageService(
+        "WMSHost", {"/"}, {{wrench::SimpleStorageServiceProperty::BUFFER_SIZE, "10000000"}}, {}));
+    auto batch_service = simulation.add(new wrench::BatchComputeService("BatchHeadNode", nodes, {}, {}));
+    wms = simulation.add(new wrench::WorkflowManager({batch_service}, {storage_service}, "WMSHost"));
+
+    // Add workflow to wms
+    wms->addWorkflow(&workflow);
+
+    // Handle GET requests
+    server.Get("/", testGet);
+    server.Get("/time", getTime);
+    server.Get("/query", getQuery);
+
+    // Handle POST requests
+    server.Post("/", testPost);
+    server.Post("/start", start);
+    server.Post("/add1", add1);
+    server.Post("/add10", add10);
+    server.Post("/add60", add60);
+    server.Post("/addTask", addTask);
+
+    server.set_error_handler(error_handling);
+
+    // Initialize server on a separate thread
+    std::thread server_thread(init_server, port_number);
+
+    // Start the simulation
+    simulation.launch();
+    return 0;
 }
