@@ -3,6 +3,7 @@
 
 #include <wrench-dev.h>
 #include <vector>
+#include <queue>
 
 namespace wrench {
 
@@ -16,12 +17,16 @@ namespace wrench {
             const std::string &hostname
         );
 
-        void addTask(const wrench::WorkflowTask& task);
-        void getTaskStatus(std::string& status, const time_t& time);
+        void addTask(const std::string& task_name, const double& gflops,
+                     const unsigned int& min_cores, const unsigned int& max_cores,
+                     const double& parallel_efficiency, const double& memory);
+        void getEventStatuses(std::queue<std::string>& statuses, const time_t& time);
 
     private:
         int main() override;
-        time_t last_query_time = 0;
+        bool check_event = false;
+        std::queue<std::shared_ptr<wrench::WorkflowExecutionEvent>> events;
+        time_t query_time = 0;
     };
 }
 

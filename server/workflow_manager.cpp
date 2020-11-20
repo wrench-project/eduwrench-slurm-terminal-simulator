@@ -3,6 +3,8 @@
 #include <random>
 #include <iostream>
 
+#define GFLOPS 1000000000
+
 namespace wrench {
 
     WorkflowManager::WorkflowManager(
@@ -29,27 +31,48 @@ namespace wrench {
 
         while(true)
         {
-            //rench::StandardJob
+            // wrench::StandardJob
             // auto tasks = this->getWorkflow()->getReadyTasks();
             // int index = dist(rng) % tasks.size();
             // auto task1 = tasks.at(index);
             // auto task2 = tasks.at((index + 1) & tasks.size());
 
             //auto event = this->waitForNextEvent(0.01);
-
+            if(check_event)
+            {
+                time_t q_time = query_time;
+                while(this->getNetworkTimeoutValue() < q_time)
+                {
+                    auto event = this->waitForNextEvent(0.01);
+                    events.push(event);
+                }
+            }
         }
     }
 
-    void WorkflowManager::addTask(const wrench::WorkflowTask& task)
+    void WorkflowManager::addTask(const std::string& task_name, const double& gflops,
+                                  const unsigned int& min_cores, const unsigned int& max_cores,
+                                  const double& parallel_efficiency, const double& memory)
     {
-        std::cout << "Task added\n";
+        // Create tasks and add to workflow.
+        auto task = this->getWorkflow()->addTask(task_name + std::to_string(query_time),
+                                                 gflops * GFLOPS, min_cores, max_cores, memory);
+        // Set parallel efficiency
+        task->setParallelModel(wrench::ParallelModel::CONSTANTEFFICIENCY(parallel_efficiency));
     }
 
-    void WorkflowManager::getTaskStatus(std::string& status, const time_t& time)
+    void WorkflowManager::getEventStatuses(std::queue<std::string>& statuses, const time_t& time)
     {
-        std::printf("Queried\n");
-        auto event = this->waitForNextEvent(time - last_query_time);
-        last_query_time = time;
+        if(!check_event)
+        {
+            while(!events.empty())
+            {
+                statuses.push(events.front()->toString());
+                events.pop();
+            }
+            check_event = true;
+        }
+        query_time = time;
     }
 }
 

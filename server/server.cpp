@@ -104,9 +104,15 @@ void getTime(const Request& req, Response& res)
 void getQuery(const Request& req, Response& res)
 {
     std::printf("Path: %s\n\n", req.path.c_str());
-    std::string status = "";
+    std::queue<std::string> status;
 
-    wms->getTaskStatus(status, get_time() - time_start);
+    wms->getEventStatuses(status, get_time() - time_start);
+
+    while(!status.empty())
+    {
+        std::printf("%s\n", status.front().c_str());
+        status.pop();
+    }
 
     json body;
 
@@ -184,8 +190,17 @@ void addTask(const Request& req, Response& res)
 {
     json req_body = req.body;
     std::printf("Path: %s\nBody: %s\n\n", req.path.c_str(), req.body.c_str());
-    std::string file = req_body["file"].get<std::string>();
-    //wms->addTask(file);
+
+    // Retrieve task creation info from request body
+    std::string task_name = req_body["task"]["taskName"].get<std::string>();
+    unsigned int gflops = req_body["task"]["Gflops"].get<unsigned int>();
+    int min_cores = req_body["task"]["minCoreCount"].get<int>();
+    int max_cores = req_body["task"]["maxCoreCount"].get<int>();
+    double parallel_eff = req_body["task"]["parallelEfficiency"].get<double>();
+    unsigned int memory = req_body["task"]["memorySize"].get<unsigned int>();
+
+    // Pass parameters in to function to add a task.
+    wms->addTask(task_name, gflops, min_cores, max_cores, parallel_eff, memory);
 
     json body;
     body["time"] = get_time() - time_start;
