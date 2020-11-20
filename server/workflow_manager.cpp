@@ -31,13 +31,15 @@ namespace wrench {
 
         while(true)
         {
-            // wrench::StandardJob
-            // auto tasks = this->getWorkflow()->getReadyTasks();
-            // int index = dist(rng) % tasks.size();
-            // auto task1 = tasks.at(index);
-            // auto task2 = tasks.at((index + 1) & tasks.size());
+            if(!this->getWorkflow()->isDone())
+            {
+                // wrench::StandardJob
+                // auto tasks = this->getWorkflow()->getReadyTasks();
+                // int index = dist(rng) % tasks.size();
+                // auto task1 = tasks.at(index);
+                // auto task2 = tasks.at((index + 1) & tasks.size());
+            }
 
-            //auto event = this->waitForNextEvent(0.01);
             if(check_event)
             {
                 time_t q_time = query_time;
@@ -55,9 +57,8 @@ namespace wrench {
                                   const double& parallel_efficiency, const double& memory)
     {
         // Create tasks and add to workflow.
-        auto task = this->getWorkflow()->addTask(task_name + std::to_string(query_time),
-                                                 gflops * GFLOPS, min_cores, max_cores, memory);
-        // Set parallel efficiency
+        auto task = this->getWorkflow()->addTask(
+            task_name + std::to_string(query_time),gflops * GFLOPS, min_cores, max_cores, memory);
         task->setParallelModel(wrench::ParallelModel::CONSTANTEFFICIENCY(parallel_efficiency));
     }
 

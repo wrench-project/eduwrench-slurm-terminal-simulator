@@ -43,35 +43,6 @@ wrench::Workflow workflow;
  */
 std::shared_ptr<wrench::WorkflowManager> wms;
 
-// TEST PATHS
-
-/**
- * @brief 
- * @param req 
- * @param res 
- */
-void testGet(const Request& req, Response& res)
-{
-    std::printf("Path: %s\n\n", req.path.c_str());
-
-    res.set_header("access-control-allow-origin", "*");
-    res.set_content("Hello World!", "text/plain");
-}
-
-/**
- * @brief 
- * @param req 
- * @param res 
- */
-void testPost(const Request& req, Response& res)
-{
-    std::printf("Path: %s\nBody: %s\n\n", req.path.c_str(), req.body.c_str());
-
-    res.set_header("access-control-allow-origin", "*");
-    res.set_content("Hello World!", "text/plain");
-}
-
-
 // GET PATHS
 
 /**
@@ -250,12 +221,10 @@ int main(int argc, char **argv)
     wms->addWorkflow(&workflow);
 
     // Handle GET requests
-    server.Get("/", testGet);
     server.Get("/time", getTime);
     server.Get("/query", getQuery);
 
     // Handle POST requests
-    server.Post("/", testPost);
     server.Post("/start", start);
     server.Post("/add1", add1);
     server.Post("/add10", add10);
