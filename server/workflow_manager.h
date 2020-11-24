@@ -19,13 +19,17 @@ namespace wrench {
 
         void addTask(const std::string& task_name, const double& gflops,
                      const unsigned int& min_cores, const unsigned int& max_cores,
-                     const double& parallel_efficiency, const double& memory);
+                     const double& memory);
         void getEventStatuses(std::queue<std::string>& statuses, const time_t& time);
+
+        void stopServer();
 
     private:
         int main() override;
         bool check_event = false;
+        bool stop = false;
         std::queue<std::shared_ptr<wrench::WorkflowExecutionEvent>> events;
+        std::queue<wrench::WorkflowJob*> doneJobs;
         time_t query_time = 0;
     };
 }

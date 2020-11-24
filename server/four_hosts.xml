@@ -4,7 +4,7 @@
     <zone id="AS0" routing="Full">
 
         <!-- The host on which the WMS will run -->
-        <host id="WMSHost" speed="10Gf" core="1">
+        <host id="WMSHost" speed="1f" core="1">
             <disk id="hard_drive" read_bw="100MBps" write_bw="100MBps">
                 <prop id="size" value="5000GiB"/>
                 <prop id="mount" value="/"/>
@@ -12,13 +12,13 @@
         </host>
 
         <!-- The host on which the BatchComputeService will run -->
-        <host id="BatchHeadNode" speed="1Gf" core="1">
+        <host id="BatchHeadNode" speed="1f" core="1">
        </host>
 
-        <host id="BatchNode1" speed="50Gf" core="10">
+        <host id="BatchNode1" speed="1f" core="1">
             <prop id="ram" value="64GB" />
         </host>
-        <host id="BatchNode2" speed="50Gf" core="10">
+        <host id="BatchNode2" speed="1f" core="1">
             <prop id="ram" value="64GB" />
         </host>
 

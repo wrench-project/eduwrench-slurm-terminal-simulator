@@ -114,6 +114,20 @@ void start(const Request& req, Response& res)
  * @param req 
  * @param res 
  */
+void stop(const Request& req, Response& res)
+{
+    std::printf("Path: %s\nBody: %s\n\n", req.path.c_str(), req.body.c_str());
+
+    wms->stopServer();
+    res.set_header("access-control-allow-origin", "*");
+    //res.set_content("", "application/json");
+}
+
+/**
+ * @brief 
+ * @param req 
+ * @param res 
+ */
 void add1(const Request& req, Response& res)
 {
     std::printf("Path: %s\nBody: %s\n\n", req.path.c_str(), req.body.c_str());
@@ -167,11 +181,10 @@ void addTask(const Request& req, Response& res)
     unsigned int gflops = req_body["task"]["Gflops"].get<unsigned int>();
     int min_cores = req_body["task"]["minCoreCount"].get<int>();
     int max_cores = req_body["task"]["maxCoreCount"].get<int>();
-    double parallel_eff = req_body["task"]["parallelEfficiency"].get<double>();
     unsigned int memory = req_body["task"]["memorySize"].get<unsigned int>();
 
     // Pass parameters in to function to add a task.
-    wms->addTask(task_name, gflops, min_cores, max_cores, parallel_eff, memory);
+    wms->addTask(task_name, gflops, min_cores, max_cores, memory);
 
     json body;
     body["time"] = get_time() - time_start;
@@ -226,6 +239,7 @@ int main(int argc, char **argv)
 
     // Handle POST requests
     server.Post("/start", start);
+    server.Post("/stop", stop);
     server.Post("/add1", add1);
     server.Post("/add10", add10);
     server.Post("/add60", add60);
