@@ -2,6 +2,7 @@
 #define WORKFLOW_MANAGER_H
 
 #include <wrench-dev.h>
+#include <map>
 #include <vector>
 #include <queue>
 
@@ -17,19 +18,20 @@ namespace wrench {
             const std::string &hostname
         );
 
-        void addTask(const std::string& task_name, const double& gflops,
-                     const unsigned int& min_cores, const unsigned int& max_cores,
-                     const double& memory);
+        void addJob(const std::string& job_name, const int& duration,
+                     const unsigned int& num_nodes);
         void getEventStatuses(std::queue<std::string>& statuses, const time_t& time);
 
         void stopServer();
 
     private:
         int main() override;
+        std::shared_ptr<JobManager> job_manager;
         bool check_event = false;
         bool stop = false;
         std::queue<std::shared_ptr<wrench::WorkflowExecutionEvent>> events;
-        std::queue<wrench::WorkflowJob*> doneJobs;
+        std::queue<std::shared_ptr<wrench::WorkflowJob>> doneJobs;
+        std::queue<std::pair<std::shared_ptr<wrench::StandardJob>, std::map<std::string, std::string>>> toSubmitJobs;
         time_t query_time = 0;
     };
 }

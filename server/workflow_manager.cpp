@@ -19,28 +19,25 @@ namespace wrench {
     
     int WorkflowManager::main()
     {
-        auto job_manager = this->createJobManager();
+        this->job_manager = this->createJobManager();
 
         auto batch_service = *(this->getAvailableComputeServices<BatchComputeService>().begin());
-        auto storage_service = *(this->getAvailableStorageServices().begin());
 
         while(true)
         {
             // Add tasks onto the job_manager so it can begin processing them
-            auto tasks = this->getWorkflow()->getReadyTasks();
-            for(auto task : tasks)
+            while (not this->toSubmitJobs.empty()) 
             {
-                std::map<WorkflowFile *, std::shared_ptr<FileLocation>> file_locations;
-                file_locations[task->getInputFiles()[0]] = FileLocation::LOCATION(storage_service);
-                file_locations[task->getOutputFiles()[0]] = FileLocation::LOCATION(storage_service);
-                StandardJob* job = job_manager->createStandardJob(task, file_locations);
-                job_manager->submitJob(job, batch_service);
+                auto to_submit = this->toSubmitJobs.front();
+                auto job = std::get<0>(to_submit);      
+                auto service_specific_args = std::get<1>(to_submit);
+                job_manager->submitJob(job, batch_service, service_specific_args);
+                this->toSubmitJobs.pop();
             }
 
             // Clean up memory by removing completed and failed jobs
-            while(doneJobs.size() > 0)
+            while(not doneJobs.empty())
             {
-                job_manager->forgetJob(doneJobs.front());
                 doneJobs.pop();
             }
 
@@ -61,6 +58,7 @@ namespace wrench {
             if(stop)
                 break;
         }
+        return 0;
     }
 
     void WorkflowManager::stopServer()
@@ -68,13 +66,23 @@ namespace wrench {
         stop = true;
     }
 
-    void WorkflowManager::addTask(const std::string& task_name, const double& gflops,
-                                  const unsigned int& min_cores, const unsigned int& max_cores,
-                                  const double& memory)
+    void WorkflowManager::addJob(const std::string& job_name, const int& duration,
+                                  const unsigned int& num_nodes)
     {
         // Create tasks and add to workflow.
         auto task = this->getWorkflow()->addTask(
-            task_name + std::to_string(query_time), gflops, min_cores, max_cores, memory);
+            job_name + "_task_" + std::to_string(query_time), (double)duration, 1, 1, 0.0);
+        
+        // Create a job
+        auto job = job_manager->createStandardJob(task, {});
+
+        std::map<std::string, std::string> service_specific_args;
+        service_specific_args["-t"] = (double)(duration/60.0);
+        service_specific_args["-N"] = std::to_string(num_nodes);
+        service_specific_args["-c"] = std::to_string(1);
+        service_specific_args["-u"] = "slurm_user";
+
+        toSubmitJobs.push(std::make_pair(job, service_specific_args));
     }
 
     void WorkflowManager::getEventStatuses(std::queue<std::string>& statuses, const time_t& time)

@@ -20,8 +20,8 @@ find_package(Threads REQUIRED)
 target_link_libraries(TestServer PRIVATE Threads::Threads)
 
 # Add simgrid libraries and includes
-include_directories(/opt/simgrid/include)
-link_directories(/opt/simgrid/lib)
+include_directories(/opt/simgrid/include /opt/local/include)
+link_directories(/opt/simgrid/lib /opt/local/lib)
 
 # Link needed libraries
 target_link_libraries(TestServer PRIVATE nlohmann_json::nlohmann_json wrench simgrid pugixml)

@@ -171,20 +171,18 @@ void add60(const Request& req, Response& res)
     res.set_content(body.dump(), "application/json");
 }
 
-void addTask(const Request& req, Response& res)
+void addJob(const Request& req, Response& res)
 {
     json req_body = req.body;
     std::printf("Path: %s\nBody: %s\n\n", req.path.c_str(), req.body.c_str());
 
     // Retrieve task creation info from request body
-    std::string task_name = req_body["task"]["taskName"].get<std::string>();
-    unsigned int gflops = req_body["task"]["Gflops"].get<unsigned int>();
-    int min_cores = req_body["task"]["minCoreCount"].get<int>();
-    int max_cores = req_body["task"]["maxCoreCount"].get<int>();
-    unsigned int memory = req_body["task"]["memorySize"].get<unsigned int>();
+    std::string job_name = req_body["job"]["jobName"].get<std::string>();
+    unsigned int duration = req_body["job"]["durationInSec"].get<unsigned int>();
+    int num_nodes = req_body["job"]["numNodes"].get<int>();
 
-    // Pass parameters in to function to add a task.
-    wms->addTask(task_name, gflops, min_cores, max_cores, memory);
+    // Pass parameters in to function to add a job .
+    wms->addJob(job_name, duration, num_nodes);
 
     json body;
     body["time"] = get_time() - time_start;
@@ -243,7 +241,7 @@ int main(int argc, char **argv)
     server.Post("/add1", add1);
     server.Post("/add10", add10);
     server.Post("/add60", add60);
-    server.Post("/addTask", addTask);
+    server.Post("/addTask", addJob);
 
     server.set_error_handler(error_handling);
 
