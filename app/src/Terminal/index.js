@@ -47,6 +47,19 @@ async function makeServerCall(input, term) {
             term.write('\r\n');
             term.write(`Terminal:~${extension}$ `);
         });
+    } else if(input === "batch") {
+        fetch('http://localhost:8080/query', {
+            method: 'GET'
+        })
+        .then((response) => response.json())
+        .then((res) => {
+            let date = new Date(res['time']);
+            let query = res['query'];
+            setTime(res['time']);
+            term.write(date.toISOString() + `: ${query}`);
+            term.write('\r\n');
+            term.write(`Terminal:~${extension}$ `);
+        });
     } else {
         term.write(input);
         term.write('\r\n');
