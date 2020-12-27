@@ -4,12 +4,16 @@
   "description": "",
   "main": "index.js",
   "scripts": {
-    "setup": "./setup.sh"
+    "setup": "./setup.sh",
+    "clean": "rm -r bundle.js libs/"
   },
   "author": "",
   "license": "ISC",
   "dependencies": {
+    "@rollup/plugin-commonjs": "^17.0.0",
     "bootstrap": "^4.5.3",
-    "xterm": "^4.9.0"
+    "rollup": "^2.35.1",
+    "xterm": "^4.9.0",
+    "xterm-addon-fit": "^0.4.0"
   }
 }

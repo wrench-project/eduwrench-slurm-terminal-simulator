@@ -1,5 +1,11 @@
-node_modules/
-libs/
+# Client
+client/node_modules/
+client/libs/
+client/bundle.js
+
+# Server
 out/
-.vs/
 build/
+
+# Other
+.vs/
