@@ -206,7 +206,7 @@ void error_handling(const Request& req, Response& res)
 void init_server(int port_number)
 {
     std::printf("Listening on port: %d\n", port_number);
-    server.listen("localhost", port_number);
+    server.listen("0.0.0.0", port_number);
 }
 
 /**
@@ -215,6 +215,7 @@ void init_server(int port_number)
  */
 int main(int argc, char **argv)
 {
+    // If using port 80, need to start server with super user permissions
     int port_number = 8080;
     // XML config file copied from batch-bag-of-tasks example
     std::string simgrid_config = "../four_hosts.xml";
