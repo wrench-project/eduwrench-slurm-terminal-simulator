@@ -7,10 +7,21 @@
         <script type="text/javascript" src="bundle.js"></script>
     </head>
     <body>
-        <div>
-            <button type="button" class="btn btn-outline-primary">Primary</button>
-            <button type="button" class="btn btn-outline-secondary">Secondary</button>
+        <div id="header" class="container">
+            <div class="row">
+                <div class="col-3">
+                    <h3>Simulation Time</h3>
+                    <h2 id="clock">12:00:00 AM</h2>
+                </div>
+                <div class="col-9">
+                    Buttons
+                </div>
+            </div>
+        </div>
+        <div class="container">
             <div id="terminal"></div>
         </div>
+        <div id="textArea"></div>
+        <div id="footer" class="container"></div>
     </body>
 </html>
