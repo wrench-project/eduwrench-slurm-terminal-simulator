@@ -1,2 +1,7 @@
 @import "libs/xterm.css";
 @import "libs/bootstrap.min.css";
+
+.btn-secondary.focus, .btn-secondary:focus {
+    -webkit-box-shadow: none;
+    box-shadow: none;
+}
