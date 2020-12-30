@@ -1,3 +1,7 @@
+/**
+ * Main file which runs all the javascript.
+ */
+
 import {Terminal} from './libs/xterm';
 import {FitAddon} from './libs/xterm-addon-fit';
 
@@ -19,10 +23,6 @@ let add60Button;
 // Holds list of events which occurred on the server
 let events = [];
 
-// Faked filesystem
-let filesystem = {};
-let path = [];
-
 // Once HTML is loaded run main function
 window.onload = main;
 
@@ -39,12 +39,9 @@ function processCommand() {
         return;
     }
     if(command == "ls") {
-        for(const key in filesystem) {
-            term.write(key + " ");
-        }
-        if(Object.keys(filesystem).length > 0) {
-            term.write("\r\n");
-        }
+        return;
+    }
+    if(command == "mkdir") {
         return;
     }
     term.write(`Command '${command}' not found.\r\n`);
