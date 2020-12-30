@@ -9,6 +9,7 @@ export function Filesystem() {
     this.ls = ls;
     this.cd = cd;
     this.mkdir = mkdir;
+    this.rm = rm;
     this.open = openFile;
     this.create = createFile;
     this.save = saveFile;
@@ -79,6 +80,21 @@ function cd(loc) {
 function mkdir(name) {
     if(this.currentDir[name] == null) {
         this.currentDir[name] = {};
+        return true;
+    }
+    return false;
+}
+
+function rm(name, recursive = false) {
+    if(this.currentDir[name] == null) {
+        return false;
+    }
+    if(recursive) {
+        delete this.currentDir[name];
+        return true;
+    }
+    if(this.currentDir[name] == "string") {
+        delete this.currentDir[name];
         return true;
     }
     return false;
