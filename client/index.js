@@ -61,7 +61,7 @@ function processCommand() {
             ls = filesystem.ls();
         }
         if(ls != "") {
-            term.write(filesystem.ls() + "\r\n");
+            term.write(ls + "\r\n");
         }
         return;
     }
@@ -142,6 +142,16 @@ function processCommand() {
         }
         return;
     }
+    if(command == "cd") {
+        if(currentLine.length > 1) {
+            if(!filesystem.cd(currentLine[1])) {
+                term.write("Cannot navigate to directory\r\n");
+            }
+        } else {
+            term.write("Missing argument\r\n");
+        }
+        return;
+    }
     if(command == "edit") {
         if(currentLine.length > 1) {
             let f = filesystem.open(currentLine[i]);
@@ -182,7 +192,7 @@ function handleArrowKeys(seq) {
 }
 
 // Non-control character regex
-const notControl = /^[\w\d\s]$/;
+const notControl = /^[\S\s]$/;
 
 /**
  * Processes and executes the character commands when inputted.
