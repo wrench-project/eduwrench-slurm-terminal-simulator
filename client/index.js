@@ -4,6 +4,7 @@
 
 import {Terminal} from './libs/xterm';
 import {FitAddon} from './libs/xterm-addon-fit';
+import {Filesystem} from './filesystem';
 
 // Load terminal library
 const term = new Terminal();
@@ -11,8 +12,14 @@ const fitAddon = new FitAddon();
 term.loadAddon(fitAddon);
 let termBuffer;
 
+// Creates faked filesystem
+const filesystem = new Filesystem();
+
 // Holds current simulation time
 let simTime = new Date(0);
+
+// Flag to signify whether text is being edited
+let fileOpen = false;
 
 // Variables to hold DOM elements
 let clock;
@@ -27,6 +34,14 @@ let events = [];
 window.onload = main;
 
 /**
+ * Shows text edit area, save button, and save/close button.
+ * @param {Text of document} text 
+ */
+function editFile(text) {
+
+}
+
+/**
  * Runs specified commands and faked programs.
  */
 function processCommand() {
@@ -39,9 +54,105 @@ function processCommand() {
         return;
     }
     if(command == "ls") {
+        let ls;
+        if(currentLine.length > 1) {
+            ls = filesystem.ls(currentLine[1]);
+        } else {
+            ls = filesystem.ls();
+        }
+        if(ls != "") {
+            term.write(filesystem.ls() + "\r\n");
+        }
         return;
     }
+    // Possible to shift the multiple directory creation to filesystem. Can pass multiple parameters as an array.
     if(command == "mkdir") {
+        if(currentLine.length > 1) {
+            for(let i = 1; i < currentLine.length; i++) {
+                let f = filesystem.mkdir(currentLine[i]);
+                if(f != "") {
+                    term.write(f + "\r\n");
+                }
+            }
+        } else {
+            term.write("Missing argument\r\n");
+        }
+        return;
+    }
+    if(command == "touch") {
+        if(currentLine.length > 1) {
+            for(let i = 1; i < currentLine.length; i++) {
+                let f = filesystem.create(currentLine[i]);
+                if(f != "") {
+                    term.write(f + "\r\n");
+                }
+            }
+        } else {
+            term.write("Missing argument\r\n");
+        }
+        return;
+    }
+    if(command == "rm") {
+        if(currentLine.length == 1) {
+            term.write("Missing argument\r\n");
+            return;
+        }
+        // Handles single argument rm.
+        if(currentLine.length == 2) {
+            if(currentLine[1] == "-r") {
+                term.write("Missing argument\r\n");
+                return;
+            }
+            let f = filesystem.rm(currentLine[1]);
+            if(f != "") {
+                term.write(f + "\r\n");
+            }
+            return;
+        }
+        // Handles recursive rm
+        if(currentLine[1] == "-r") {
+            for(let i = 2; i < currentLine.length; i++) {
+                let f = filesystem.rm(currentLine[i], true);
+                if(f != "") {
+                    term.write(f + "\r\n");
+                }
+            }
+            return;
+        }
+        // Handle multiple arguments non-recursive
+        for(let i = 2; i < currentLine.length; i++) {
+            let f = filesystem.rm(currentLine[i]);
+            if(f != "") {
+                term.write(f + "\r\n");
+            }
+        }
+    }
+    if(command == "cat") {
+        if(currentLine.length > 1) {
+            for(let i = 1; i < currentLine.length; i++) {
+                let f = filesystem.open(currentLine[i]);
+                if(f != null) {
+                    term.write(f + "\r\n");
+                } else {
+                    term.write("File not found or is directory\r\n");
+                }
+            }
+        } else {
+            term.write("Missing argument\r\n");
+        }
+        return;
+    }
+    if(command == "edit") {
+        if(currentLine.length > 1) {
+            let f = filesystem.open(currentLine[i]);
+            if(f != null) {
+                editFile(f);
+            } else {
+                term.write("File not found or is directory\r\n");
+            }
+        } else {
+            term.write("Missing argument\r\n");
+        }
         return;
     }
     term.write(`Command '${command}' not found.\r\n`);
@@ -79,6 +190,9 @@ const notControl = /^[\w\d\s]$/;
  */
 function processInput(seq) {
     console.log(seq.length + " " + seq.charCodeAt(0).toString(16));
+    if(fileOpen) {
+        return;
+    }
     switch(seq) {
         case '\x03':
             term.write('^C\r\n~$ ');

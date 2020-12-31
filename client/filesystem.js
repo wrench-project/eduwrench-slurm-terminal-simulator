@@ -80,24 +80,24 @@ function cd(loc) {
 function mkdir(name) {
     if(this.currentDir[name] == null) {
         this.currentDir[name] = {};
-        return true;
+        return "";
     }
-    return false;
+    return `Cannot create directory '${name}': File exists`;
 }
 
 function rm(name, recursive = false) {
     if(this.currentDir[name] == null) {
-        return false;
+        return "No such file or directory";
     }
     if(recursive) {
         delete this.currentDir[name];
-        return true;
+        return "";
     }
     if(this.currentDir[name] == "string") {
         delete this.currentDir[name];
-        return true;
+        return "";
     }
-    return false;
+    return `${name} is a directory`;
 }
 
 function openFile(name) {
@@ -110,9 +110,9 @@ function openFile(name) {
 function createFile(name) {
     if(this.currentDir[name] == null) {
         this.currentDir[name] = "";
-        return true;
+        return "";
     }
-    return false;
+    return `Cannot create file '${name}': File exists`;;
 }
 
 function saveFile(fileName, data) {
