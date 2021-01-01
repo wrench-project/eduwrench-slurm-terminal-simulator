@@ -26,6 +26,9 @@ let clock;
 let add1Button;
 let add10Button;
 let add60Button;
+let textArea;
+let saveButton;
+let saveAndExitButton;
 
 // Holds list of events which occurred on the server
 let events = [];
@@ -33,12 +36,30 @@ let events = [];
 // Once HTML is loaded run main function
 window.onload = main;
 
+let openedFile = "";
+
+function saveFile() {
+    filesystem.save(openedFile, textEditor.innerText);
+}
+
+function exitFile() {
+    filesystem.save(openedFile, textEditor.innerText);
+    textArea.style.display = "none";
+    openedFile = "";
+    fileOpen = false;
+    term.setOption('cursorBlink', true);
+}
+
 /**
  * Shows text edit area, save button, and save/close button.
  * @param {Text of document} text 
  */
-function editFile(text) {
-
+function editFile(filename, text) {
+    textEditor.innerText = text;
+    textArea.style.display = "block";
+    fileOpen = true;
+    openedFile = filename;
+    term.setOption('cursorBlink', false);
 }
 
 /**
@@ -154,9 +175,9 @@ function processCommand() {
     }
     if(command == "edit") {
         if(currentLine.length > 1) {
-            let f = filesystem.open(currentLine[i]);
+            let f = filesystem.open(currentLine[1]);
             if(f != null) {
-                editFile(f);
+                editFile(currentLine[1], f);
             } else {
                 term.write("File not found or is directory\r\n");
             }
@@ -205,17 +226,17 @@ function processInput(seq) {
     }
     switch(seq) {
         case '\x03':
-            term.write('^C\r\n~$ ');
+            term.write(`^C\r\n${filesystem.getPath()}$ `);
             break;
         case '\x7f':
-            if(termBuffer.cursorX > 2) {
+            if(termBuffer.cursorX > filesystem.getPath().length + 2) {
                 term.write('\b \b');
             }
             break;
         case '\r':
             term.write('\r\n')
             processCommand();
-            term.write('~$ ');
+            term.write(`${filesystem.getPath()}$ `);
             break;
         default:
             if(notControl.test(seq)) {
@@ -309,9 +330,12 @@ function main() {
     
     // Get and set DOM elements
     clock = document.getElementById('clock');
+    textArea = document.getElementById('textArea')
     add1Button = document.getElementById('add1');
     add10Button = document.getElementById('add10');
     add60Button = document.getElementById('add60');
+    saveButton = document.getElementById('save');
+    saveAndExitButton = document.getElementById('exit');
 
     // Set up functions which need to be updated every specified interval
     setInterval(updateClockAndQueryServer, 1000);
@@ -320,4 +344,6 @@ function main() {
     add1Button.addEventListener("click", add1, false);
     add10Button.addEventListener("click", add10, false);
     add60Button.addEventListener("click", add60, false);
+    saveButton.addEventListener("click", saveFile, false);
+    saveAndExitButton.addEventListener("click", exitFile, false);
 }
