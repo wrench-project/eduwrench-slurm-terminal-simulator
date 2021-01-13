@@ -27,7 +27,6 @@ let add1Button;
 let add10Button;
 let add60Button;
 let textArea;
-let saveButton;
 let saveAndExitButton;
 
 // Holds list of events which occurred on the server
@@ -38,11 +37,8 @@ window.onload = main;
 
 let openedFile = "";
 
-function saveFile() {
-    filesystem.save(openedFile, textEditor.innerText);
-}
-
 function exitFile() {
+    filesystem
     filesystem.save(openedFile, textEditor.innerText);
     textArea.style.display = "none";
     openedFile = "";
@@ -153,6 +149,7 @@ function processCommand() {
             for(let i = 1; i < currentLine.length; i++) {
                 let f = filesystem.open(currentLine[i]);
                 if(f != null) {
+                    f = f.replace(/\n/g, '\r\n');
                     term.write(f + "\r\n");
                 } else {
                     term.write("File not found or is directory\r\n");
@@ -256,6 +253,16 @@ function initializeTerminal() {
     // Currently experimental hence this weird calling approach which does not match xterm docs
     termBuffer = term.buffer.active;
 
+    // Add pre-existing files into filesystem
+    filesystem.create("batch_script.slurm");
+    filesystem.create("parallel_program");
+    filesystem.create("README");
+
+    // Add text to files
+    filesystem.save("batch_script.slurm", "#!/bin/bash\n#SBATCH --nodes=12\n#SBATCH --tasks-per-node=2\n#SBATCH --cpus-per-task=10\n#SBATCH --time 02:00:00\n#SBATCH --output=job-%A.err\n#SBATCH --output=job-%A.out\nsrun ./parallel_program");
+    filesystem.save("parallel_program", "This is binary.");
+    filesystem.save("README", "To be added...");
+
     // Finalize setup
     fitAddon.fit();
     term.write("Terminal initialized...\r\n\r\n~$ ")
@@ -307,6 +314,8 @@ function updateClockAndQueryServer() {
 /**
  * FUNCTIONS USED TO HANDLE MOVING TIME BUTTONS
  */
+
+// Convert it to wait for next event using a while loop. Update clock after.
 function add1() {
     simTime.setTime(simTime.getTime() + 60000);
     updateClock();
@@ -334,7 +343,6 @@ function main() {
     add1Button = document.getElementById('add1');
     add10Button = document.getElementById('add10');
     add60Button = document.getElementById('add60');
-    saveButton = document.getElementById('save');
     saveAndExitButton = document.getElementById('exit');
 
     // Set up functions which need to be updated every specified interval
@@ -344,6 +352,5 @@ function main() {
     add1Button.addEventListener("click", add1, false);
     add10Button.addEventListener("click", add10, false);
     add60Button.addEventListener("click", add60, false);
-    saveButton.addEventListener("click", saveFile, false);
     saveAndExitButton.addEventListener("click", exitFile, false);
 }

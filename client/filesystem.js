@@ -1,19 +1,25 @@
 /**
  * Fakes the filesystem for terminal.
  */
-export function Filesystem() {
-    this.filesystem = {};
-    this.currentDir = this.filesystem;
-    this.path = [];
-    this.getPath = getPath;
-    this.ls = ls;
-    this.cd = cd;
-    this.mkdir = mkdir;
-    this.rm = rm;
-    this.open = openFile;
-    this.create = createFile;
-    this.save = saveFile;
+export class Filesystem {
+    constructor() {
+        this.filesystem = {};
+        this.currentDir = this.filesystem;
+        this.path = [];
+        this.getPath = getPath;
+        this.ls = ls;
+        this.cd = cd;
+        this.mkdir = mkdir;
+        this.rm = rm;
+        this.open = openFile;
+        this.create = createFile;
+        this.save = saveFile;
+    }
 }
+
+// TODO: Fix issues related to hitting backspace adding spaces after command due to how buffer in xterm.js is implemented.
+// TODO: Convert structure of filesystem to include type and data rather as an intermediary rather than
+//       the file/folder itself.
 
 function getPath() {
     let output = "~";
@@ -28,9 +34,9 @@ function ls(loc = null) {
     if(loc == null) {
         for(const key in this.currentDir) {
             if(typeof this.currentDir[key] == "string") {
-                output += key + " ";
+                output += key + " \t";
             } else {
-                output += key + "/ ";
+                output += key + "/ \t";
             }
         }
         return output;
