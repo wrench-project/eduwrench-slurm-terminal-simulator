@@ -89,7 +89,7 @@ void getQuery(const Request& req, Response& res)
 
     body["time"] = get_time() - time_start;
     body["jobStatus"] = "A query to the server was made.";
-    res.set_header("access-control-allow-origin", "*");
+    res.set_header("Access-Control-Allow-Origin", "*");
     res.set_content(body.dump(), "application/json");
 }
 
