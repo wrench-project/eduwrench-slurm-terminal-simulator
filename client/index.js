@@ -36,7 +36,13 @@ let events = [];
 window.onload = main;
 
 let openedFile = "";
+let jobNum = 1;
+let serverAddress = "192.168.0.20";
 
+/**
+ * Saves the file to fake filesystem and returns control to terminal
+ * while hiding text editor.
+ */
 function exitFile() {
     filesystem
     filesystem.save(openedFile, textEditor.innerText);
@@ -56,6 +62,28 @@ function editFile(filename, text) {
     fileOpen = true;
     openedFile = filename;
     term.setOption('cursorBlink', false);
+}
+
+/**
+ * Sends batch file info to server for simulation.
+ * @param {Configuration File} config 
+ */
+function sendBatch(config) {
+    config = config.split('\n');
+    let dur = config[4].split(' ')[2].split(':');
+    let sec = parseInt(dur[0]) * 3600 + parseInt(dur[1]) * 60 + parseInt(dur[2]);
+    let body = {
+        job: {
+            jobName: jobNum,
+            durationInSec: sec,
+            numNodes: 1
+        }
+    }
+    fetch(`http://${serverAddress}/addJob`, { method: 'POST', body: JSON.stringify(body)})
+    .then((res) => res.json())
+    .then((res) => {
+        console.log(res);
+    });
 }
 
 /**
@@ -183,6 +211,19 @@ function processCommand() {
         }
         return;
     }
+    if(command == "sbatch") {
+        if(currentLine.length > 1) {
+            let f = filesystem.open(currentLine[1]);
+            if(f != null && currentLine[1] == "batch_script.slurm") {
+                sendBatch(f);
+            } else {
+                term.write("Not batch file\r\n");
+            }
+        } else {
+            term.write("Missing argument\r\n");
+        }
+        return;
+    }
     term.write(`Command '${command}' not found.\r\n`);
 }
 
@@ -274,8 +315,11 @@ function initializeTerminal() {
  * Sends a get request to server to get current server simulated time and events which occurred.
  * TODO: Implementation of function.
  */
-function queryServer() {
-    return simTime.getTime();
+async function queryServer() {
+    let res = await fetch(`http://${serverAddress}/query`, { method: 'GET' });
+    res = await res.json();
+    console.log(res);
+    return res["time"];
 }
 
 /**
@@ -299,12 +343,12 @@ function updateClock() {
 /**
  * Function called every second to update the clock and query the server.
  */
-function updateClockAndQueryServer() {
+async function updateClockAndQueryServer() {
     // Increment simulation time by 1 second
     simTime.setTime(simTime.getTime() + 1000);
 
     // Query server for current time
-    let serverTime = queryServer();
+    let serverTime = await queryServer();
     if(Math.abs(serverTime - simTime.getTime()) > 500) {
         simTime.setTime(serverTime);
     }
@@ -315,7 +359,7 @@ function updateClockAndQueryServer() {
  * FUNCTIONS USED TO HANDLE MOVING TIME BUTTONS
  */
 
-// Convert it to wait for next event using a while loop. Update clock after.
+// TODO: Convert add1 to wait for next event using a while loop. Update clock after.
 function add1() {
     simTime.setTime(simTime.getTime() + 60000);
     updateClock();
@@ -323,11 +367,13 @@ function add1() {
 
 function add10() {
     simTime.setTime(simTime.getTime() + 600000);
+    fetch(`http://${serverAddress}/add10`, { method: 'POST' });
     updateClock();
 }
 
 function add60() {
     simTime.setTime(simTime.getTime() + 3600000);
+    fetch(`http://${serverAddress}/add60`, { method: 'POST' });
     updateClock();
 }
 
@@ -347,6 +393,9 @@ function main() {
 
     // Set up functions which need to be updated every specified interval
     setInterval(updateClockAndQueryServer, 1000);
+
+    // Initialize server clock
+    fetch(`http://${serverAddress}/start`, { method: 'POST' });
 
     // Setup event handlers
     add1Button.addEventListener("click", add1, false);
