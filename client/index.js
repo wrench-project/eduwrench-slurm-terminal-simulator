@@ -37,7 +37,7 @@ window.onload = main;
 
 let openedFile = "";
 let jobNum = 1;
-let serverAddress = "192.168.0.20";
+let serverAddress = "192.168.0.20/api";
 
 /**
  * Saves the file to fake filesystem and returns control to terminal

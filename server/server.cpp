@@ -233,16 +233,16 @@ int main(int argc, char **argv)
     wms->addWorkflow(&workflow);
 
     // Handle GET requests
-    server.Get("/time", getTime);
-    server.Get("/query", getQuery);
+    server.Get("/api/time", getTime);
+    server.Get("/api/query", getQuery);
 
     // Handle POST requests
-    server.Post("/start", start);
-    server.Post("/stop", stop);
-    server.Post("/add1", add1);
-    server.Post("/add10", add10);
-    server.Post("/add60", add60);
-    server.Post("/addTask", addJob);
+    server.Post("/api/start", start);
+    server.Post("/api/stop", stop);
+    server.Post("/api/add1", add1);
+    server.Post("/api/add10", add10);
+    server.Post("/api/add60", add60);
+    server.Post("/api/addTask", addJob);
 
     server.set_error_handler(error_handling);
 
