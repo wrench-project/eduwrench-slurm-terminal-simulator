@@ -46,9 +46,10 @@ namespace wrench {
             // Needs to be done this way because waiting for next event cannot be done on another thread.
             if(check_event)
             {
-                time_t q_time = query_time;
-                while(this->getNetworkTimeoutValue() < q_time)
+                std::printf("%f\n", query_time);
+                while(this->getNetworkTimeoutValue() < query_time)
                 {
+                    query_time -= 0.01;
                     auto event = this->waitForNextEvent(0.01);
                     events.push(event);
                 }
@@ -72,13 +73,13 @@ namespace wrench {
     {
         // Create tasks and add to workflow.
         auto task = this->getWorkflow()->addTask(
-            job_name + "_task_" + std::to_string(query_time), (double)duration, 1, 1, 0.0);
+            job_name + "_task_" + std::to_string(query_time), (double)(duration * 60), 1, 1, 0.0);
         
         // Create a job
         auto job = job_manager->createStandardJob(task, {});
 
         std::map<std::string, std::string> service_specific_args;
-        service_specific_args["-t"] = (double)(duration/60.0);
+        service_specific_args["-t"] = std::to_string(duration);
         service_specific_args["-N"] = std::to_string(num_nodes);
         service_specific_args["-c"] = std::to_string(1);
         service_specific_args["-u"] = "slurm_user";
@@ -107,7 +108,7 @@ namespace wrench {
             }
             check_event = true;
         }
-        query_time = time;
+        query_time += time;
     }
 }
 

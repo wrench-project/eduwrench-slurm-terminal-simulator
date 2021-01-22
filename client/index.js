@@ -29,8 +29,6 @@ let add60Button;
 let textArea;
 let saveAndExitButton;
 
-// Holds list of events which occurred on the server
-let events = [];
 
 // Once HTML is loaded run main function
 window.onload = main;
@@ -71,15 +69,15 @@ function editFile(filename, text) {
 function sendBatch(config) {
     config = config.split('\n');
     let dur = config[4].split(' ')[2].split(':');
-    let sec = parseInt(dur[0]) * 3600 + parseInt(dur[1]) * 60 + parseInt(dur[2]);
+    let sec = parseInt(dur[0]) * 60 + parseInt(dur[1]) + Math.round(parseInt(dur[2]) / 60);
     let body = {
         job: {
-            jobName: jobNum,
+            jobName: `${jobNum}`,
             durationInSec: sec,
             numNodes: 1
         }
     }
-    fetch(`http://${serverAddress}/addJob`, { method: 'POST', body: JSON.stringify(body)})
+    fetch(`http://${serverAddress}/addTask`, { method: 'POST', body: JSON.stringify(body)})
     .then((res) => res.json())
     .then((res) => {
         console.log(res);
@@ -319,6 +317,10 @@ async function queryServer() {
     let res = await fetch(`http://${serverAddress}/query`, { method: 'GET' });
     res = await res.json();
     console.log(res);
+    let events = res.events;
+    for(const e in events) {
+        console.log(e);
+    }
     return res["time"];
 }
 

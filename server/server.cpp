@@ -43,6 +43,8 @@ wrench::Workflow workflow;
  */
 std::shared_ptr<wrench::WorkflowManager> wms;
 
+std::vector<std::string> events;
+
 // GET PATHS
 
 /**
@@ -74,21 +76,22 @@ void getTime(const Request& req, Response& res)
  */
 void getQuery(const Request& req, Response& res)
 {
-    std::printf("Path: %s\n\n", req.path.c_str());
+    //std::printf("Path: %s\n\n", req.path.c_str());
     std::queue<std::string> status;
+    events.clear();
 
-    wms->getEventStatuses(status, get_time() - time_start);
+    wms->getEventStatuses(status, 1);
 
     while(!status.empty())
     {
-        std::printf("%s\n", status.front().c_str());
+        events.push_back(status.front());
         status.pop();
     }
 
     json body;
 
     body["time"] = get_time() - time_start;
-    body["jobStatus"] = "A query to the server was made.";
+    body["events"] = events;
     res.set_header("Access-Control-Allow-Origin", "*");
     res.set_content(body.dump(), "application/json");
 }
@@ -131,6 +134,15 @@ void stop(const Request& req, Response& res)
 void add1(const Request& req, Response& res)
 {
     std::printf("Path: %s\nBody: %s\n\n", req.path.c_str(), req.body.c_str());
+    std::queue<std::string> status;
+
+    wms->getEventStatuses(status, 60);
+
+    while(!status.empty())
+    {
+        events.push_back(status.front());
+        status.pop();
+    }
 
     json body;
     time_start -= 60000;
@@ -147,6 +159,15 @@ void add1(const Request& req, Response& res)
 void add10(const Request& req, Response& res)
 {
     std::printf("Path: %s\nBody: %s\n\n", req.path.c_str(), req.body.c_str());
+    std::queue<std::string> status;
+
+    wms->getEventStatuses(status, 600);
+
+    while(!status.empty())
+    {
+        events.push_back(status.front());
+        status.pop();
+    }
 
     json body;
     time_start -= 60000 * 10;
@@ -163,6 +184,15 @@ void add10(const Request& req, Response& res)
 void add60(const Request& req, Response& res)
 {
     std::printf("Path: %s\nBody: %s\n\n", req.path.c_str(), req.body.c_str());
+    std::queue<std::string> status;
+
+    wms->getEventStatuses(status, 3600);
+
+    while(!status.empty())
+    {
+        events.push_back(status.front());
+        status.pop();
+    }
 
     json body;
     time_start -= 60000 * 60;
@@ -173,7 +203,7 @@ void add60(const Request& req, Response& res)
 
 void addJob(const Request& req, Response& res)
 {
-    json req_body = req.body;
+    json req_body = json::parse(req.body);
     std::printf("Path: %s\nBody: %s\n\n", req.path.c_str(), req.body.c_str());
 
     // Retrieve task creation info from request body
