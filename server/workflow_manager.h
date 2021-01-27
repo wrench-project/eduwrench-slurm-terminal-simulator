@@ -5,6 +5,7 @@
 #include <map>
 #include <vector>
 #include <queue>
+#include <mutex>
 
 namespace wrench {
 
@@ -18,7 +19,7 @@ namespace wrench {
             const std::string &hostname
         );
 
-        void addJob(const std::string& job_name, const int& duration,
+        void addJob(const std::string& job_name, const double& duration,
                      const unsigned int& num_nodes);
         void getEventStatuses(std::queue<std::string>& statuses, const time_t& time);
 
@@ -32,7 +33,8 @@ namespace wrench {
         std::queue<std::shared_ptr<wrench::WorkflowExecutionEvent>> events;
         std::queue<std::shared_ptr<wrench::WorkflowJob>> doneJobs;
         std::queue<std::pair<std::shared_ptr<wrench::StandardJob>, std::map<std::string, std::string>>> toSubmitJobs;
-        double query_time = 0;
+        std::mutex queue_mutex;
+        double server_time = 0;
     };
 }
 

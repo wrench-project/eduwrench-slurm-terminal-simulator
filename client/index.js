@@ -69,7 +69,7 @@ function editFile(filename, text) {
 function sendBatch(config) {
     config = config.split('\n');
     let dur = config[4].split(' ')[2].split(':');
-    let sec = parseInt(dur[0]) * 60 + parseInt(dur[1]) + Math.round(parseInt(dur[2]) / 60);
+    let sec = parseInt(dur[0]) * 3600 + parseInt(dur[1]) * 60 + parseInt(dur[2]);
     let body = {
         job: {
             jobName: `${jobNum}`,
@@ -212,7 +212,7 @@ function processCommand() {
     if(command == "sbatch") {
         if(currentLine.length > 1) {
             let f = filesystem.open(currentLine[1]);
-            if(f != null && currentLine[1] == "batch_script.slurm") {
+            if(f != null && currentLine[1] == "batch.slurm") {
                 sendBatch(f);
             } else {
                 term.write("Not batch file\r\n");
@@ -293,12 +293,12 @@ function initializeTerminal() {
     termBuffer = term.buffer.active;
 
     // Add pre-existing files into filesystem
-    filesystem.create("batch_script.slurm");
+    filesystem.create("batch.slurm");
     filesystem.create("parallel_program");
     filesystem.create("README");
 
     // Add text to files
-    filesystem.save("batch_script.slurm", "#!/bin/bash\n#SBATCH --nodes=12\n#SBATCH --tasks-per-node=2\n#SBATCH --cpus-per-task=10\n#SBATCH --time 02:00:00\n#SBATCH --output=job-%A.err\n#SBATCH --output=job-%A.out\nsrun ./parallel_program");
+    filesystem.save("batch.slurm", "#!/bin/bash\n#SBATCH --nodes=12\n#SBATCH --tasks-per-node=2\n#SBATCH --cpus-per-task=10\n#SBATCH --time 00:01:00\n#SBATCH --output=job-%A.err\n#SBATCH --output=job-%A.out\nsrun ./parallel_program");
     filesystem.save("parallel_program", "This is binary.");
     filesystem.save("README", "To be added...");
 

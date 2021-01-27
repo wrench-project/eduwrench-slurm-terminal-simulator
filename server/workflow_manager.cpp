@@ -27,13 +27,14 @@ namespace wrench {
         while(true)
         {
             // Add tasks onto the job_manager so it can begin processing them
-            while (not this->toSubmitJobs.empty()) 
+            while (!this->toSubmitJobs.empty()) 
             {
                 auto to_submit = this->toSubmitJobs.front();
                 auto job = std::get<0>(to_submit);      
                 auto service_specific_args = std::get<1>(to_submit);
                 job_manager->submitJob(job, batch_service, service_specific_args);
                 this->toSubmitJobs.pop();
+                std::printf("Submit Server Time: %f\n", this->simulation->getCurrentSimulatedDate());
             }
 
             // Clean up memory by removing completed and failed jobs
@@ -44,16 +45,18 @@ namespace wrench {
 
             // Moves time forward for requested time while adding any completed events to a queue.
             // Needs to be done this way because waiting for next event cannot be done on another thread.
-            if(check_event)
+            while(this->simulation->getCurrentSimulatedDate() < server_time)
             {
-                std::printf("%f\n", query_time);
-                while(this->getNetworkTimeoutValue() < query_time)
+                // Retrieve event
+                auto event = this->waitForNextEvent(0.01);
+                if(event != nullptr)
                 {
-                    query_time -= 0.01;
-                    auto event = this->waitForNextEvent(0.01);
+                    std::printf("Event Server Time: %f\n", this->simulation->getCurrentSimulatedDate());
+                    std::printf("Event: %s\n", event->toString().c_str());
+                    queue_mutex.lock();
                     events.push(event);
+                    queue_mutex.unlock();
                 }
-                check_event = false;
             }
 
             // Exits if server needs to stop
@@ -68,12 +71,12 @@ namespace wrench {
         stop = true;
     }
 
-    void WorkflowManager::addJob(const std::string& job_name, const int& duration,
+    void WorkflowManager::addJob(const std::string& job_name, const double& duration,
                                   const unsigned int& num_nodes)
     {
         // Create tasks and add to workflow.
         auto task = this->getWorkflow()->addTask(
-            job_name + "_task_" + std::to_string(query_time), (double)(duration * 60), 1, 1, 0.0);
+            job_name + "_task_" + std::to_string(server_time), duration, 1, 1, 0.0);
         
         // Create a job
         auto job = job_manager->createStandardJob(task, {});
@@ -89,26 +92,23 @@ namespace wrench {
 
     void WorkflowManager::getEventStatuses(std::queue<std::string>& statuses, const time_t& time)
     {
-        // Checks if any events have been processed
-        if(!check_event)
+        // Keeps retrieving events while there are events and converts them to a string(temp) to return
+        // to client.
+        while(!events.empty())
         {
-            // Keeps retrieving events while there are events and converts them to a string(temp) to return
-            // to client.
-            while(events.size() > 0)
-            {
-                auto event = events.front();
-                statuses.push(event->toString());
-                events.pop();
+            queue_mutex.lock();
+            auto event = events.front();
+            statuses.push(event->toString());
+            events.pop();
+            queue_mutex.unlock();
 
-                // Cleans up by pushing done/failed jobs onto a queue for main thread to clean up.
-                if(auto failed = std::dynamic_pointer_cast<wrench::StandardJobFailedEvent>(event))
-                    doneJobs.push(failed->standard_job);
-                else if(auto complete = std::dynamic_pointer_cast<wrench::StandardJobCompletedEvent>(event))
-                    doneJobs.push(complete->standard_job);
-            }
-            check_event = true;
-        }
-        query_time += time;
+            // Cleans up by pushing done/failed jobs onto a queue for main thread to clean up.
+            if(auto failed = std::dynamic_pointer_cast<wrench::StandardJobFailedEvent>(event))
+                doneJobs.push(failed->standard_job);
+            else if(auto complete = std::dynamic_pointer_cast<wrench::StandardJobCompletedEvent>(event))
+                doneJobs.push(complete->standard_job);
+        }        
+        server_time = time;
     }
 }
 

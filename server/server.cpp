@@ -80,7 +80,7 @@ void getQuery(const Request& req, Response& res)
     std::queue<std::string> status;
     events.clear();
 
-    wms->getEventStatuses(status, 1);
+    wms->getEventStatuses(status, (get_time() - time_start) / 1000);
 
     while(!status.empty())
     {
@@ -136,7 +136,7 @@ void add1(const Request& req, Response& res)
     std::printf("Path: %s\nBody: %s\n\n", req.path.c_str(), req.body.c_str());
     std::queue<std::string> status;
 
-    wms->getEventStatuses(status, 60);
+    wms->getEventStatuses(status, (get_time() - time_start) / 1000);
 
     while(!status.empty())
     {
@@ -160,8 +160,9 @@ void add10(const Request& req, Response& res)
 {
     std::printf("Path: %s\nBody: %s\n\n", req.path.c_str(), req.body.c_str());
     std::queue<std::string> status;
+    time_start -= 60000 * 10;
 
-    wms->getEventStatuses(status, 600);
+    wms->getEventStatuses(status, (get_time() - time_start) / 1000);
 
     while(!status.empty())
     {
@@ -170,7 +171,6 @@ void add10(const Request& req, Response& res)
     }
 
     json body;
-    time_start -= 60000 * 10;
     body["time"] = get_time() - time_start;
     res.set_header("access-control-allow-origin", "*");
     res.set_content(body.dump(), "application/json");
@@ -185,17 +185,18 @@ void add60(const Request& req, Response& res)
 {
     std::printf("Path: %s\nBody: %s\n\n", req.path.c_str(), req.body.c_str());
     std::queue<std::string> status;
+    time_start -= 60000 * 60;
 
-    wms->getEventStatuses(status, 3600);
+    wms->getEventStatuses(status, (get_time() - time_start) / 1000);
 
     while(!status.empty())
     {
         events.push_back(status.front());
+        std::printf("%s\n", status.front().c_str());
         status.pop();
     }
 
     json body;
-    time_start -= 60000 * 60;
     body["time"] = get_time() - time_start;
     res.set_header("access-control-allow-origin", "*");
     res.set_content(body.dump(), "application/json");
@@ -208,7 +209,7 @@ void addJob(const Request& req, Response& res)
 
     // Retrieve task creation info from request body
     std::string job_name = req_body["job"]["jobName"].get<std::string>();
-    unsigned int duration = req_body["job"]["durationInSec"].get<unsigned int>();
+    double duration = req_body["job"]["durationInSec"].get<double>();
     int num_nodes = req_body["job"]["numNodes"].get<int>();
 
     // Pass parameters in to function to add a job .
