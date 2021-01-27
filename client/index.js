@@ -88,7 +88,7 @@ function sendBatch(config) {
  * Runs specified commands and faked programs.
  */
 function processCommand() {
-    let currentLine = termBuffer.getLine(termBuffer.cursorY).translateToString(true).split(/^~.*?\$ /)[1].split(" ");
+    let currentLine = termBuffer.getLine(termBuffer.cursorY).translateToString(true).trim().split(/^~.*?\$ /)[1].split(" ");
     let command = currentLine[0];
     
     // Checking for which command to execute
