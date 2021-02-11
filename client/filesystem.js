@@ -17,7 +17,6 @@ export class Filesystem {
     }
 }
 
-// TODO: Fix issues related to hitting backspace adding spaces after command due to how buffer in xterm.js is implemented.
 // TODO: Convert structure of filesystem to include type and data rather as an intermediary rather than
 //       the file/folder itself.
 
