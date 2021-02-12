@@ -212,12 +212,20 @@ void addJob(const Request& req, Response& res)
     double duration = req_body["job"]["durationInSec"].get<double>();
     int num_nodes = req_body["job"]["numNodes"].get<int>();
 
-    // Pass parameters in to function to add a job .
-    wms->addJob(job_name, duration, num_nodes);
-
     json body;
-    body["time"] = get_time() - time_start;
-    body["success"] = true;
+
+    // Pass parameters in to function to add a job .
+    if(wms->addJob(job_name, duration, num_nodes))
+    {
+        body["time"] = get_time() - time_start;
+        body["success"] = true;
+    }
+    else
+    {
+        body["time"] = get_time() - time_start;
+        body["success"] = false;
+    }
+    
     res.set_header("access-control-allow-origin", "*");
     res.set_content(body.dump(), "application/json");
 }

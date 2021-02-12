@@ -19,7 +19,7 @@ namespace wrench {
             const std::string &hostname
         );
 
-        void addJob(const std::string& job_name, const double& duration,
+        bool addJob(const std::string& job_name, const double& duration,
                      const unsigned int& num_nodes);
         void getEventStatuses(std::queue<std::string>& statuses, const time_t& time);
 

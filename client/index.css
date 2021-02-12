@@ -17,6 +17,11 @@
     padding: 10px;
 }
 
+#batchEditor {
+    padding-top: 1%;
+    display: none;
+}
+
 .btn-secondary.focus, .btn-secondary:focus {
     -webkit-box-shadow: none;
     box-shadow: none;

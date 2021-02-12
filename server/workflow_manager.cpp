@@ -71,9 +71,11 @@ namespace wrench {
         stop = true;
     }
 
-    void WorkflowManager::addJob(const std::string& job_name, const double& duration,
+    bool WorkflowManager::addJob(const std::string& job_name, const double& duration,
                                   const unsigned int& num_nodes)
     {
+        if(num_nodes > this->getAvailableComputeServices<ComputeService>().size())
+            return false;
         // Create tasks and add to workflow.
         auto task = this->getWorkflow()->addTask(
             job_name + "_task_" + std::to_string(server_time), duration, 1, 1, 0.0);
@@ -88,6 +90,7 @@ namespace wrench {
         service_specific_args["-u"] = "slurm_user";
 
         toSubmitJobs.push(std::make_pair(job, service_specific_args));
+        return true;
     }
 
     void WorkflowManager::getEventStatuses(std::queue<std::string>& statuses, const time_t& time)

@@ -27,8 +27,18 @@ let add1Button;
 let add10Button;
 let add60Button;
 let textArea;
+let batchEditor;
 let saveAndExitButton;
+let slurmNodesInput;
+let slurmHoursInput;
+let slurmMinutesInput;
+let slurmSecondsInput;
 
+// batch.slurm variables
+let slurmNodes = 2;
+let slurmHour = 0;
+let slurmMinute = 1;
+let slurmSeconds = 0;
 
 // Once HTML is loaded run main function
 window.onload = main;
@@ -37,21 +47,45 @@ let openedFile = "";
 let jobNum = 1;
 let serverAddress = "192.168.0.20/api";
 
+function padZero(val) {
+    if(val.length == 1) {
+        val = "0" + val;
+    }
+    return val;
+}
+
 /**
  * Saves the file to fake filesystem and returns control to terminal
  * while hiding text editor.
  */
 function exitFile() {
-    filesystem
     filesystem.save(openedFile, textEditor.innerText);
+    textArea.contentEditable = false;
     textArea.style.display = "none";
+    batchEditor.style.display = "none";
     openedFile = "";
     fileOpen = false;
+    textEditor.setAttribute("contentEditable", true);
     term.setOption('cursorBlink', true);
+}
+
+function editBatchFile(filename, text) {
+    textEditor.setAttribute("contentEditable", false);
+    slurmNodesInput.value = slurmNodes;
+    slurmHoursInput.value = padZero(slurmHour.toString());
+    slurmMinutesInput.value = padZero(slurmMinute.toString());
+    slurmSecondsInput.value = padZero(slurmSeconds.toString());
+    textEditor.innerText = text;
+    textArea.style.display = "block";
+    batchEditor.style.display = "block";
+    fileOpen = true;
+    openedFile = filename;
+    term.setOption('cursorBlink', false);
 }
 
 /**
  * Shows text edit area, save button, and save/close button.
+ * @param {Name of file} filename
  * @param {Text of document} text 
  */
 function editFile(filename, text) {
@@ -62,6 +96,23 @@ function editFile(filename, text) {
     term.setOption('cursorBlink', false);
 }
 
+function changeBatch() {
+    slurmNodes = parseInt(slurmNodesInput.value);
+    slurmHour = parseInt(slurmHoursInput.value);
+    slurmMinute = parseInt(slurmMinutesInput.value);
+    slurmSeconds = parseInt(slurmSecondsInput.value);
+    let slurmNodesText = slurmNodes.toString();
+    let slurmHourText = padZero(slurmHour.toString());
+    let slurmMinuteText = padZero(slurmMinute.toString());
+    let slurmSecondsText = padZero(slurmSeconds.toString());
+    let batchSlurm = "#!/bin/bash\n#SBATCH --nodes=" + slurmNodesText;
+    batchSlurm += "\n#SBATCH --tasks-per-node=1\n#SBATCH --cpus-per-task=10\n#SBATCH --time ";
+    batchSlurm += slurmHourText + ":" + slurmMinuteText + ":" + slurmSecondsText;
+    batchSlurm += "\n#SBATCH --output=job-%A.err\n#SBATCH --output=job-%A.out\nsrun ./parallel_program";
+    textEditor.innerText = batchSlurm;
+}
+
+// TODO: Prints out job id if success
 /**
  * Sends batch file info to server for simulation.
  * @param {Configuration File} config 
@@ -70,17 +121,22 @@ function sendBatch(config) {
     config = config.split('\n');
     let dur = config[4].split(' ')[2].split(':');
     let sec = parseInt(dur[0]) * 3600 + parseInt(dur[1]) * 60 + parseInt(dur[2]);
+    let nodes = parseInt(config[1].split('=')[1]);
     let body = {
         job: {
             jobName: `${jobNum}`,
             durationInSec: sec,
-            numNodes: 1
+            numNodes: nodes
         }
     }
     fetch(`http://${serverAddress}/addTask`, { method: 'POST', body: JSON.stringify(body)})
     .then((res) => res.json())
     .then((res) => {
         console.log(res);
+        if(!res.success) {
+            filesystem.create(".err");
+            filesystem.save(".err", "Number of nodes exceeds what is available in system");
+        }
     });
 }
 
@@ -200,7 +256,11 @@ function processCommand() {
         if(currentLine.length > 1) {
             let f = filesystem.open(currentLine[1]);
             if(f != null) {
-                editFile(currentLine[1], f);
+                if(currentLine[1] == "batch.slurm") {
+                    editBatchFile(currentLine[1], f);
+                } else {
+                    editFile(currentLine[1], f);
+                }
             } else {
                 term.write("File not found or is directory\r\n");
             }
@@ -298,7 +358,11 @@ function initializeTerminal() {
     filesystem.create("README");
 
     // Add text to files
-    filesystem.save("batch.slurm", "#!/bin/bash\n#SBATCH --nodes=12\n#SBATCH --tasks-per-node=2\n#SBATCH --cpus-per-task=10\n#SBATCH --time 00:01:00\n#SBATCH --output=job-%A.err\n#SBATCH --output=job-%A.out\nsrun ./parallel_program");
+    let batchSlurm = "#!/bin/bash\n#SBATCH --nodes=" + slurmNodes;
+    batchSlurm += "\n#SBATCH --tasks-per-node=1\n#SBATCH --cpus-per-task=10\n#SBATCH --time ";
+    batchSlurm += "00:01:00";
+    batchSlurm += "\n#SBATCH --output=job-%A.err\n#SBATCH --output=job-%A.out\nsrun ./parallel_program";
+    filesystem.save("batch.slurm", batchSlurm);
     filesystem.save("parallel_program", "This is binary.");
     filesystem.save("README", "To be added...");
 
@@ -387,11 +451,16 @@ function main() {
     
     // Get and set DOM elements
     clock = document.getElementById('clock');
-    textArea = document.getElementById('textArea')
+    textArea = document.getElementById('textArea');
+    batchEditor = document.getElementById('batchEditor');
     add1Button = document.getElementById('add1');
     add10Button = document.getElementById('add10');
     add60Button = document.getElementById('add60');
     saveAndExitButton = document.getElementById('exit');
+    slurmNodesInput = document.getElementById('slurmNodes');
+    slurmHoursInput = document.getElementById('slurmHours');
+    slurmMinutesInput = document.getElementById('slurmMinutes');
+    slurmSecondsInput = document.getElementById('slurmSeconds');
 
     // Set up functions which need to be updated every specified interval
     setInterval(updateClockAndQueryServer, 1000);
@@ -404,4 +473,8 @@ function main() {
     add10Button.addEventListener("click", add10, false);
     add60Button.addEventListener("click", add60, false);
     saveAndExitButton.addEventListener("click", exitFile, false);
+    slurmNodesInput.addEventListener("change", changeBatch, false);
+    slurmHoursInput.addEventListener("change", changeBatch, false);
+    slurmMinutesInput.addEventListener("change", changeBatch, false);
+    slurmSecondsInput.addEventListener("change", changeBatch, false);
 }
