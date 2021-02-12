@@ -1,4 +1,5 @@
-NOTES:
+NOTES: We'll need a way to "reset" simulations
+
 # Draft Pedagogic Module Narrative
 ---
 
@@ -134,7 +135,7 @@ SIMULATOR GOES HERE
 
 ---
 
-# TAB #3: Job cancelation and queue
+# TAB #3: Job cancellation and queue
 
 ### The scancel and squeue commands
 
@@ -177,17 +178,62 @@ Use the app to do (at least) the following:
 
 ---
 
-# TAB #4: Job crafting
+# TAB #4: Crafting job sizes
 
+In the simulated activity on the previous tab, you faced competition with
+users. This was a very simple example in which you used whatever
+number of compute nodes were available at the time of submission. But
+perhaps you could have submitted a job asking for more nodes, which may
+have waited not too long in the queue, and then eventually completed
+earlier! Let try this out with the simulated application at the bottom of
+this page, which is similar to that in the previous tab.
 
-TODO
+### Simulation activity
+
+Use the app to do (at least) the following:
+
+  1. Inspect the state of the queue. You should see that only 1 node is available right now. 
+  2. If you were to submit a 1-node job right now, when would myprogram complete? 
+  3. Submit a 2-node job and ask for just enough time for myprogram to complete
+  4. When does this job complete? Was it better then submitting a 1-node job?
 
 
 ---
 
-# TAB #5: Job flooding
+# TAB #5: Impact of job durations
 
-TODO
+In the previous tab, the instructions in the simulated activity said "ask
+for just enough time for myprogram to complete". It turns out that many
+users, in practice ask for much more time that needed. This is because they
+do not know how long their program will run (for instance, the program runs
+shorter or longer based on its input data). Furthermore, users many not
+know the speedup behavior of their program. So although they may know how
+long the program would run on 1 node, they don't know how long it will run
+on 10 nodes.  Since asking for too little time leads to job failures, most
+users are conservative and ask for more time. This behavior has been
+studied by researchers (here is a [classical articles](XXX), if interested).  
+The problem is that asking for too much time can increase a job's wait
+time (due to most batch schedulers implementing a strategy called "backfilling", which
+allows small/short jobs to jump ahead in the queue!).  
+
+Let's witness first-hand the impact of the requested job duration using the
+simulation app at the bottom of this page.
+
+### Simulation activity
+
+Use the app to do (at least) the following:
+
+  1. Asking for just the right amount of time
+    - Feel free to inspect the state of the queue, which will show that all nodes are currently busy
+    - Submit a job asking for 4 compute nodes and just enough time to run *myprogram* (i.e., 2 + 20/4 hours)
+    - At what time did the job complete?
+  2. Asking for too much time
+    - Reset the simulation and resubmit the job, but now asking for 24 hours, just being conservative
+    - At what time did the job complete? 
+  3. Exploring
+    - Feel free to reset the simulation and resubmit the job with different durations, so see the behavior. The behavior
+      is typically non-continous. That is, when asking for one more second, the job's wait time can jump by hours.
+
 
 ---
 
