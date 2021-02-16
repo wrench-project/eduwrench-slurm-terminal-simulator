@@ -11,47 +11,46 @@ Content below is text that will eventually find its way into EduWRENCH.
 
 ### Batch schedulers
 
-Large parallel platforms cost a lot of money, not only for initial hardware
+Large parallel platforms are expensive, not only for initial hardware
 purchases and ongoing maintenance, but also in terms of electrical power
-cost.  Therefore, in most organizations, these platforms are *shared* among
-users. There are several ways in which this sharing can be done depending
+consumption.  This is why in most organizations these platforms are
+*shared* among users. This sharing can be done in different ways depending
 on the context. For instance, cloud providers allow transparent sharing by
 giving user virtual machine instances that transparently run on the
 physical machines.  In the field of High Performance Computing, a
 traditional way to allow this sharing is with a **batch scheduler**.
 
-Consider a cluster of homogeneous multi-core compute nodes.  A batch
-scheduler is a software service that allows users to submit **jobs** to the
-cluster, which is typically the only way for users to access the cluster's
-compute nodes.  Each job specifies a desired *number of compute nodes* and
-a desired *duration*. For instance, a job can say: "I need
-4 nodes for 2 hours".  These jobs are placed in a **queue**, where they
-wait until the nodes they need are available. A decent real-world
-analogy is exactly like parties of diners waiting for tables at a busy restaurant,
-where the host person is the batch scheduler. The difference is that in
-addition to saying "we need a table with 4 seats" (in our case
-seats are nodes) parties would also need to give a time limit ("we
-need 2 hours to eat"). 
+Consider a cluster of homogeneous multi-core nodes (or just "nodes").  A
+batch scheduler is a software service that allows users to submit **jobs**
+to the cluster. Submitting jobs is typically the only way for users to
+access the cluster's nodes.  Each job specifies a desired *number of
+nodes*, a desired *duration*, and a program to run on these nodes. For
+instance, a job can say: "I need 4 nodes for 2 hours".  These job requests
+are placed in a **queue**, where they wait until the nodes they need are
+available. A decent real-world analogy is parties of diners waiting for
+tables at a busy restaurant, where the host person is the batch scheduler.
+The difference is that in addition to saying "we need a table with 4 seats"
+(in our case seats are nodes) parties would also need to give a time limit
+("we need 2 hours to eat").
 
-After waiting some time in the queue, a job is allocated the nodes it
-requested. At that point, the user's program is started on these nodes.
+After waiting in the queue, a job is allocated to and started on available nodes.
 Importantly, *jobs are forcefully terminated if they go over their time
 limit!*  So if the user's program needs 3 hours to run but the job only
 requested 2 hours, the program will not complete successfully. Unless the
-program has saved some of it state to some disk while it was running, all
+program has saved its state to disk while it was running, all
 is lost and the program must be restarted from scratch.
 
 ---
 
 ### Slurm
 
-A batch scheduler implementations is [Slurm](https://slurm.schedmd.com). In
+A well-known batch scheduler is [Slurm](https://slurm.schedmd.com). In
 this pedagogic module, we assume that Slurm is installed on a cluster to
 which you want to submit jobs.  We picked Slurm due to its popularity, but
 the same concepts apply to all batch schedulers.
 
 **Disclaimer**: This module in no way provides comprehensive Slurm training. 
-The intent is to introduce you to batch scheduling in general, merely using Slurm
+The intent is to introduce you to batch scheduling in general, using Slurm
 as an example. *And in fact, you will be only exposed to a small
 and simplified subset of the Slurm functionality.*
 
@@ -66,64 +65,74 @@ command-line.  To get started, just go to the next tab on this page!
 
 ## The sbatch command
 
-You were given an account on a batch-scheduled cluster with 10 compute
+You were given an account on a batch-scheduled cluster with 10 
 nodes. You have logged in to cluster's *frontend node*, on which you can
 run Slurm commands to use the cluster's nodes. The **sbatch** command is
 used to submit jobs. It takes a single command-line argument, which is the
-name of a "batch script". The batch script specifies the job request, an
-in particular the desired number of compute nodes and the desired duration. 
-The first thing for you to learn is how to submit a job to the batch
-scheduler and see it complete or fail.
+name of a "batch script". The batch script specifies the job request, and
+in particular the desired number of nodes and duration. 
+The first thing for you to learn is how to submit a job. 
 
 ## Simulated scenario
 
-On the The simulation app at the bottom of this page presents you with a
-very limited (fake) Linux terminal for the cluster's frontend node.  Only a
-few commands are supported: cat, rm, XX, edit, and **sbatch**.
-
-In the working
-directory there is:
+In your working directory on the cluster's front-end node there is:
   - An executable called *myprogram* which is the program you want to run
     on the cluster. This program can run on one or more nodes, each time
-    using all the cores on the nodes. It has the following parallel
+    using all the cores on each node. It has the following parallel
     speedup behavior: **It runs in $2 + 20/n$ hours when executed on $n$ nodes**
-    (this is a atypical Amdahl's Law behavior). So for instance, running 
+    (typical Amdahl's Law behavior). So for instance, running 
     *myprogram* on 5 nodes takes 6 hours.
-  - A batch script called XXX.slurm, which is to be passed to the sbatch
-    command. You can edit this batch script using the **edit**
-    command to specify a desired number of nodes and duration. 
+  - A so-called "batch script", stored in file XXX.slurm, which is to be
+    passed to the Slurm **sbatch**.  This batch script specifies the desired
+    number nodes and duration for running *myprogram* as a job on the cluster.
 
-The sbatch command prints an integer job ID after being invoked, say 1234.
-When the job completes successfully, a 1234.out file is produced with some
-success message. In the real world, *myprogram* would produce some
-meaningful output data.  When the job fails, a 1234.err file is produced
-with some failure message. Also, we run the *myprogram* multiple times.  In
-the real
+The **sbatch** command is used to submit jobs. It takes a batch script as a single command-line
+argument. When invoked, it submits the the corresponding job to the batch scheduler
+and prints an integer job ID after being invoked, say 1234.
+After the job is done, two files are created: 1234.out and 1234.err.
+1234.out containes the stantard output of *myprogram*, and 1234.err the
+standard error.  For our purposes, if *myprogram* has completed
+successfully, the .out file contains some success message and the .err file
+is empty. If instead *myprogram* has failed, then .out file is empty and
+the .err file contains some failure message.  
+
+In the real world, *myprogram* would generate additional meaningful output
+files.  Also, on the activity below your will submit multiple jobs to run
+*myprogram*. The intent is that each run would be for different input.
+
 
 ## Simulation activity
 
-The simulation app at the bottom of this page presents you with a very
-limited (fake) Linux terminal for the cluster's frontend node.  Only a few
-commands are supported: cat, rm, XX, edit, and **sbatch**.  It also shows
-you the simulated time of the day, and makes it possible for you to advance
-in time at will.
+The simulation app at the bottom of this page presents you with a
+very limited (fake) Linux terminal on the cluster's frontend node. 
+ Only a few commands are supported: cat, rm, date, edit, XXX,  and **sbatch**. 
+*This
+app shows you the (simulated) time of the day, and makes it possible for you to advance
+in time at will.*
+
+You can edit this batch script using the **edit**
+    command to specify a desired number of nodes and duration. 
 
 Use the app to do (at least) the following:
 
   1. Successful job execution
-
-    - Submit a job to run *myprogram* on 4 compute nodes with enough requested time so that it can successfully complete. Double check the content of the .out and .err files.
+    - Using the *edit* command, edit the batch script to specify that you want
+      to run *myprogram* on 4 nodes. Specify a duration that is sufficient
+      for *myprogram* to complete successfully. 
+    - Submit this job to the batch scheduled and move time forward until after the job should have completed. 
+    - Double check the content and creation date of the .out and .err files.
     - Does *myprogram* complete about when you thought it would?
 
   2. Failed job execution
 
-    - Submit a job to run *myprogram* on 6 compute nodes without enough requested time so that it will certainly fail. Double-check the content of the .out and .err files. 
+    - Now Submit a job to run *myprogram* on 6 nodes *without* enough requested time, so that it will certainly fail. 
+    - Once enough time has passed, double-check the content and creation date of the .out and .err files. 
     - Does *myprogram* fail about when you thought it would?
 
   3. Queue waiting time
 
-    - Submit a job to run *myprogram* on 8 compute nodes with enough requested time so that it will successfully complete
-    - Soon after, submit another job to run *myprogram* again, but 4 compute node so that it will successfully complete
+    - Submit a job to run *myprogram* on 8 nodes with enough requested time so that it will successfully complete.
+    - Soon after, submit another job to run *myprogram* succesfully again, but using 4 nodes.
     - Without advancing time, estimate the following:
       - the completion time of the first job
       - the wait time of the second job
@@ -139,12 +148,12 @@ SIMULATOR GOES HERE
 
 ### The scancel and squeue commands
 
-In addition to **sbatch** for submitting jobs, let's now use:
+In addition to **sbatch** for submitting jobs, let's now use two other Slurm commands:
 
   - *scancel* is used to cancel jobs. It takes an integer job ID as its single 
     command-line argument.
 
-  - *squeue* is used to list all jobs currently in the systems, which are either pending (i.e., submitted but not running yet) or running
+  - *squeue* is used to list all jobs currently in the systems, which are either pending (i.e., submitted but not running yet) or running.
 
 
 ### Simulated scenario
@@ -161,7 +170,7 @@ Use the app to do (at least) the following:
 
   1. Job submission and cancellation
 
-    - Submit a job to run *myprogram* on 6 compute nodes with enough requested time so that it can successfully complete.
+    - Submit a job to run *myprogram* on 6 nodes with enough requested time so that it can successfully complete.
     - Soon after submission, inspect the state of the batch queue and answer the following questions:
         - How many jobs are currently pending?
         - How many jobs are currently running?
@@ -172,8 +181,8 @@ Use the app to do (at least) the following:
 
     - Reset the simulation to be back to the initial state
     - Inspect the state of the queue and answer the following questions:
-        - How many compute nodes are currently used by the jobs?
-    - Submit a job to run *myprogram* asking for as many compute nodes as possible so that your job can run hopefully right now (unless another competing job shows up in the nick of time!)
+        - How many nodes are currently used by the jobs?
+    - Submit a job to run *myprogram* asking for as many nodes as possible so that your job can run hopefully right now (unless another competing job shows up in the nick of time!)
     - Inspect the state of the queue. Is your job running?
 
 ---
@@ -182,7 +191,7 @@ Use the app to do (at least) the following:
 
 In the simulated activity on the previous tab, you faced competition with
 users. This was a very simple example in which you used whatever
-number of compute nodes were available at the time of submission. But
+number of nodes were available at the time of submission. But
 perhaps you could have submitted a job asking for more nodes, which may
 have waited not too long in the queue, and then eventually completed
 earlier! Let try this out with the simulated application at the bottom of
@@ -225,7 +234,7 @@ Use the app to do (at least) the following:
 
   1. Asking for just the right amount of time
     - Feel free to inspect the state of the queue, which will show that all nodes are currently busy
-    - Submit a job asking for 4 compute nodes and just enough time to run *myprogram* (i.e., 2 + 20/4 hours)
+    - Submit a job asking for 4 nodes and just enough time to run *myprogram* (i.e., 2 + 20/4 hours)
     - At what time did the job complete?
   2. Asking for too much time
     - Reset the simulation and resubmit the job, but now asking for 24 hours, just being conservative
