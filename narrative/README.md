@@ -160,7 +160,7 @@ In addition to **sbatch** for submitting jobs, let's now use two other Slurm com
 
 The simulation app at the bottom of this page is similar to that in the
 previous tab. In the app on the previous tab, you were the only user on
-on the cluster. Now, instead, you are competing with other users! These
+the cluster. Now, instead, **you are competing with other users!** These
 other users submit whatever jobs whenever they want, which is out of your
 control. 
 
@@ -170,19 +170,19 @@ Use the app to do (at least) the following:
 
   1. Job submission and cancellation
 
-    - Submit a job to run *myprogram* on 6 nodes with enough requested time so that it can successfully complete.
+    - Submit a job to run *myprogram* on 6 nodes successfully. 
     - Soon after submission, inspect the state of the batch queue and answer the following questions:
         - How many jobs are currently pending?
         - How many jobs are currently running?
         - Is your job pending or running?
-    - Cancel your job
+    - Then simply cancel your job.
 
   2. Sneaky job submission
 
-    - Reset the simulation to be back to the initial state
+    - Reset the simulation to go back to the initial time. 
     - Inspect the state of the queue and answer the following questions:
         - How many nodes are currently used by the jobs?
-    - Submit a job to run *myprogram* asking for as many nodes as possible so that your job can run hopefully right now (unless another competing job shows up in the nick of time!)
+    - Submit a job to run *myprogram* successfully, asking for as many nodes as possible so that your job can run right now (unless another competing job shows up in the nick of time!)
     - Inspect the state of the queue. Is your job running?
 
 ---
@@ -203,8 +203,9 @@ Use the app to do (at least) the following:
 
   1. Inspect the state of the queue. You should see that only 1 node is available right now. 
   2. If you were to submit a 1-node job right now, when would myprogram complete? 
-  3. Submit a 2-node job and ask for just enough time for myprogram to complete
-  4. When does this job complete? Was it better then submitting a 1-node job?
+  3. Submit a 2-node job and ask for just enough time for myprogram to complete.
+  4. When does this job complete? 
+  5. Which option was better: using 1 node or using 2 nodes? 
 
 
 ---
@@ -216,14 +217,18 @@ for just enough time for myprogram to complete". It turns out that many
 users, in practice ask for much more time that needed. This is because they
 do not know how long their program will run (for instance, the program runs
 shorter or longer based on its input data). Furthermore, users many not
-know the speedup behavior of their program. So although they may know how
+know the speedup behavior of their programs. So although they may know how
 long the program would run on 1 node, they don't know how long it will run
 on 10 nodes.  Since asking for too little time leads to job failures, most
 users are conservative and ask for more time. This behavior has been
-studied by researchers (here is a [classical articles](XXX), if interested).  
-The problem is that asking for too much time can increase a job's wait
+studied by researchers (here is a [research
+article](https://citeseerx.ist.psu.edu/viewdoc/download?doi=10.1.1.9.5068&rep=rep1&type=pdf),
+if interested).
+
+The problem with asking for too much time is that it can increase a job's wait
 time (due to most batch schedulers implementing a strategy called "backfilling", which
-allows small/short jobs to jump ahead in the queue!).  
+allows smaller/shorter jobs to jump ahead in the queue!).  
+
 
 Let's witness first-hand the impact of the requested job duration using the
 simulation app at the bottom of this page.
@@ -233,15 +238,16 @@ simulation app at the bottom of this page.
 Use the app to do (at least) the following:
 
   1. Asking for just the right amount of time
-    - Feel free to inspect the state of the queue, which will show that all nodes are currently busy
-    - Submit a job asking for 4 nodes and just enough time to run *myprogram* (i.e., 2 + 20/4 hours)
+    - Feel free to inspect the state of the queue, which will show that all nodes are currently busy.
+    - Submit a job asking for 4 nodes and just enough time to run *myprogram*.
     - At what time did the job complete?
   2. Asking for too much time
-    - Reset the simulation and resubmit the job, but now asking for 24 hours, just being conservative
+    - Reset the simulation and resubmit the job, but now asking for 24 hours, pretending to be a user who doesn't know the program's speedup behavio and being conservative
     - At what time did the job complete? 
   3. Exploring
-    - Feel free to reset the simulation and resubmit the job with different durations, so see the behavior. The behavior
-      is typically non-continous. That is, when asking for one more second, the job's wait time can jump by hours.
+    - Feel free to reset the simulation and resubmit the job with different durations, so see the behavior. The behavior is non-continous: when asking for one more second, the job's wait time can jump by hours.
+
+
 
 
 ---
