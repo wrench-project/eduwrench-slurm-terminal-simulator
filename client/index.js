@@ -140,6 +140,10 @@ function sendBatch(config) {
     });
 }
 
+function getQueue() {
+    fetch(`http://${serverAddress}/getQueue`, { method: 'GET' });
+}
+
 /**
  * Runs specified commands and faked programs.
  */
@@ -280,6 +284,10 @@ function processCommand() {
         } else {
             term.write("Missing argument\r\n");
         }
+        return;
+    }
+    if(command == "squeue") {
+        getQueue();
         return;
     }
     term.write(`Command '${command}' not found.\r\n`);

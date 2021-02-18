@@ -25,6 +25,8 @@ namespace wrench {
 
         void stopServer();
 
+        std::vector<std::tuple<std::string,std::string,int,int,int,double,double>> get_queue();
+
     private:
         int main() override;
         std::shared_ptr<JobManager> job_manager;
@@ -33,6 +35,7 @@ namespace wrench {
         std::queue<std::shared_ptr<wrench::WorkflowExecutionEvent>> events;
         std::queue<std::shared_ptr<wrench::WorkflowJob>> doneJobs;
         std::queue<std::pair<std::shared_ptr<wrench::StandardJob>, std::map<std::string, std::string>>> toSubmitJobs;
+        std::map<std::string, std::shared_ptr<wrench::WorkflowJob>> job_list;
         std::mutex queue_mutex;
         double server_time = 0;
     };

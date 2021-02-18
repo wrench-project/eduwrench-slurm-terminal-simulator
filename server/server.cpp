@@ -96,6 +96,18 @@ void getQuery(const Request& req, Response& res)
     res.set_content(body.dump(), "application/json");
 }
 
+/**
+ * @brief
+ * @param req
+ * @param res
+ */
+void getQueue(const Request& req, Response& res)
+{
+    std::printf("Path: %s\n\n", req.path.c_str());
+    wms->get_queue();
+    res.set_header("access-control-allow-origin", "*");
+}
+
 // POST PATHS
 
 /**
@@ -274,6 +286,7 @@ int main(int argc, char **argv)
     // Handle GET requests
     server.Get("/api/time", getTime);
     server.Get("/api/query", getQuery);
+    server.Get("/api/getQueue", getQueue);
 
     // Handle POST requests
     server.Post("/api/start", start);

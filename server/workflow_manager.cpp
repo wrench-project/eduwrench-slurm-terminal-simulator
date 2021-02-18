@@ -3,7 +3,6 @@
 #include <random>
 #include <iostream>
 
-// TODO: Add a mutex around the queue because standard library queues are not thread-safe
 namespace wrench {
 
     WorkflowManager::WorkflowManager(
@@ -74,6 +73,7 @@ namespace wrench {
     bool WorkflowManager::addJob(const std::string& job_name, const double& duration,
                                   const unsigned int& num_nodes)
     {
+        std::cout << this->getAvailableComputeServices<BatchComputeService>().cbegin()->get()->getNumHosts() << std::endl;
         if(num_nodes > this->getAvailableComputeServices<ComputeService>().size())
             return false;
         // Create tasks and add to workflow.
@@ -90,6 +90,7 @@ namespace wrench {
         service_specific_args["-u"] = "slurm_user";
 
         toSubmitJobs.push(std::make_pair(job, service_specific_args));
+        job_list[task->getID()] = job;
         return true;
     }
 
@@ -112,6 +113,20 @@ namespace wrench {
                 doneJobs.push(complete->standard_job);
         }        
         server_time = time;
+    }
+
+    std::vector<std::tuple<std::string,std::string,int,int,int,double,double>> WorkflowManager::get_queue()
+    {
+        std::vector<std::tuple<std::string,std::string,int,int,int,double,double>> queue;
+        auto batch_services = this->getAvailableComputeServices<BatchComputeService>();
+        for(auto const bs : batch_services)
+        {
+            auto bs_queue = bs->getQueue();
+            queue.insert(queue.end(), bs_queue.begin(), bs_queue.end());
+        }
+        for(auto const q : queue)
+            std::cout << std::get<0>(q) << ' ' << std::get<1>(q) << std::endl;
+        return queue;
     }
 }
 
