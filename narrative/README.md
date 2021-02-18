@@ -1,6 +1,7 @@
 NOTES: We'll need a way to "reset" simulations
 
 # Draft Pedagogic Module Narrative
+
 ---
 
 Content below is text that will eventually find its way into EduWRENCH.
@@ -290,9 +291,6 @@ time because of long wait time.
 
 ---
 
-
-
-
-
-
+NOTES:
+    - Batch scheduler provides estimated start times?
 
