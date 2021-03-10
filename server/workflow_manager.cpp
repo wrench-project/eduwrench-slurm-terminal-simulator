@@ -8,7 +8,8 @@ namespace wrench {
     WorkflowManager::WorkflowManager(
         const std::set<std::shared_ptr<ComputeService>> &compute_services,
         const std::set<std::shared_ptr<StorageService>> &storage_services,
-        const std::string &hostname) : WMS(
+        const std::string &hostname,
+        const int node_count) : node_count(node_count), WMS(
             nullptr, nullptr,
             compute_services,
             storage_services,
@@ -73,8 +74,7 @@ namespace wrench {
     bool WorkflowManager::addJob(const std::string& job_name, const double& duration,
                                   const unsigned int& num_nodes)
     {
-        std::cout << this->getAvailableComputeServices<BatchComputeService>().cbegin()->get()->getNumHosts() << std::endl;
-        if(num_nodes > this->getAvailableComputeServices<ComputeService>().size())
+        if(num_nodes > node_count)
             return false;
         // Create tasks and add to workflow.
         auto task = this->getWorkflow()->addTask(
@@ -90,8 +90,19 @@ namespace wrench {
         service_specific_args["-u"] = "slurm_user";
 
         toSubmitJobs.push(std::make_pair(job, service_specific_args));
-        job_list[task->getID()] = job;
+        job_list[job->getName()] = job;
         return true;
+    }
+
+    bool WorkflowManager::cancelJob(const std::string& job_name)
+    {
+        if(job_list[job_name] != nullptr)
+        {
+            auto batch_service = *(this->getAvailableComputeServices<BatchComputeService>().begin());
+            batch_service->terminateJob(job_list[job_name]);
+            return true;
+        }
+        return false;
     }
 
     void WorkflowManager::getEventStatuses(std::queue<std::string>& statuses, const time_t& time)

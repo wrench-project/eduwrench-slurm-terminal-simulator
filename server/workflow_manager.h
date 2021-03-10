@@ -16,11 +16,15 @@ namespace wrench {
         WorkflowManager(
             const std::set<std::shared_ptr<ComputeService>> &compute_services,
             const std::set<std::shared_ptr<StorageService>> &storage_services,
-            const std::string &hostname
+            const std::string &hostname,
+            const int node_count
         );
 
         bool addJob(const std::string& job_name, const double& duration,
                      const unsigned int& num_nodes);
+        
+        bool cancelJob(const std::string& job_name);
+        
         void getEventStatuses(std::queue<std::string>& statuses, const time_t& time);
 
         void stopServer();
@@ -38,6 +42,7 @@ namespace wrench {
         std::map<std::string, std::shared_ptr<wrench::WorkflowJob>> job_list;
         std::mutex queue_mutex;
         double server_time = 0;
+        int node_count;
     };
 }
 

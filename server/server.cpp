@@ -260,6 +260,37 @@ void init_server(int port_number)
     server.listen("0.0.0.0", port_number);
 }
 
+
+void write_xml(int nodes, int cores)
+{
+    std::ofstream outputXML;
+    outputXML.open("config.xml");
+    outputXML << "<?xml version='1.0'?>\n";
+    outputXML << "<!DOCTYPE platform SYSTEM \"http://simgrid.gforge.inria.fr/simgrid/simgrid.dtd\">\n";
+    outputXML << "<platform version=\"4.1\">\n";
+    outputXML << "    <zone id=\"AS0\" routing=\"Full\">\n";
+    outputXML << "        <cluster id=\"cluster\" prefix=\"ComputeNode_\" suffix=\"\" radical=\"0-";
+    outputXML <<  std::to_string(nodes - 1) + "\" speed=\"1f\" bw=\"125GBps\" core=\"";
+    outputXML <<  std::to_string(cores) +"\" lat=\"0us\" router_id=\"router\"/>\n";
+    outputXML << "        <zone id=\"AS1\" routing=\"Full\">\n";
+    outputXML << "            <host id=\"WMSHost\" speed=\"1f\">\n";
+    outputXML << "                <disk id=\"hard_drive\" read_bw=\"100MBps\" write_bw=\"100MBps\">\n";
+    outputXML << "                  <prop id=\"size\" value=\"5000GiB\"/>\n";
+    outputXML << "                  <prop id=\"mount\" value=\"/\"/>\n";
+    outputXML << "                </disk>\n";
+    outputXML << "            </host>\n";
+    outputXML <<  "           <link id=\"fastlink\" bandwidth=\"10000000GBps\" latency=\"0ms\"/>\n";
+    outputXML << "            <route src=\"WMSHost\" dst=\"WMSHost\"> <link_ctn id=\"fastlink\"/> </route>\n";
+    outputXML << "        </zone>\n";
+    outputXML << "        <link id=\"link\" bandwidth=\"10000000GBps\" latency=\"0ms\"/>\n";
+    outputXML << "        <zoneRoute src=\"cluster\" dst=\"AS1\" gw_src=\"router\" gw_dst=\"WMSHost\">\n";
+    outputXML << "            <link_ctn id=\"link\"/>\n";
+    outputXML << "        </zoneRoute>\n";
+    outputXML << "    </zone>\n";
+    outputXML << "</platform>\n";
+    outputXML.close();
+}
+
 /**
  * @brief 
  * @return 
@@ -268,8 +299,34 @@ int main(int argc, char **argv)
 {
     // If using port 80, need to start server with super user permissions
     int port_number = 8080;
-    // XML config file copied from batch-bag-of-tasks example
-    std::string simgrid_config = "../four_hosts.xml";
+    int node_count = 2;
+    int core_count = 1;
+
+    // Command line argument handling
+    if(argc > 1 && (argc - 1) % 2 == 0)
+    {
+        for(int i = 1; i < argc; i++)
+        {
+            std::string flag = argv[i++];
+            int flag_val;
+            try {
+                flag_val = std::stoi(argv[i]);
+            } catch(const std::exception&) {
+                std::printf("Flag %s needs to be an integer\n", argv[i-1]);
+                return -1;
+            }
+            if(flag == "--cores")
+                core_count = flag_val;
+            else if(flag == "--port")
+                port_number = flag_val;
+            else if(flag == "--nodes")
+                node_count = flag_val;
+        }
+    }
+
+    // XML generated then read.
+    write_xml(node_count, core_count);
+    std::string simgrid_config = "config.xml";
 
     // Initialize WRENCH
     simulation.init(&argc, argv);
@@ -278,7 +335,7 @@ int main(int argc, char **argv)
     auto storage_service = simulation.add(new wrench::SimpleStorageService(
         "WMSHost", {"/"}, {{wrench::SimpleStorageServiceProperty::BUFFER_SIZE, "10000000"}}, {}));
     auto batch_service = simulation.add(new wrench::BatchComputeService("BatchHeadNode", nodes, {}, {}));
-    wms = simulation.add(new wrench::WorkflowManager({batch_service}, {storage_service}, "WMSHost"));
+    wms = simulation.add(new wrench::WorkflowManager({batch_service}, {storage_service}, "WMSHost", nodes.size()));
 
     // Add workflow to wms
     wms->addWorkflow(&workflow);
