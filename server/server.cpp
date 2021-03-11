@@ -274,7 +274,7 @@ void write_xml(int nodes, int cores)
     outputXML <<  std::to_string(cores) +"\" lat=\"0us\" router_id=\"router\"/>\n";
     outputXML << "        <zone id=\"AS1\" routing=\"Full\">\n";
     outputXML << "            <host id=\"WMSHost\" speed=\"1f\">\n";
-    outputXML << "                <disk id=\"hard_drive\" read_bw=\"100MBps\" write_bw=\"100MBps\">\n";
+    outputXML << "                <disk id=\"hard_drive\" read_bw=\"100GBps\" write_bw=\"100GBps\">\n";
     outputXML << "                  <prop id=\"size\" value=\"5000GiB\"/>\n";
     outputXML << "                  <prop id=\"mount\" value=\"/\"/>\n";
     outputXML << "                </disk>\n";
