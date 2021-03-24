@@ -48,7 +48,7 @@ let jobNum = 1;
 let serverAddress = "192.168.0.20/api";
 
 function padZero(val) {
-    if(val.length == 1) {
+    if(val.length == 1 || (typeof(val) == 'number' && val < 10)) {
         val = "0" + val;
     }
     return val;
@@ -134,7 +134,7 @@ function sendBatch(config) {
     .then((res) => {
         console.log(res);
         if(!res.success) {
-            filesystem.create(".err");
+            filesystem.create(".err", simTime.getTime());
             filesystem.save(".err", "Number of nodes exceeds what is available in system");
         }
     });
@@ -172,7 +172,7 @@ function processCommand() {
     if(command == "mkdir") {
         if(currentLine.length > 1) {
             for(let i = 1; i < currentLine.length; i++) {
-                let f = filesystem.mkdir(currentLine[i]);
+                let f = filesystem.mkdir(currentLine[i], simTime.getTime());
                 if(f != "") {
                     term.write(f + "\r\n");
                 }
@@ -185,7 +185,7 @@ function processCommand() {
     if(command == "touch") {
         if(currentLine.length > 1) {
             for(let i = 1; i < currentLine.length; i++) {
-                let f = filesystem.create(currentLine[i]);
+                let f = filesystem.create(currentLine[i], simTime.getTime());
                 if(f != "") {
                     term.write(f + "\r\n");
                 }
@@ -234,7 +234,9 @@ function processCommand() {
         if(currentLine.length > 1) {
             for(let i = 1; i < currentLine.length; i++) {
                 let f = filesystem.open(currentLine[i]);
-                if(f != null) {
+                if (f == -1) {
+                    term.write("File is binary\r\n");
+                } else if(f != null) {
                     f = f.replace(/\n/g, '\r\n');
                     term.write(f + "\r\n");
                 } else {
@@ -262,15 +264,14 @@ function processCommand() {
             if(f != null) {
                 if(currentLine[1] == "batch.slurm") {
                     editBatchFile(currentLine[1], f);
+                } else if(f == -1)
+                    term.write("File is binary\r\n");
                 } else {
                     editFile(currentLine[1], f);
                 }
             } else {
                 term.write("File not found or is directory\r\n");
             }
-        } else {
-            term.write("Missing argument\r\n");
-        }
         return;
     }
     if(command == "sbatch") {
@@ -288,6 +289,21 @@ function processCommand() {
     }
     if(command == "squeue") {
         getQueue();
+        return;
+    }
+    if(command == "date") {
+        if(currentLine.length > 1) {
+            let f = filesystem.date(currentLine[1]);
+            if(f === "") {
+                term.write("Does not exist\r\n");
+            } else {
+                f = new Date(f);
+                let time = padZero(f.getUTCHours()) + ":" + padZero(f.getUTCMinutes()) + ":" + padZero(f.getUTCSeconds()) + " UTC";
+                term.write(padZero(f.getUTCMonth() + 1) + "/" + padZero(f.getUTCDate()) + " " + time +"\r\n");
+            }
+        } else {
+            term.write("Missing argument\r\n");
+        }
         return;
     }
     term.write(`Command '${command}' not found.\r\n`);
@@ -361,9 +377,9 @@ function initializeTerminal() {
     termBuffer = term.buffer.active;
 
     // Add pre-existing files into filesystem
-    filesystem.create("batch.slurm");
-    filesystem.create("parallel_program");
-    filesystem.create("README");
+    filesystem.create("batch.slurm", 0);
+    filesystem.createBinary("parallel_program", 0);
+    filesystem.create("README", 0);
 
     // Add text to files
     let batchSlurm = "#!/bin/bash\n#SBATCH --nodes=" + slurmNodes;
