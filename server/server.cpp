@@ -331,8 +331,11 @@ int main(int argc, char **argv)
     // Initialize WRENCH
     simulation.init(&argc, argv);
     simulation.instantiatePlatform(simgrid_config);
-    // TODO: Fill in the list of nodes programmatically with ALL nodes
-    std::vector<std::string> nodes = {"ComputeNode_0", "ComputeNode_1", "ComputeNode_2"};
+    // Generate vector containing variable number of compute nodes
+    std::vector<std::string> nodes = {"ComputeNode_0"};
+    for(int i = 1; i < node_count; ++i)
+        nodes.push_back("ComputeNode_" + std::to_string(i));
+    // Construct all services
     auto storage_service = simulation.add(new wrench::SimpleStorageService(
         "WMSHost", {"/"}, {{wrench::SimpleStorageServiceProperty::BUFFER_SIZE, "10000000"}}, {}));
     auto batch_service = simulation.add(new wrench::BatchComputeService("ComputeNode_0", nodes, {}, {}));
