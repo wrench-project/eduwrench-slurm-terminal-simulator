@@ -54,7 +54,7 @@ namespace wrench {
                     std::printf("Event Server Time: %f\n", this->simulation->getCurrentSimulatedDate());
                     std::printf("Event: %s\n", event->toString().c_str());
                     queue_mutex.lock();
-                    events.push(event);
+                    events.push(std::make_pair(this->simulation->getCurrentSimulatedDate(), event));
                     queue_mutex.unlock();
                 }
             }
@@ -113,14 +113,14 @@ namespace wrench {
         {
             queue_mutex.lock();
             auto event = events.front();
-            statuses.push(event->toString());
+            statuses.push(std::to_string(event.first) + " " + event.second->toString());
             events.pop();
             queue_mutex.unlock();
 
             // Cleans up by pushing done/failed jobs onto a queue for main thread to clean up.
-            if(auto failed = std::dynamic_pointer_cast<wrench::StandardJobFailedEvent>(event))
+            if(auto failed = std::dynamic_pointer_cast<wrench::StandardJobFailedEvent>(event.second))
                 doneJobs.push(failed->standard_job);
-            else if(auto complete = std::dynamic_pointer_cast<wrench::StandardJobCompletedEvent>(event))
+            else if(auto complete = std::dynamic_pointer_cast<wrench::StandardJobCompletedEvent>(event.second))
                 doneJobs.push(complete->standard_job);
         }        
         server_time = time;
