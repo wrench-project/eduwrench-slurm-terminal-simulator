@@ -20,7 +20,7 @@ namespace wrench {
             const int node_count
         );
 
-        bool addJob(const std::string& job_name, const double& duration,
+        std::string addJob(const std::string& job_name, const double& duration,
                      const unsigned int& num_nodes);
         
         bool cancelJob(const std::string& job_name);

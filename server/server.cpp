@@ -226,10 +226,12 @@ void addJob(const Request& req, Response& res)
 
     json body;
 
+    std::string jobID = wms->addJob(job_name, duration, num_nodes);
     // Pass parameters in to function to add a job .
-    if(wms->addJob(job_name, duration, num_nodes))
+    if(jobID != "")
     {
         body["time"] = get_time() - time_start;
+        body["jobID"] = jobID;
         body["success"] = true;
     }
     else

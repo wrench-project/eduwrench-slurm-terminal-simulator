@@ -117,7 +117,7 @@ function changeBatch() {
  * Sends batch file info to server for simulation.
  * @param {Configuration File} config 
  */
-function sendBatch(config) {
+async function sendBatch(config) {
     config = config.split('\n');
     let dur = config[4].split(' ')[2].split(':');
     let sec = parseInt(dur[0]) * 3600 + parseInt(dur[1]) * 60 + parseInt(dur[2]);
@@ -129,15 +129,14 @@ function sendBatch(config) {
             numNodes: nodes
         }
     }
-    fetch(`http://${serverAddress}/addTask`, { method: 'POST', body: JSON.stringify(body)})
-    .then((res) => res.json())
-    .then((res) => {
-        console.log(res);
-        if(!res.success) {
-            filesystem.create(".err", simTime.getTime());
-            filesystem.save(".err", "Number of nodes exceeds what is available in system");
-        }
-    });
+    let res = await fetch(`http://${serverAddress}/addTask`, { method: 'POST', body: JSON.stringify(body)});
+    res = await res.json();
+    if(!res.success) {
+        filesystem.create(".err", simTime.getTime());
+        filesystem.save(".err", "Number of nodes exceeds what is available in system");
+    } else {
+        term.write('\u001B\u005B\u0041\r' + res.jobID + "\r\n" + `${filesystem.getPath()}$ `);
+    }
 }
 
 function getQueue() {
@@ -147,7 +146,7 @@ function getQueue() {
 /**
  * Runs specified commands and faked programs.
  */
-function processCommand() {
+async function processCommand() {
     let currentLine = termBuffer.getLine(termBuffer.cursorY).translateToString(true).trim().split(/^~.*?\$ /)[1].split(" ");
     let command = currentLine[0];
     
@@ -278,7 +277,8 @@ function processCommand() {
         if(currentLine.length > 1) {
             let f = filesystem.open(currentLine[1]);
             if(f != null && currentLine[1] == "batch.slurm") {
-                sendBatch(f);
+                term.write("\r\n");
+                await sendBatch(f);
             } else {
                 term.write("Not batch file\r\n");
             }

@@ -71,11 +71,11 @@ namespace wrench {
         stop = true;
     }
 
-    bool WorkflowManager::addJob(const std::string& job_name, const double& duration,
+    std::string WorkflowManager::addJob(const std::string& job_name, const double& duration,
                                   const unsigned int& num_nodes)
     {
         if(num_nodes > node_count)
-            return false;
+            return "";
         // Create tasks and add to workflow.
         auto task = this->getWorkflow()->addTask(
             job_name + "_task_" + std::to_string(server_time), duration, 1, 1, 0.0);
@@ -91,7 +91,7 @@ namespace wrench {
 
         toSubmitJobs.push(std::make_pair(job, service_specific_args));
         job_list[job->getName()] = job;
-        return true;
+        return job->getName();
     }
 
     bool WorkflowManager::cancelJob(const std::string& job_name)
