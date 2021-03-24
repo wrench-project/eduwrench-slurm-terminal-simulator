@@ -32,7 +32,7 @@ function ls(loc = null) {
     let output = "";
     if(loc == null) {
         for(const key in this.currentDir) {
-            if(typeof this.currentDir[key] == "string") {
+            if(this.currentDir[key][type] != "dir") {
                 output += key + " \t";
             } else {
                 output += key + "/ \t";
@@ -43,10 +43,10 @@ function ls(loc = null) {
     if(this.currentDir[loc] == null) {
         return "No such file or directory";
     }
-    if(typeof this.currentDir[loc] == "string") {
+    if(this.currentDir[loc][type] != "dir") {
         return loc;
     }
-    for(const key in this.currentDir[loc]) {
+    for(const key in this.currentDir[loc][data]) {
         output += key + " ";
     }
     return output;
@@ -61,9 +61,9 @@ function cd(loc) {
         let lastDir = this.path.pop();
         let currDir = this.filesystem;
         for(const p of this.path) {
-            currDir = currDir[p];
+            currDir = currDir[p][data];
         }
-        currDir[lastDir] = this.currentDir;
+        currDir[lastDir][data] = this.currentDir;
         this.currentDir = currDir;
         return true;
     }
@@ -72,19 +72,22 @@ function cd(loc) {
         return true;
     }
     // If what you want is a file.
-    if(this.currentDir[loc] == null || typeof this.currentDir[loc] == "string") {
+    if(this.currentDir[loc] == null || this.currentDir[loc] != "dir") {
         return false;
     }
     
     // If selecting a directory
     this.path.push(loc);
-    this.currentDir = this.currentDir[loc];
+    this.currentDir = this.currentDir[loc][data];
     return true;
 }
 
 function mkdir(name) {
     if(this.currentDir[name] == null) {
-        this.currentDir[name] = {};
+        this.currentDir[name] = {
+            type: "dir",
+            data: {}
+        };
         return "";
     }
     return `Cannot create directory '${name}': File exists`;
@@ -98,7 +101,7 @@ function rm(name, recursive = false) {
         delete this.currentDir[name];
         return "";
     }
-    if(this.currentDir[name] == "string") {
+    if(this.currentDir[name][type] == "text" || this.currentDir[name][type] == "bin") {
         delete this.currentDir[name];
         return "";
     }
@@ -106,23 +109,26 @@ function rm(name, recursive = false) {
 }
 
 function openFile(name) {
-    if(typeof this.currentDir[name] == "string") {
-        return this.currentDir[name];
+    if(this.currentDir[name][type] == "text") {
+        return this.currentDir[name][data];
     }
     return null;
 }
 
 function createFile(name) {
     if(this.currentDir[name] == null) {
-        this.currentDir[name] = "";
+        this.currentDir[name] = {
+            type: "text",
+            data: ""
+        };
         return "";
     }
     return `Cannot create file '${name}': File exists`;;
 }
 
 function saveFile(fileName, data) {
-    if(typeof this.currentDir[fileName] == "string") {
-        this.currentDir[fileName] = data;
+    if(this.currentDir[fileName][type] == "text") {
+        this.currentDir[fileName][data] = data;
         return true;
     }
     return false;
