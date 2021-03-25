@@ -126,17 +126,19 @@ namespace wrench {
         server_time = time;
     }
 
-    std::vector<std::tuple<std::string,std::string,int,int,int,double,double>> WorkflowManager::get_queue()
+    std::vector<std::string> WorkflowManager::get_queue()
     {
-        std::vector<std::tuple<std::string,std::string,int,int,int,double,double>> queue;
+        std::vector<std::tuple<std::string,std::string,int,int,int,double,double>> i_queue;
+        std::vector<std::string> queue;
         auto batch_services = this->getAvailableComputeServices<BatchComputeService>();
         for(auto const bs : batch_services)
         {
             auto bs_queue = bs->getQueue();
-            queue.insert(queue.end(), bs_queue.begin(), bs_queue.end());
+            i_queue.insert(i_queue.end(), bs_queue.begin(), bs_queue.end());
         }
-        for(auto const q : queue)
-            std::cout << std::get<0>(q) << ' ' << std::get<1>(q) << std::endl;
+        for(auto const q : i_queue)
+            queue.push_back(std::get<0>(q) + ',' + std::get<1>(q) + ',' + std::to_string(std::get<2>(q)) +
+                ',' + std::to_string(std::get<4>(q)) + ',' + std::to_string(std::get<6>(q)));
         return queue;
     }
 }

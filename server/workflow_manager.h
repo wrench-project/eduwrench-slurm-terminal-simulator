@@ -29,7 +29,7 @@ namespace wrench {
 
         void stopServer();
 
-        std::vector<std::tuple<std::string,std::string,int,int,int,double,double>> get_queue();
+        std::vector<std::string> get_queue();
 
     private:
         int main() override;

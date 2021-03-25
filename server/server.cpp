@@ -104,8 +104,13 @@ void getQuery(const Request& req, Response& res)
 void getQueue(const Request& req, Response& res)
 {
     std::printf("Path: %s\n\n", req.path.c_str());
-    wms->get_queue();
+
+    json body;
+    body["time"] = get_time() - time_start;
+    body["queue"] = wms->get_queue();;
+
     res.set_header("access-control-allow-origin", "*");
+    res.set_content(body.dump(), "application/json");
 }
 
 // POST PATHS

@@ -1,5 +1,6 @@
 /**
  * Main file which runs all the javascript.
+ * TODO: Fix bug where when it requires scrolling on terminal window, commands break and do not work.
  */
 
 import {Terminal} from './libs/xterm';
@@ -112,7 +113,6 @@ function changeBatch() {
     textEditor.innerText = batchSlurm;
 }
 
-// TODO: Prints out job id if success
 /**
  * Sends batch file info to server for simulation.
  * @param {Configuration File} config 
@@ -139,8 +139,43 @@ async function sendBatch(config) {
     }
 }
 
+/**
+ * Retrieves current queue of jobs in server (batch scheduler)
+ */
 function getQueue() {
-    fetch(`http://${serverAddress}/getQueue`, { method: 'GET' });
+    fetch(`http://${serverAddress}/getQueue`, { method: 'GET' })
+        .then(res => res.json())
+        .then(res => {
+            term.write('\rJOBNAME         USER       NODES TIME         STATUS\r\n');
+            for(const q of res.queue) {
+                let q_parse = q.split(",");
+                let jobName = q_parse[1].slice(0,15);
+                let user = q_parse[0].slice(0,10);
+                let nodes = q_parse[2];
+                let startTime = Math.round(parseFloat(q_parse[4]));
+                let sTime = "0           "
+                let status = 'RUNNING';
+                while(jobName.length < 15) {
+                    jobName += ' ';
+                }
+                while(user.length < 10) {
+                    user += ' ';
+                }
+                while(nodes.length < 5) {
+                    nodes += ' ';
+                }
+                if(startTime < 0) {
+                    status = 'READY';
+                } else {
+                    let t = new Date(0);
+                    t.setSeconds(startTime);
+                    sTime = padZero(t.getUTCHours()) + ":" + padZero(t.getUTCMinutes()) +
+                        ":" + padZero(t.getUTCSeconds()) + " UTC";
+                }
+                term.write(`${jobName} ${user} ${nodes} ${sTime} ${status}` + "\r\n");
+            }
+            term.write(`${filesystem.getPath()}$ `);
+        });
 }
 
 /**
@@ -293,13 +328,13 @@ async function processCommand() {
     }
     if(command == "date") {
         if(currentLine.length > 1) {
-            let f = filesystem.date(currentLine[1]);
+            let f = filesystem.getDate(currentLine[1]);
             if(f === "") {
                 term.write("Does not exist\r\n");
             } else {
-                f = new Date(f);
-                let time = padZero(f.getUTCHours()) + ":" + padZero(f.getUTCMinutes()) + ":" + padZero(f.getUTCSeconds()) + " UTC";
-                term.write(padZero(f.getUTCMonth() + 1) + "/" + padZero(f.getUTCDate()) + " " + time +"\r\n");
+                let d = new Date(f);
+                let time = padZero(d.getUTCHours()) + ":" + padZero(d.getUTCMinutes()) + ":" + padZero(d.getUTCSeconds()) + " UTC";
+                term.write(padZero(d.getUTCMonth() + 1) + "/" + padZero(d.getUTCDate()) + " " + time +"\r\n");
             }
         } else {
             term.write("Missing argument\r\n");
@@ -416,11 +451,11 @@ async function queryServer() {
 async function handleEvents(events) {
     for(const e of events) {
         let e_parse = e.split(" ");
-        let time = e_parse[0]
+        let time = Math.round(parseFloat(e_parse[0]));
         let status = e_parse[1];
         let jobName = e_parse[3].slice(0, -1);
         if(status == "StandardJobCompletedEvent") {
-            filesystem.createBinary(jobName + ".out", new Date(time));
+            filesystem.createBinary(jobName + ".out", time * 1000);
         }
     }
 }

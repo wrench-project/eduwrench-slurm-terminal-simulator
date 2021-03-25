@@ -15,7 +15,7 @@ export class Filesystem {
         this.create = createFile;
         this.createBinary = createBinaryFile;
         this.save = saveFile;
-        this.date = date;
+        this.getDate = date;
     }
 }
 
