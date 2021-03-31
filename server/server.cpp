@@ -219,6 +219,11 @@ void add60(const Request& req, Response& res)
     res.set_content(body.dump(), "application/json");
 }
 
+/**
+ * @brief 
+ * @param req 
+ * @param res 
+ */
 void addJob(const Request& req, Response& res)
 {
     json req_body = json::parse(req.body);
@@ -244,6 +249,25 @@ void addJob(const Request& req, Response& res)
         body["time"] = get_time() - time_start;
         body["success"] = false;
     }
+    
+    res.set_header("access-control-allow-origin", "*");
+    res.set_content(body.dump(), "application/json");
+}
+
+/**
+ * @brief 
+ * @param req 
+ * @param res 
+ */
+void cancelJob(const Request& req, Response& res)
+{
+    json req_body = json::parse(req.body);
+    std::printf("Path: %s\nBody: %s\n\n", req.path.c_str(), req.body.c_str());
+    json body;
+    body["time"] = get_time() - time_start;
+    body["success"] = false;
+    if(wms->cancelJob(req_body["jobName"].get<std::string>()))
+        body["success"] = true;        
     
     res.set_header("access-control-allow-origin", "*");
     res.set_content(body.dump(), "application/json");
@@ -362,7 +386,8 @@ int main(int argc, char **argv)
     server.Post("/api/add1", add1);
     server.Post("/api/add10", add10);
     server.Post("/api/add60", add60);
-    server.Post("/api/addTask", addJob);
+    server.Post("/api/addJob", addJob);
+    server.Post("/api/cancelJob", cancelJob);
 
     server.set_error_handler(error_handling);
 

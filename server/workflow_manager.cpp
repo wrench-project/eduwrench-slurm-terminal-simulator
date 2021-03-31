@@ -33,7 +33,9 @@ namespace wrench {
                 auto job = std::get<0>(to_submit);      
                 auto service_specific_args = std::get<1>(to_submit);
                 job_manager->submitJob(job, batch_service, service_specific_args);
+                queue_mutex.lock();
                 this->toSubmitJobs.pop();
+                queue_mutex.unlock();
                 std::printf("Submit Server Time: %f\n", this->simulation->getCurrentSimulatedDate());
             }
 
@@ -41,6 +43,18 @@ namespace wrench {
             while(not doneJobs.empty())
             {
                 doneJobs.pop();
+            }
+
+            // Cancel jobs
+            while(not cancelJobs.empty())
+            {
+                auto batch_service = *(this->getAvailableComputeServices<BatchComputeService>().begin());
+                auto job_name = cancelJobs.front();
+                batch_service->terminateJob(job_list[job_name]);
+                job_list.erase(job_name);
+                queue_mutex.lock();
+                cancelJobs.pop();
+                queue_mutex.unlock();
             }
 
             // Moves time forward for requested time while adding any completed events to a queue.
@@ -89,7 +103,9 @@ namespace wrench {
         service_specific_args["-c"] = std::to_string(1);
         service_specific_args["-u"] = "slurm_user";
 
+        queue_mutex.lock();
         toSubmitJobs.push(std::make_pair(job, service_specific_args));
+        queue_mutex.unlock();
         job_list[job->getName()] = job;
         return job->getName();
     }
@@ -98,8 +114,9 @@ namespace wrench {
     {
         if(job_list[job_name] != nullptr)
         {
-            auto batch_service = *(this->getAvailableComputeServices<BatchComputeService>().begin());
-            batch_service->terminateJob(job_list[job_name]);
+            queue_mutex.lock();
+            cancelJobs.push(job_name);
+            queue_mutex.unlock();
             return true;
         }
         return false;
@@ -115,13 +132,13 @@ namespace wrench {
             auto event = events.front();
             statuses.push(std::to_string(event.first) + " " + event.second->toString());
             events.pop();
-            queue_mutex.unlock();
 
             // Cleans up by pushing done/failed jobs onto a queue for main thread to clean up.
             if(auto failed = std::dynamic_pointer_cast<wrench::StandardJobFailedEvent>(event.second))
                 doneJobs.push(failed->standard_job);
             else if(auto complete = std::dynamic_pointer_cast<wrench::StandardJobCompletedEvent>(event.second))
                 doneJobs.push(complete->standard_job);
+            queue_mutex.unlock();
         }        
         server_time = time;
     }

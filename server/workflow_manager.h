@@ -37,6 +37,7 @@ namespace wrench {
         bool check_event = false;
         bool stop = false;
         std::queue<std::pair<double, std::shared_ptr<wrench::WorkflowExecutionEvent>>> events;
+        std::queue<std::string> cancelJobs;
         std::queue<std::shared_ptr<wrench::WorkflowJob>> doneJobs;
         std::queue<std::pair<std::shared_ptr<wrench::StandardJob>, std::map<std::string, std::string>>> toSubmitJobs;
         std::map<std::string, std::shared_ptr<wrench::WorkflowJob>> job_list;

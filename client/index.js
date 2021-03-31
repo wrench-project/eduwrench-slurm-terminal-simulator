@@ -135,8 +135,23 @@ async function sendBatch(config) {
         filesystem.create(".err", simTime.getTime());
         filesystem.save(".err", "Number of nodes exceeds what is available in system");
     } else {
-        term.write('\u001B\u005B\u0041\r' + res.jobID + "\r\n" + `${filesystem.getPath()}$ `);
+        term.write('\u001B\u005B\u0041\r' + res.jobID.split("_").slice(1).join("_") + "\r\n" + `${filesystem.getPath()}$ `);
     }
+}
+
+function cancelJob(jobName) {
+    let body = {
+        jobName: "standard_" + jobName
+    }
+    fetch(`http://${serverAddress}/cancelJob`, { method: 'POST', body: JSON.stringify(body)})
+        .then(res => res.json())
+        .then(res => {
+            let status = "Successfully cancelled " + jobName;
+            if(!res.status) {
+                status = "Job cannot be cancelled. Does not exist or no permission."
+            }
+            term.write(status + "\r\n" + `${filesystem.getPath()}$ `);
+        });
 }
 
 /**
@@ -149,7 +164,7 @@ function getQueue() {
             term.write('\rJOBNAME         USER       NODES TIME         STATUS\r\n');
             for(const q of res.queue) {
                 let q_parse = q.split(",");
-                let jobName = q_parse[1].slice(0,15);
+                let jobName = q_parse[1].split("_").slice(1).join("_").slice(0,15);
                 let user = q_parse[0].slice(0,10);
                 let nodes = q_parse[2];
                 let startTime = Math.round(parseFloat(q_parse[4]));
@@ -327,6 +342,14 @@ async function processCommand() {
         getQueue();
         return;
     }
+    if(command == "scancel") {
+        if(currentLine.length > 1) {
+            cancelJob(currentLine[1]);
+        } else {
+            term.write("Missing argument\r\n");
+        }
+        return;
+    }
     if(command == "date") {
         if(currentLine.length > 1) {
             let f = filesystem.getDate(currentLine[1]);
@@ -456,7 +479,7 @@ async function handleEvents(events) {
         let status = e_parse[1];
         let jobName = e_parse[3].slice(0, -1);
         if(status == "StandardJobCompletedEvent") {
-            filesystem.createBinary(jobName + ".out", time * 1000);
+            filesystem.createBinary(jobName.split("_").slice(1).join("_") + ".out", time * 1000);
         }
     }
 }
