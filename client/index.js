@@ -129,7 +129,7 @@ async function sendBatch(config) {
             numNodes: nodes
         }
     }
-    let res = await fetch(`http://${serverAddress}/addTask`, { method: 'POST', body: JSON.stringify(body)});
+    let res = await fetch(`http://${serverAddress}/addJob`, { method: 'POST', body: JSON.stringify(body)});
     res = await res.json();
     if(!res.success) {
         filesystem.create(".err", simTime.getTime());
@@ -182,7 +182,8 @@ function getQueue() {
  * Runs specified commands and faked programs.
  */
 async function processCommand() {
-    let currentLine = termBuffer.getLine(termBuffer.cursorY).translateToString(true).trim().split(/^~.*?\$ /)[1].split(" ");
+    let lineNum = termBuffer.cursorY + termBuffer.viewportY;
+    let currentLine = termBuffer.getLine(lineNum).translateToString(true).trim().split(/^~.*?\$ /)[1].split(" ");
     let command = currentLine[0];
     
     // Checking for which command to execute
