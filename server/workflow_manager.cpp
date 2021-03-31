@@ -5,11 +5,21 @@
 
 namespace wrench {
 
+    // Struct to hold information on tracefile jobs to be added in
+    struct TraceFileJobInfo {
+        int nodes;
+        double flops;
+        wrench::WorkflowTask* task;
+    };
+
     WorkflowManager::WorkflowManager(
         const std::set<std::shared_ptr<ComputeService>> &compute_services,
         const std::set<std::shared_ptr<StorageService>> &storage_services,
         const std::string &hostname,
-        const int node_count) : node_count(node_count), WMS(
+        const int node_count,
+        const int core_count,
+        std::vector<std::tuple<std::string, double, double, double, double, unsigned int, std::string>> trace_file_jobs) : 
+        node_count(node_count), core_count(core_count), trace_file_jobs(trace_file_jobs), WMS(
             nullptr, nullptr,
             compute_services,
             storage_services,
@@ -23,6 +33,35 @@ namespace wrench {
         this->job_manager = this->createJobManager();
 
         auto batch_service = *(this->getAvailableComputeServices<BatchComputeService>().begin());
+
+        std::queue<std::pair<double, TraceFileJobInfo>> tracefile_tasks;
+
+        // Adds items onto a queue for each trace file tasks so it can be added to batch at correct times.
+        if(trace_file_jobs.size() > 0)
+        {
+            int counter = 0;
+            for (auto const &job : trace_file_jobs)
+            {
+                TraceFileJobInfo t;
+                double task_time = std::get<1>(job);
+                std::string username = std::get<0>(job);
+                double flops = std::get<2>(job);
+                t.flops = std::get<3>(job);
+                double requested_ram = std::get<4>(job);
+                t.nodes = std::get<5>(job);
+                int min_num_cores = core_count;
+                int max_num_cores = core_count;
+                double ram = 0.0;
+                // Ignore jobs that are too big
+                if (t.nodes > node_count) {
+                    continue;
+                }
+
+                // Create task
+                t.task = this->getWorkflow()->addTask(username + "_" + std::to_string(counter++), flops, min_num_cores, max_num_cores, ram);
+                tracefile_tasks.push(std::make_pair(task_time, t));
+            }
+        }
 
         while(true)
         {
@@ -70,6 +109,17 @@ namespace wrench {
                     queue_mutex.lock();
                     events.push(std::make_pair(this->simulation->getCurrentSimulatedDate(), event));
                     queue_mutex.unlock();
+                }
+                while(!tracefile_tasks.empty() && tracefile_tasks.front().first >= this->simulation->getCurrentSimulatedDate())
+                {
+                    auto t = tracefile_tasks.front().second;
+                    auto standard_job = job_manager->createStandardJob({t.task}, {}, {}, {}, {});
+                    std::map<std::string, std::string> batch_job_args;
+                    batch_job_args["-N"] = std::to_string(t.nodes);
+                    batch_job_args["-t"] = std::to_string(t.flops);
+                    batch_job_args["-c"] = std::to_string(core_count);
+                    this->job_manager->submitJob(standard_job, batch_service, batch_job_args);
+                    tracefile_tasks.pop();
                 }
             }
 
@@ -130,14 +180,28 @@ namespace wrench {
         {
             queue_mutex.lock();
             auto event = events.front();
-            statuses.push(std::to_string(event.first) + " " + event.second->toString());
-            events.pop();
+            std::shared_ptr<wrench::StandardJob> job;
 
             // Cleans up by pushing done/failed jobs onto a queue for main thread to clean up.
             if(auto failed = std::dynamic_pointer_cast<wrench::StandardJobFailedEvent>(event.second))
+            {
                 doneJobs.push(failed->standard_job);
+                job = failed->standard_job;
+            }
             else if(auto complete = std::dynamic_pointer_cast<wrench::StandardJobCompletedEvent>(event.second))
+            {
                 doneJobs.push(complete->standard_job);
+                job = complete->standard_job;
+            }
+
+            // Check if jobs are ones submitted by user otherwise do not return anything to user.
+            if(job_list[job->getName()])
+            {
+                statuses.push(std::to_string(event.first) + " " + event.second->toString());
+                job_list.erase(job->getName());
+            }
+            events.pop();
+
             queue_mutex.unlock();
         }        
         server_time = time;

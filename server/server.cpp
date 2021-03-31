@@ -9,6 +9,7 @@
 
 #include <nlohmann/json.hpp>
 #include <wrench.h>
+#include <wrench/util/TraceFileLoader.h>
 
 
 // Define a long function which is used multiple times
@@ -332,6 +333,7 @@ int main(int argc, char **argv)
     int port_number = 8080;
     int node_count = 2;
     int core_count = 1;
+    std::vector<std::tuple<std::string, double, double, double, double, unsigned int, std::string>> tracefile;
 
     // Command line argument handling
     if(argc > 1 && (argc - 1) % 2 == 0)
@@ -339,6 +341,18 @@ int main(int argc, char **argv)
         for(int i = 1; i < argc; i++)
         {
             std::string flag = argv[i++];
+
+            if(flag == "--tracefile")
+            {
+                try {
+                    tracefile = wrench::TraceFileLoader::loadFromTraceFile(flag, false, 0);
+                } catch(std::invalid_argument &e) {
+                    std::printf("Invalid tracefile\n");
+                    return -1;
+                }
+            }
+
+            // Handle flags requiring numeric values
             int flag_val;
             try {
                 flag_val = std::stoi(argv[i]);
@@ -370,7 +384,7 @@ int main(int argc, char **argv)
     auto storage_service = simulation.add(new wrench::SimpleStorageService(
         "WMSHost", {"/"}, {{wrench::SimpleStorageServiceProperty::BUFFER_SIZE, "10000000"}}, {}));
     auto batch_service = simulation.add(new wrench::BatchComputeService("ComputeNode_0", nodes, {}, {}));
-    wms = simulation.add(new wrench::WorkflowManager({batch_service}, {storage_service}, "WMSHost", nodes.size()));
+    wms = simulation.add(new wrench::WorkflowManager({batch_service}, {storage_service}, "WMSHost", nodes.size(), core_count, tracefile));
 
     // Add workflow to wms
     wms->addWorkflow(&workflow);

@@ -17,7 +17,9 @@ namespace wrench {
             const std::set<std::shared_ptr<ComputeService>> &compute_services,
             const std::set<std::shared_ptr<StorageService>> &storage_services,
             const std::string &hostname,
-            const int node_count
+            const int node_count,
+            const int core_count,
+            const std::vector<std::tuple<std::string, double, double, double, double, unsigned int, std::string>> trace_file_jobs
         );
 
         std::string addJob(const std::string& job_name, const double& duration,
@@ -44,6 +46,8 @@ namespace wrench {
         std::mutex queue_mutex;
         double server_time = 0;
         int node_count;
+        int core_count;
+        std::vector<std::tuple<std::string, double, double, double, double, unsigned int, std::string>> trace_file_jobs;
     };
 }
 
