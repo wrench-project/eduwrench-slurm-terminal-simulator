@@ -383,7 +383,7 @@ int main(int argc, char **argv)
     // Construct all services
     auto storage_service = simulation.add(new wrench::SimpleStorageService(
         "WMSHost", {"/"}, {{wrench::SimpleStorageServiceProperty::BUFFER_SIZE, "10000000"}}, {}));
-    auto batch_service = simulation.add(new wrench::BatchComputeService("ComputeNode_0", nodes, {}, {}));
+    auto batch_service = simulation.add(new wrench::BatchComputeService("ComputeNode_0", nodes, "", {{wrench::BatchComputeServiceProperty::SIMULATED_WORKLOAD_TRACE_FILE, XXXtrace_file_pathXXX}}, {}));
     wms = simulation.add(new wrench::WorkflowManager({batch_service}, {storage_service}, "WMSHost", nodes.size(), core_count, tracefile));
 
     // Add workflow to wms
