@@ -333,7 +333,7 @@ int main(int argc, char **argv)
     int port_number = 8080;
     int node_count = 2;
     int core_count = 1;
-    std::vector<std::tuple<std::string, double, double, double, double, unsigned int, std::string>> tracefile;
+    std::string tracefile;
 
     // Command line argument handling
     if(argc > 1 && (argc - 1) % 2 == 0)
@@ -344,8 +344,9 @@ int main(int argc, char **argv)
 
             if(flag == "--tracefile")
             {
+                tracefile = flag;
                 try {
-                    tracefile = wrench::TraceFileLoader::loadFromTraceFile(flag, false, 0);
+                    wrench::TraceFileLoader::loadFromTraceFile(tracefile, false, 0);
                 } catch(std::invalid_argument &e) {
                     std::printf("Invalid tracefile\n");
                     return -1;
@@ -383,8 +384,8 @@ int main(int argc, char **argv)
     // Construct all services
     auto storage_service = simulation.add(new wrench::SimpleStorageService(
         "WMSHost", {"/"}, {{wrench::SimpleStorageServiceProperty::BUFFER_SIZE, "10000000"}}, {}));
-    auto batch_service = simulation.add(new wrench::BatchComputeService("ComputeNode_0", nodes, "", {{wrench::BatchComputeServiceProperty::SIMULATED_WORKLOAD_TRACE_FILE, XXXtrace_file_pathXXX}}, {}));
-    wms = simulation.add(new wrench::WorkflowManager({batch_service}, {storage_service}, "WMSHost", nodes.size(), core_count, tracefile));
+    auto batch_service = simulation.add(new wrench::BatchComputeService("ComputeNode_0", nodes, "", {{wrench::BatchComputeServiceProperty::SIMULATED_WORKLOAD_TRACE_FILE, tracefile}}, {}));
+    wms = simulation.add(new wrench::WorkflowManager({batch_service}, {storage_service}, "WMSHost", nodes.size(), core_count));
 
     // Add workflow to wms
     wms->addWorkflow(&workflow);
