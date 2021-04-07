@@ -521,9 +521,16 @@ async function updateClockAndQueryServer() {
  * FUNCTIONS USED TO HANDLE MOVING TIME BUTTONS
  */
 
-// TODO: Convert add1 to wait for next event using a while loop. Update clock after.
+// TODO: Implement waitForNextEvent functionality. Will require server changes
+// where the event will be returned as part of the json object where the handleEvent
+// functio here will be called. Time will be updated accordingly
+function waitNext() {
+
+}
+
 function add1() {
     simTime.setTime(simTime.getTime() + 60000);
+    fetch(`http://${serverAddress}/add1`, { method: 'POST' });
     updateClock();
 }
 
