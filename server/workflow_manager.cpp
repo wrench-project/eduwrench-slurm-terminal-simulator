@@ -123,9 +123,18 @@ namespace wrench {
         stop = true;
     }
 
+    /**
+     * @brief Adds a job to the simulation
+     * 
+     * @param job_name Name of job to be added (currently not in use)
+     * @param duration How long the job should run in flops.
+     * @param num_nodes Number of nodes requested.
+     * @return std::string Name of job or empty string if failed to create.
+     */
     std::string WorkflowManager::addJob(const std::string& job_name, const double& duration,
                                   const unsigned int& num_nodes)
     {
+        // Check if valid number of nodes.
         if(num_nodes > node_count)
             return "";
         // Create tasks and add to workflow.
@@ -135,23 +144,38 @@ namespace wrench {
         // Create a job
         auto job = job_manager->createStandardJob(task, {});
 
+        // Set up the command line arguments of slurm to submit job.
         std::map<std::string, std::string> service_specific_args;
         service_specific_args["-t"] = std::to_string(duration);
         service_specific_args["-N"] = std::to_string(num_nodes);
         service_specific_args["-c"] = std::to_string(1);
         service_specific_args["-u"] = "slurm_user";
 
+        // Lock the queue to prevent deadlock. Put into queue due to simulation and web server on separate threads.
         queue_mutex.lock();
         toSubmitJobs.push(std::make_pair(job, service_specific_args));
         queue_mutex.unlock();
+
+        // Flag that there is a job of this name created by the user needed for job cancellation. Mapping name string
+        // to pointer of the job.
         job_list[job->getName()] = job;
         return job->getName();
     }
 
+    /**
+     * @brief Cancels a running or queued job in simulation
+     * 
+     * @param job_name Name of job to cancel.
+     * @return true Successfully canceled.
+     * @return false Failed to cancel whether no permission or doesn't exist.
+     */
     bool WorkflowManager::cancelJob(const std::string& job_name)
     {
+        // Search in hashtable for the job
         if(job_list[job_name] != nullptr)
         {
+            // Insert into queue the job needed to be removed. Mutex needed due to
+            // web server and simulation on different threads.
             queue_mutex.lock();
             cancelJobs.push(job_name);
             queue_mutex.unlock();
@@ -160,16 +184,24 @@ namespace wrench {
         return false;
     }
 
+    /**
+     * @brief Retrieve the list of events for the specified time period.
+     * 
+     * @param statuses Queue to hold all statuses.
+     * @param time Expected server time in seconds.
+     */
     void WorkflowManager::getEventStatuses(std::queue<std::string>& statuses, const time_t& time)
     {
         // Keeps retrieving events while there are events and converts them to a string(temp) to return
         // to client.
         while(!events.empty())
         {
+            // Locks the mutex because event statuses are in a queue shared by web server thread and simulation thread.
             queue_mutex.lock();
             auto event = events.front();
             std::shared_ptr<wrench::StandardJob> job;
 
+            // Casts jobs to JobFailed or JobComplete and extracts the job pointer containing information.
             // Cleans up by pushing done/failed jobs onto a queue for main thread to clean up.
             if(auto failed = std::dynamic_pointer_cast<wrench::StandardJobFailedEvent>(event.second))
             {
@@ -195,16 +227,28 @@ namespace wrench {
         server_time = time;
     }
 
+    /**
+     * @brief Retrieves statuses of all simulated jobs in the simulation.
+     * 
+     * @return std::vector<std::string> List of job statuses with relevant information.
+     */
     std::vector<std::string> WorkflowManager::get_queue()
     {
         std::vector<std::tuple<std::string,std::string,int,int,int,double,double>> i_queue;
         std::vector<std::string> queue;
         auto batch_services = this->getAvailableComputeServices<BatchComputeService>();
+
+        // Loops through all available batch services (should only be one supposedly in this case).
+        // and inserts into intermediary queue to extract the relevant information.
         for(auto const bs : batch_services)
         {
             auto bs_queue = bs->getQueue();
             i_queue.insert(i_queue.end(), bs_queue.begin(), bs_queue.end());
         }
+
+        // Loops through intermediary queue and extracts the needed information to convert into a string
+        // before finally inserting into queue which needs to be returned. Front-end will handle parsing
+        // of informationi so information is passed as a comma-separated string.
         for(auto const q : i_queue)
             queue.push_back(std::get<0>(q) + ',' + std::get<1>(q) + ',' + std::to_string(std::get<2>(q)) +
                 ',' + std::to_string(std::get<4>(q)) + ',' + std::to_string(std::get<6>(q)));

@@ -75,8 +75,13 @@ namespace wrench {
          * @brief Holds map of jobs started by the user.
          */
         std::map<std::string, std::shared_ptr<wrench::WorkflowJob>> job_list;
-        std::mutex queue_mutex;
+
+        /**
+         * @brief Server time in seconds due to how wrench uses number of seconds since simulation started.
+         */
         double server_time = 0;
+
+        std::mutex queue_mutex;
         int node_count;
         int core_count;
     };
