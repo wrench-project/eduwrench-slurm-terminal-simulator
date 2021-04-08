@@ -12,46 +12,50 @@
 #include <wrench/util/TraceFileLoader.h>
 
 
-// Define a long function which is used multiple times
+// Define a long function which is used multiple times to retrieve the time
 #define get_time() (std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count())
 
 using httplib::Request;
 using httplib::Response;
 using json = nlohmann::json;
 
-/**
- * @brief 
- */
+
 httplib::Server server;
 
 /**
- * @brief 
+ * @brief Time offset used to calculate simulation time.
+ * 
+ * The time in milliseconds used to subtract from the current time to get the simulated time which starts at 0.
  */
 time_t time_start = 0;
 
 /**
- * @brief
+ * @brief Wrench simulation object
  */
 wrench::Simulation simulation;
 
 /**
- * @brief
+ * @brief Wrench workflow object
  */
 wrench::Workflow workflow;
 
 /**
- * @brief
+ * @brief Wrench workflow manager
  */
 std::shared_ptr<wrench::WorkflowManager> wms;
 
+/**
+ * @brief Vector to be used to hold server events.
+ */
 std::vector<std::string> events;
 
 // GET PATHS
 
 /**
- * @brief 
- * @param req 
- * @param res 
+ * @brief Path handling the current server simulated time.
+ * 
+ * @param req HTTP request object
+ * @param res HTTP response object
  */
 void getTime(const Request& req, Response& res)
 {
@@ -59,28 +63,31 @@ void getTime(const Request& req, Response& res)
 
     json body;
 
+    // Checks if time has started otherwise return an error.
     if (time_start == 0)
     {
         res.status = 400;
         return;
     }
 
+    // Sets and returns the time.
     body["time"] = get_time() - time_start;
     res.set_header("access-control-allow-origin", "*");
     res.set_content(body.dump(), "application/json");
 }
 
 /**
- * @brief
- * @param req
- * @param res
+ * @brief Path handling the retrieval of even statuses.
+ * 
+ * @param req HTTP request object
+ * @param res HTTP response object
  */
 void getQuery(const Request& req, Response& res)
 {
-    //std::printf("Path: %s\n\n", req.path.c_str());
+    // Create queue to hold event statuses
     std::queue<std::string> status;
-    events.clear();
 
+    // Retrieves event statuses from servers and 
     wms->getEventStatuses(status, (get_time() - time_start) / 1000);
 
     while(!status.empty())
@@ -90,17 +97,21 @@ void getQuery(const Request& req, Response& res)
     }
 
     json body;
-
+    auto event_list = events;
     body["time"] = get_time() - time_start;
-    body["events"] = events;
+    body["events"] = event_list;
     res.set_header("Access-Control-Allow-Origin", "*");
     res.set_content(body.dump(), "application/json");
+
+    // Clear the current event queue since all events have been loaded into the body.
+    events.clear();
 }
 
 /**
- * @brief
- * @param req
- * @param res
+ * @brief Path handling the current jobs in the queue running or waiting.
+ * 
+ * @param req HTTP request object
+ * @param res HTTP response object
  */
 void getQueue(const Request& req, Response& res)
 {
@@ -117,9 +128,10 @@ void getQueue(const Request& req, Response& res)
 // POST PATHS
 
 /**
- * @brief 
- * @param req 
- * @param res 
+ * @brief Path handling the starting of the simulation.
+ * 
+ * @param req HTTP request object
+ * @param res HTTP response object
  */
 void start(const Request& req, Response& res)
 {
@@ -127,13 +139,13 @@ void start(const Request& req, Response& res)
 
     time_start = get_time();
     res.set_header("access-control-allow-origin", "*");
-    //res.set_content("", "application/json");
 }
 
 /**
- * @brief 
- * @param req 
- * @param res 
+ * @brief Path handling the stopping of the simulation.
+ * 
+ * @param req HTTP request object
+ * @param res HTTP response object
  */
 void stop(const Request& req, Response& res)
 {
@@ -141,19 +153,21 @@ void stop(const Request& req, Response& res)
 
     wms->stopServer();
     res.set_header("access-control-allow-origin", "*");
-    //res.set_content("", "application/json");
 }
 
 /**
- * @brief 
- * @param req 
- * @param res 
+ * @brief Path handling adding of 1 minute to current server simulated time.
+ * 
+ * @param req HTTP request object
+ * @param res HTTP response object
  */
 void add1(const Request& req, Response& res)
 {
     std::printf("Path: %s\nBody: %s\n\n", req.path.c_str(), req.body.c_str());
     std::queue<std::string> status;
+    time_start -= 60000;
 
+    // Retrieve the event statuses during the 1 minute skip period.
     wms->getEventStatuses(status, (get_time() - time_start) / 1000);
 
     while(!status.empty())
@@ -163,16 +177,16 @@ void add1(const Request& req, Response& res)
     }
 
     json body;
-    time_start -= 60000;
     body["time"] = get_time() - time_start;
     res.set_header("access-control-allow-origin", "*");
     res.set_content(body.dump(), "application/json");
 }
 
 /**
- * @brief 
- * @param req 
- * @param res 
+ * @brief Path handling adding of 10 minutes to current server simulated time.
+ * 
+ * @param req HTTP request object
+ * @param res HTTP response object
  */
 void add10(const Request& req, Response& res)
 {
@@ -180,6 +194,7 @@ void add10(const Request& req, Response& res)
     std::queue<std::string> status;
     time_start -= 60000 * 10;
 
+    // Retrieve the event statuses during the 10 minute skip period.
     wms->getEventStatuses(status, (get_time() - time_start) / 1000);
 
     while(!status.empty())
@@ -195,9 +210,10 @@ void add10(const Request& req, Response& res)
 }
 
 /**
- * @brief 
- * @param req 
- * @param res 
+ * @brief Path handling adding of 1 hour to current server simulated time.
+ * 
+ * @param req HTTP request object
+ * @param res HTTP response object
  */
 void add60(const Request& req, Response& res)
 {
@@ -205,6 +221,7 @@ void add60(const Request& req, Response& res)
     std::queue<std::string> status;
     time_start -= 60000 * 60;
 
+    // Retrieve the event statuses during the 1 hour skip period.
     wms->getEventStatuses(status, (get_time() - time_start) / 1000);
 
     while(!status.empty())
@@ -221,9 +238,10 @@ void add60(const Request& req, Response& res)
 }
 
 /**
- * @brief 
- * @param req 
- * @param res 
+ * @brief Path handling adding a job to the simulated batch scheduler.
+ * 
+ * @param req HTTP request object
+ * @param res HTTP response object
  */
 void addJob(const Request& req, Response& res)
 {
@@ -237,8 +255,10 @@ void addJob(const Request& req, Response& res)
 
     json body;
 
+    // Pass parameters in to function to add a job.
     std::string jobID = wms->addJob(job_name, duration, num_nodes);
-    // Pass parameters in to function to add a job .
+    
+    // Retrieve the return value from adding ajob to determine if successful.
     if(jobID != "")
     {
         body["time"] = get_time() - time_start;
@@ -256,9 +276,10 @@ void addJob(const Request& req, Response& res)
 }
 
 /**
- * @brief 
- * @param req 
- * @param res 
+ * @brief Path handling canceling a job from the simulated batch scheduler.
+ * 
+ * @param req HTTP request object
+ * @param res HTTP response object
  */
 void cancelJob(const Request& req, Response& res)
 {
@@ -267,6 +288,7 @@ void cancelJob(const Request& req, Response& res)
     json body;
     body["time"] = get_time() - time_start;
     body["success"] = false;
+    // Send cancel job to wms and set success in job cancelation if can be done.
     if(wms->cancelJob(req_body["jobName"].get<std::string>()))
         body["success"] = true;        
     
@@ -277,22 +299,33 @@ void cancelJob(const Request& req, Response& res)
 // ERROR HANDLING
 
 /**
- * @brief 
- * @param req 
- * @param res 
+ * @brief Generic path handling for errors.
+ * 
+ * @param req HTTP request object
+ * @param res HTTP response object
  */
 void error_handling(const Request& req, Response& res)
 {
     std::printf("%d\n", res.status);
 }
 
+/**
+ * @brief Initializes the server.
+ * 
+ * @param port_number Port number the server should be running on.
+ */
 void init_server(int port_number)
 {
     std::printf("Listening on port: %d\n", port_number);
     server.listen("0.0.0.0", port_number);
 }
 
-
+/**
+ * @brief Creates and writes the XML config file to be used by wrench to configure simgrid.
+ * 
+ * @param nodes Number of nodes to be simulated.
+ * @param cores Number of cores per node to be simulated.
+ */
 void write_xml(int nodes, int cores)
 {
     std::ofstream outputXML;
@@ -323,10 +356,7 @@ void write_xml(int nodes, int cores)
     outputXML.close();
 }
 
-/**
- * @brief 
- * @return 
- */
+// Main function
 int main(int argc, char **argv)
 {
     // If using port 80, need to start server with super user permissions
@@ -341,10 +371,11 @@ int main(int argc, char **argv)
         for(int i = 1; i < argc; i++)
         {
             std::string flag = argv[i++];
-
+            // Handling of tracefile input
             if(flag == "--tracefile")
             {
                 tracefile = flag;
+                // Check if tracefile is loadable otherwise return error.
                 try {
                     wrench::TraceFileLoader::loadFromTraceFile(tracefile, false, 0);
                 } catch(std::invalid_argument &e) {
@@ -406,7 +437,8 @@ int main(int argc, char **argv)
 
     server.set_error_handler(error_handling);
 
-    // Initialize server on a separate thread
+    // Initialize server on a separate thread since simgrid uses some special handling which
+    // blocks the web server from running otherwise.
     std::thread server_thread(init_server, port_number);
 
     // Start the simulation

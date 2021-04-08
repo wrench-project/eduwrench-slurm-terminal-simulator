@@ -12,6 +12,15 @@ namespace wrench {
         wrench::WorkflowTask* task;
     };
 
+    /**
+     * @brief Construct a new Workflow Manager object
+     * 
+     * @param compute_services Set of pointers representative of compute services.
+     * @param storage_services Set of pointers representative of storage.
+     * @param hostname String containing the name of the simulated computer.
+     * @param node_count Integer value holding the number of nodes the computer has.
+     * @param core_count Integer value holding the number of cores per node.
+     */
     WorkflowManager::WorkflowManager(
         const std::set<std::shared_ptr<ComputeService>> &compute_services,
         const std::set<std::shared_ptr<StorageService>> &storage_services,
@@ -27,21 +36,32 @@ namespace wrench {
             "WorkflowManager"
         ) { }
     
+    /**
+     * @brief Overridden main within WMS to handle the how jobs are processed. 
+     * 
+     * @return int Default return value
+     */
     int WorkflowManager::main()
     {
         this->job_manager = this->createJobManager();
 
         auto batch_service = *(this->getAvailableComputeServices<BatchComputeService>().begin());
 
+        // Main loop handling the WMS implementation.
         while(true)
         {
             // Add tasks onto the job_manager so it can begin processing them
             while (!this->toSubmitJobs.empty()) 
             {
+                // Retrieves the job to be submitted and set up needed arguments.
                 auto to_submit = this->toSubmitJobs.front();
                 auto job = std::get<0>(to_submit);      
                 auto service_specific_args = std::get<1>(to_submit);
+
+                // Submit the job.
                 job_manager->submitJob(job, batch_service, service_specific_args);
+
+                // Lock the queue otherwise deadlocks might occur.
                 queue_mutex.lock();
                 this->toSubmitJobs.pop();
                 queue_mutex.unlock();
@@ -50,17 +70,20 @@ namespace wrench {
 
             // Clean up memory by removing completed and failed jobs
             while(not doneJobs.empty())
-            {
                 doneJobs.pop();
-            }
 
             // Cancel jobs
             while(not cancelJobs.empty())
             {
+                // Retrieve compute service and job to execute job termination.
                 auto batch_service = *(this->getAvailableComputeServices<BatchComputeService>().begin());
                 auto job_name = cancelJobs.front();
                 batch_service->terminateJob(job_list[job_name]);
+
+                // Remove from the map list of jobs
                 job_list.erase(job_name);
+
+                // Lock the queue otherwise deadlocks might occur.
                 queue_mutex.lock();
                 cancelJobs.pop();
                 queue_mutex.unlock();
@@ -70,12 +93,15 @@ namespace wrench {
             // Needs to be done this way because waiting for next event cannot be done on another thread.
             while(this->simulation->getCurrentSimulatedDate() < server_time)
             {
-                // Retrieve event
+                // Retrieve event by going through very tiny time increments.
                 auto event = this->waitForNextEvent(0.01);
+
+                // Checks if there was a job event during the time period
                 if(event != nullptr)
                 {
                     std::printf("Event Server Time: %f\n", this->simulation->getCurrentSimulatedDate());
                     std::printf("Event: %s\n", event->toString().c_str());
+                    // Add job onto the event queue with locks to prevent deadlocks.
                     queue_mutex.lock();
                     events.push(std::make_pair(this->simulation->getCurrentSimulatedDate(), event));
                     queue_mutex.unlock();
@@ -89,6 +115,9 @@ namespace wrench {
         return 0;
     }
 
+    /**
+     * @brief Sets the flag to stop the server since the web server and wms server run on two different threads.
+     */
     void WorkflowManager::stopServer()
     {
         stop = true;

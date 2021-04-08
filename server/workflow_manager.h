@@ -34,13 +34,46 @@ namespace wrench {
 
     private:
         int main() override;
+
+        /**
+         * @brief Holds the job manager which will be needed to create jobs.
+         */
         std::shared_ptr<JobManager> job_manager;
+
+        /**
+         * @brief Flag value to determine whether an event check needs to be executed.
+         */
         bool check_event = false;
+
+        /**
+         * @brief Flag value to determine if the simulation needs to end.
+         */
         bool stop = false;
+
+        /**
+         * @brief Holds queue of events within the simulation to allow it to pass between web server and simulation threads.
+         */
         std::queue<std::pair<double, std::shared_ptr<wrench::WorkflowExecutionEvent>>> events;
+
+        /**
+         * @brief Holds queue of jobs to cancel within the simulation to allow it to pass between web server and simulation threads.
+         */
         std::queue<std::string> cancelJobs;
+
+        /**
+         * @brief Holds queue of completed jobs within the simulation in order to clean up
+         * to allow it to pass between web server and simulation threads.
+         */
         std::queue<std::shared_ptr<wrench::WorkflowJob>> doneJobs;
+
+        /**
+         * @brief Holds queue of jobs to start within the simulation to allow it to pass between web server and simulation threads.
+         */
         std::queue<std::pair<std::shared_ptr<wrench::StandardJob>, std::map<std::string, std::string>>> toSubmitJobs;
+
+        /**
+         * @brief Holds map of jobs started by the user.
+         */
         std::map<std::string, std::shared_ptr<wrench::WorkflowJob>> job_list;
         std::mutex queue_mutex;
         double server_time = 0;

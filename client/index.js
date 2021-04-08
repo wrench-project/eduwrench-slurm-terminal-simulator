@@ -1,6 +1,5 @@
 /**
  * Main file which runs all the javascript.
- * TODO: Fix bug where when it requires scrolling on terminal window, commands break and do not work.
  */
 
 import {Terminal} from './libs/xterm';
@@ -44,11 +43,16 @@ let slurmSeconds = 0;
 // Once HTML is loaded run main function
 window.onload = main;
 
+// Miscellaneous values
 let openedFile = "";
 let jobNum = 1;
 let serverAddress = "192.168.0.20/api";
 
+// Function used to pad zeroes to the left of the value.
 function padZero(val) {
+    // Checks if it is a string and if a number, if the number is less than 10.
+    // This means this function cannot pad values with three digits unless it is a string.
+    // If file is converted from javascript to typescript, it will be simple to solve.
     if(val.length == 1 || (typeof(val) == 'number' && val < 10)) {
         val = "0" + val;
     }
@@ -57,25 +61,42 @@ function padZero(val) {
 
 /**
  * Saves the file to fake filesystem and returns control to terminal
- * while hiding text editor.
+ * while hiding text editor
  */
 function exitFile() {
+    // Saves file to filesystem
     filesystem.save(openedFile, textEditor.innerText);
+
+    // Adjust the editing area and environmental values
     textArea.contentEditable = false;
     textArea.style.display = "none";
     batchEditor.style.display = "none";
     openedFile = "";
     fileOpen = false;
+
+    // This particular line is needed if closing the editBatchFile. Doesn't
+    // effect regular file opening
     textEditor.setAttribute("contentEditable", true);
+
+    // Restarts blinking on line.
     term.setOption('cursorBlink', true);
 }
 
+/**
+ * Opens up the batch configuration file.
+ * @param {Name of file to open} filename 
+ * @param {Text in the file to be opened} text 
+ */
 function editBatchFile(filename, text) {
+    // Makes sure the text is not directly editable.
     textEditor.setAttribute("contentEditable", false);
+    // Sets up the current variables of file to be displayed in the form.
     slurmNodesInput.value = slurmNodes;
     slurmHoursInput.value = padZero(slurmHour.toString());
     slurmMinutesInput.value = padZero(slurmMinute.toString());
     slurmSecondsInput.value = padZero(slurmSeconds.toString());
+
+    // Sets up the text area to be representative of file with environmental variables set.
     textEditor.innerText = text;
     textArea.style.display = "block";
     batchEditor.style.display = "block";
@@ -90,6 +111,7 @@ function editBatchFile(filename, text) {
  * @param {Text of document} text 
  */
 function editFile(filename, text) {
+    // Sets up the text area to be representative of file with environmental variables set.
     textEditor.innerText = text;
     textArea.style.display = "block";
     fileOpen = true;
@@ -97,15 +119,23 @@ function editFile(filename, text) {
     term.setOption('cursorBlink', false);
 }
 
+/**
+ * Executes when one of the form areas while editing the batch config file has been changed.
+ */
 function changeBatch() {
+    // Retrieves the values and set them to the global variables.
     slurmNodes = parseInt(slurmNodesInput.value);
     slurmHour = parseInt(slurmHoursInput.value);
     slurmMinute = parseInt(slurmMinutesInput.value);
     slurmSeconds = parseInt(slurmSecondsInput.value);
+
+    // Retrieves the string version of the values.
     let slurmNodesText = slurmNodes.toString();
     let slurmHourText = padZero(slurmHour.toString());
     let slurmMinuteText = padZero(slurmMinute.toString());
     let slurmSecondsText = padZero(slurmSeconds.toString());
+
+    // Regenerates the content displayed.
     let batchSlurm = "#!/bin/bash\n#SBATCH --nodes=" + slurmNodesText;
     batchSlurm += "\n#SBATCH --tasks-per-node=1\n#SBATCH --cpus-per-task=10\n#SBATCH --time ";
     batchSlurm += slurmHourText + ":" + slurmMinuteText + ":" + slurmSecondsText;
@@ -114,14 +144,19 @@ function changeBatch() {
 }
 
 /**
- * Sends batch file info to server for simulation.
+ * Sends batch file info to server for simulation. Async because it uses await
  * @param {Configuration File} config 
  */
 async function sendBatch(config) {
+    // Splits the content of the batch configuration file by new lines.
     config = config.split('\n');
+
+    // Extracts the needed values: duration, seconds, and node count from the file.
     let dur = config[4].split(' ')[2].split(':');
     let sec = parseInt(dur[0]) * 3600 + parseInt(dur[1]) * 60 + parseInt(dur[2]);
     let nodes = parseInt(config[1].split('=')[1]);
+
+    // Sets the body of the request
     let body = {
         job: {
             jobName: `${jobNum}`,
@@ -129,23 +164,37 @@ async function sendBatch(config) {
             numNodes: nodes
         }
     }
+
+    // Sends a POST request to the server to add a new job
     let res = await fetch(`http://${serverAddress}/addJob`, { method: 'POST', body: JSON.stringify(body)});
+
+    // Parses the return value and decides what to generate/write
     res = await res.json();
     if(!res.success) {
         filesystem.create(".err", simTime.getTime());
         filesystem.save(".err", "Number of nodes exceeds what is available in system");
     } else {
-        term.write('\u001B\u005B\u0041\r' + res.jobID.split("_").slice(1).join("_") + "\r\n" + `${filesystem.getPath()}$ `);
+        // Writes to terminal the job name. Since the server returns "standard_job_x" we need to remove the standard
+        // section hence the split and slice.
+        term.write('\r' + res.jobID.split("_").slice(1).join("_") + "\r\n" + `${filesystem.getPath()}$ `);
     }
 }
 
+/**
+ * Used to cancel the simulated job running or waiting through a POST request
+ * @param {Name of the job to be canceled} jobName 
+ */
 function cancelJob(jobName) {
+    // Sets up the body
     let body = {
         jobName: "standard_" + jobName
     }
+
+    // Sends the request asynchronously and parses as JSON
     fetch(`http://${serverAddress}/cancelJob`, { method: 'POST', body: JSON.stringify(body)})
         .then(res => res.json())
         .then(res => {
+            // Prints the cancellation success
             let status = "Successfully cancelled " + jobName;
             if(!res.status) {
                 status = "Job cannot be cancelled. Does not exist or no permission."
@@ -158,18 +207,28 @@ function cancelJob(jobName) {
  * Retrieves current queue of jobs in server (batch scheduler)
  */
 function getQueue() {
+    // Makes GET request to get the current queue
     fetch(`http://${serverAddress}/getQueue`, { method: 'GET' })
         .then(res => res.json())
         .then(res => {
+            // Writes the table headers
             term.write('\rJOBNAME         USER       NODES TIME         STATUS\r\n');
+            // Writes to terminal each job within the queue
             for(const q of res.queue) {
                 let q_parse = q.split(",");
+                // Sets job name which will display only 15 characters
                 let jobName = q_parse[1].split("_").slice(1).join("_").slice(0,15);
+                // Sets user name which will display only 10 characters
                 let user = q_parse[0].slice(0,10);
+                // Sets up node count
                 let nodes = q_parse[2];
+                // Sets the startTime to closest whole millisecond value
                 let startTime = Math.round(parseFloat(q_parse[4]));
+                // Sets up variable if startTime is not available since job isn't running
                 let sTime = "0           "
+                // Sets up variable which could change if job is running or not.
                 let status = 'RUNNING';
+                // Pads the string with spaces to make sure it fits into table formatting
                 while(jobName.length < 15) {
                     jobName += ' ';
                 }
@@ -179,14 +238,17 @@ function getQueue() {
                 while(nodes.length < 5) {
                     nodes += ' ';
                 }
+                // Sets up the startTime variable correctly where if negative means it's not running.
                 if(startTime < 0) {
                     status = 'READY';
                 } else {
+                    // Finds out the time and correctly generates the UTC time
                     let t = new Date(0);
                     t.setSeconds(startTime);
                     sTime = padZero(t.getUTCHours()) + ":" + padZero(t.getUTCMinutes()) +
                         ":" + padZero(t.getUTCSeconds()) + " UTC";
                 }
+                // Write to terminal the job
                 term.write(`${jobName} ${user} ${nodes} ${sTime} ${status}` + "\r\n");
             }
             term.write(`${filesystem.getPath()}$ `);
@@ -197,32 +259,48 @@ function getQueue() {
  * Runs specified commands and faked programs.
  */
 async function processCommand() {
+    // Retrieves the current line number of the terminal. Currently might have a bug in the library since it is
+    // experimental for the version being used.
     let lineNum = termBuffer.cursorY + termBuffer.viewportY;
+    // Splits up the current line into parts based on the space while removing the unneeded parts of it. 
     let currentLine = termBuffer.getLine(lineNum).translateToString(true).trim().split(/^~.*?\$ /)[1].split(" ");
+    // Since the first command line argument is the command set it as a separate variable.
     let command = currentLine[0];
     
-    // Checking for which command to execute
+    // Check for which command to execute
+
+    // Clears the terminal. Currently might have a bug where the line where clear is called isn't cleared
+    // but ignorable.
     if(command == "clear") {
         term.clear();
         return;
     }
+    // List files in the filesystem in specified directory.
     if(command == "ls") {
         let ls;
+        // If multiple command line arguments, request the faked filesystem to retrieve those filenames,
+        // otherwise if only ls, then the current directory.
         if(currentLine.length > 1) {
             ls = filesystem.ls(currentLine[1]);
         } else {
             ls = filesystem.ls();
         }
+        // If it contains filenames, print them to console.
         if(ls != "") {
             term.write(ls + "\r\n");
         }
         return;
     }
-    // Possible to shift the multiple directory creation to filesystem. Can pass multiple parameters as an array.
+    // Future implementation: Possible to shift the multiple directory creation to filesystem. Can pass multiple parameters as an array.
+    // Implements the make directory command
     if(command == "mkdir") {
+        // Since the command requires an argument checks for that otherwise prints error.
         if(currentLine.length > 1) {
+            // If multiple directories are to be made loop through arguments and create them.
             for(let i = 1; i < currentLine.length; i++) {
+                // Creates the directory while providing the current simulated time.
                 let f = filesystem.mkdir(currentLine[i], simTime.getTime());
+                // If filesystem returns an error, print out error.
                 if(f != "") {
                     term.write(f + "\r\n");
                 }
@@ -232,10 +310,15 @@ async function processCommand() {
         }
         return;
     }
+    // Command used to create a file. Doesn't actually update the file updated date (since that doesn't exist in this version).
     if(command == "touch") {
+        // Since the command requires an argument checks for that otherwise prints error.
         if(currentLine.length > 1) {
+            // If multiple files are to be made loop through arguments and create them.
             for(let i = 1; i < currentLine.length; i++) {
+                // Creates the file while providing the current simulated time.
                 let f = filesystem.create(currentLine[i], simTime.getTime());
+                // If filesystem returns an error, print out error.
                 if(f != "") {
                     term.write(f + "\r\n");
                 }
@@ -245,17 +328,21 @@ async function processCommand() {
         }
         return;
     }
+    // Removes files and/or directories.
     if(command == "rm") {
+        // Since the command requires an argument checks for that otherwise prints error.
         if(currentLine.length == 1) {
             term.write("Missing argument\r\n");
             return;
         }
         // Handles single argument rm.
         if(currentLine.length == 2) {
+            // If missing file or directory name, prints error since flag isn't one.
             if(currentLine[1] == "-r") {
                 term.write("Missing argument\r\n");
                 return;
             }
+            // Removes file if error occurs like removing directory then writes error.
             let f = filesystem.rm(currentLine[1]);
             if(f != "") {
                 term.write(f + "\r\n");
@@ -264,6 +351,7 @@ async function processCommand() {
         }
         // Handles recursive rm
         if(currentLine[1] == "-r") {
+            // Removes all the files using filesystem
             for(let i = 2; i < currentLine.length; i++) {
                 let f = filesystem.rm(currentLine[i], true);
                 if(f != "") {
@@ -280,13 +368,18 @@ async function processCommand() {
             }
         }
     }
+    // Prints file contents to terminal
     if(command == "cat") {
+        // Since the command requires an argument checks for that otherwise prints error.
         if(currentLine.length > 1) {
+            // Handling for multiple files to print
             for(let i = 1; i < currentLine.length; i++) {
                 let f = filesystem.open(currentLine[i]);
+                // Makes sure it isn't a "binary" since that shouldn't be opened
                 if (f == -1) {
                     term.write("File is binary\r\n");
                 } else if(f != null) {
+                    // Replaces the new line with carriage return and new line or else won't print to terminal correctly.
                     f = f.replace(/\n/g, '\r\n');
                     term.write(f + "\r\n");
                 } else {
@@ -298,7 +391,9 @@ async function processCommand() {
         }
         return;
     }
+    // Calls directory change
     if(command == "cd") {
+        // Since the command requires an argument checks for that otherwise prints error.
         if(currentLine.length > 1) {
             if(!filesystem.cd(currentLine[1])) {
                 term.write("Cannot navigate to directory\r\n");
@@ -308,13 +403,17 @@ async function processCommand() {
         }
         return;
     }
+    // Allows editing of files
     if(command == "edit") {
+        // Since the command requires an argument checks for that otherwise prints error.
         if(currentLine.length > 1) {
             let f = filesystem.open(currentLine[1]);
             if(f != null) {
+                // Hardcoded file representing a batch config file which will open in a custom manner.
+                // Otherwise opens it normally unless it is a "binary" file.
                 if(currentLine[1] == "batch.slurm") {
                     editBatchFile(currentLine[1], f);
-                } else if(f == -1)
+                } else if(f == -1) {
                     term.write("File is binary\r\n");
                 } else {
                     editFile(currentLine[1], f);
@@ -323,12 +422,15 @@ async function processCommand() {
                 term.write("File not found or is directory\r\n");
             }
         return;
+        }
     }
+    // Command to send the batch file.
     if(command == "sbatch") {
+        // Since the command requires an argument checks for that otherwise prints error.
         if(currentLine.length > 1) {
             let f = filesystem.open(currentLine[1]);
+            // Checks if it is the hard-coded config file.
             if(f != null && currentLine[1] == "batch.slurm") {
-                term.write("\r\n");
                 await sendBatch(f);
             } else {
                 term.write("Not batch file\r\n");
@@ -338,11 +440,14 @@ async function processCommand() {
         }
         return;
     }
+    // Command to retrieve and print the queue
     if(command == "squeue") {
         getQueue();
         return;
     }
+    // Command to cancel a job.
     if(command == "scancel") {
+        // Since the command requires an argument checks for that otherwise prints error.
         if(currentLine.length > 1) {
             cancelJob(currentLine[1]);
         } else {
@@ -350,12 +455,15 @@ async function processCommand() {
         }
         return;
     }
+    // Implements equivalent of date -r in linux systems to print date of creation
     if(command == "date") {
+        // Since the command requires an argument checks for that otherwise prints error.
         if(currentLine.length > 1) {
             let f = filesystem.getDate(currentLine[1]);
             if(f === "") {
                 term.write("Does not exist\r\n");
             } else {
+                // Prints date without printing the year (because of implementation would be 1970)
                 let d = new Date(f);
                 let time = padZero(d.getUTCHours()) + ":" + padZero(d.getUTCMinutes()) + ":" + padZero(d.getUTCSeconds()) + " UTC";
                 term.write(padZero(d.getUTCMonth() + 1) + "/" + padZero(d.getUTCDate()) + " " + time +"\r\n");
@@ -373,12 +481,17 @@ async function processCommand() {
  */
 function handleArrowKeys(seq) {
     let currentLine = termBuffer.getLine(termBuffer.cursorY).translateToString(true);
+    // Up and down in the future can theoretically get previous commands but not implemented for simplicity.
     if (seq == '\u001B\u005B\u0041') {
-        console.log('up'); 
+        // COMMENTED OUT DEBUGGING CODE TO BE REMOVED
+        //console.log('up'); 
     }
     if (seq == '\u001B\u005B\u0042') {
-        console.log('down'); 
+        // COMMENTED OUT DEBUGGING CODE TO BE REMOVED
+        // console.log('down'); 
     }
+
+    // Moves the cursor left or right.
     if (seq == '\u001B\u005B\u0043') {
         if(termBuffer.cursorX < currentLine.length) { 
             term.write(seq);
@@ -399,25 +512,34 @@ const notControl = /^[\S\s]$/;
  * @param {Input typed into the terminal, generally a single character} seq 
  */
 function processInput(seq) {
-    console.log(seq.length + " " + seq.charCodeAt(0).toString(16));
+    // COMMENTED OUT DEBUGGING CODE TO BE REMOVED
+    // console.log(seq.length + " " + seq.charCodeAt(0).toString(16));
+
+    // Ignores any input if a file is open
     if(fileOpen) {
         return;
     }
+    // Switch statement to handle special characters
     switch(seq) {
+        // Case to handle Ctrl-C to cancel input
         case '\x03':
             term.write(`^C\r\n${filesystem.getPath()}$ `);
             break;
+        // Case to handle backspace
         case '\x7f':
             if(termBuffer.cursorX > filesystem.getPath().length + 2) {
                 term.write('\b \b');
             }
             break;
+        // Case to trigger command processing
         case '\r':
             term.write('\r\n')
             processCommand();
             term.write(`${filesystem.getPath()}$ `);
             break;
+        // Otherwise write to console.
         default:
+            // Since arrow keys are handled differently and there are other control characters not implemented
             if(notControl.test(seq)) {
                 term.write(seq);
             } else if(seq.length == 3 && seq.charAt(0) == '\x1b') {
@@ -462,7 +584,6 @@ function initializeTerminal() {
 async function queryServer() {
     let res = await fetch(`http://${serverAddress}/query`, { method: 'GET' });
     res = await res.json();
-    console.log(res);
     handleEvents(res.events);
     return res["time"];
 }
@@ -473,11 +594,15 @@ async function queryServer() {
  * @param {Current server time to represent what time output file will be created} time 
  */
 async function handleEvents(events) {
+    // Loop through array of events
     for(const e of events) {
+        // Parse through events
         let e_parse = e.split(" ");
         let time = Math.round(parseFloat(e_parse[0]));
         let status = e_parse[1];
         let jobName = e_parse[3].slice(0, -1);
+
+        // Checks if job has been completed and creates a binary file representative of output file.
         if(status == "StandardJobCompletedEvent") {
             filesystem.createBinary(jobName.split("_").slice(1).join("_") + ".out", time * 1000);
         }
@@ -528,18 +653,27 @@ function waitNext() {
 
 }
 
+/**
+ * Adds 1 minute to clock and updates server.
+ */
 function add1() {
     simTime.setTime(simTime.getTime() + 60000);
     fetch(`http://${serverAddress}/add1`, { method: 'POST' });
     updateClock();
 }
 
+/**
+ * Adds 10 minute to clock and updates server.
+ */
 function add10() {
     simTime.setTime(simTime.getTime() + 600000);
     fetch(`http://${serverAddress}/add10`, { method: 'POST' });
     updateClock();
 }
 
+/**
+ * Adds 1 hour to clock and updates server.
+ */
 function add60() {
     simTime.setTime(simTime.getTime() + 3600000);
     fetch(`http://${serverAddress}/add60`, { method: 'POST' });
