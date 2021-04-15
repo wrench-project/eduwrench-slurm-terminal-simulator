@@ -437,6 +437,8 @@ int main(int argc, char **argv)
 
     server.set_error_handler(error_handling);
 
+    server.set_mount_point("/", "./www");
+
     // Initialize server on a separate thread since simgrid uses some special handling which
     // blocks the web server from running otherwise.
     std::thread server_thread(init_server, port_number);
