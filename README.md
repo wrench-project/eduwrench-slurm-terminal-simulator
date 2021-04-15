@@ -12,7 +12,7 @@
 
 ## Building the server
 As long as you have the prerequisite libraries installed, running the following should suffice.
-```makefile
+```bash
 mkdir build && cd build && cmake ..
 ```
 An executable called TestServer should be created.
@@ -31,7 +31,7 @@ current implementation requires this sequence for it to run properly
 
 
 ```
-% cd server; ./TestServer xxx xxx xxxx
+% cd server/build; ./TestServer xxx xxx xxxx
 ```
 
 Then running the client is done as:
@@ -40,5 +40,5 @@ Then running the client is done as:
 % XXXX
 ```
 
-At this point, pointing a Web browser to http://xxxx.x.x.x.x.xxxxx
+At this point, pointing a Web browser to http://localhost or http://127.0.0.1
 
