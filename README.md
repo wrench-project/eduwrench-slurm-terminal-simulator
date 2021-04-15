@@ -25,7 +25,10 @@ With node_modules folder in the directory, run the shell script setup.sh to bund
 
 ## Running
 
-You need to start the server first before starting the client because the current implementation requires this sequence for it to run properly (likely needs to be fixed/changed later). 
+You need to start the server first before starting the client because the
+current implementation requires this sequence for it to run properly
+(likely needs to be fixed/changed later).
+
 
 ```
 % cd server; ./TestServer xxx xxx xxxx
