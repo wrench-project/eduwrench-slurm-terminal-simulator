@@ -21,6 +21,8 @@ If you want to clean up the files, then just remove the build folder.
 ## Building the client
 After checking if you have nodejs and npm installed enter the client directory and run `npm ci`. Do not run `npm install` unless all libraries installed by npm have been checked to work then in that case, make sure to update the package.json and package-lock.json files.  
   
+Make sure to change the serverAddress variable on line 49 in the index.js file to the correct ip address to wherever the server is running which is most likely localhost.  
+  
 With node_modules folder in the directory, run the shell script setup.sh to bundle up the javascript and the needed libraries.
 
 ## Running
