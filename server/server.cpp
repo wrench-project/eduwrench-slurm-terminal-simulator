@@ -360,7 +360,7 @@ void write_xml(int nodes, int cores)
 int main(int argc, char **argv)
 {
     // If using port 80, need to start server with super user permissions
-    int port_number = 8080;
+    int port_number = 80;
     int node_count = 2;
     int core_count = 1;
     std::string tracefile;
@@ -437,7 +437,8 @@ int main(int argc, char **argv)
 
     server.set_error_handler(error_handling);
 
-    server.set_mount_point("/", "./www");
+    // Path is relative so if you build in a different directory, you will have to change the relative path.
+    server.set_mount_point("/", "../../client");
 
     // Initialize server on a separate thread since simgrid uses some special handling which
     // blocks the web server from running otherwise.
