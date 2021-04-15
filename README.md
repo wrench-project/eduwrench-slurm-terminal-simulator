@@ -24,4 +24,18 @@ After checking if you have nodejs and npm installed enter the client directory a
 With node_modules folder in the directory, run the shell script setup.sh to bundle up the javascript and the needed libraries.
 
 ## Running
-Make sure to start the server first before starting the client because the current implementation requires this sequence for it to run properly. Changes can be made later to make sure it doesn't matter.
+
+You need to start the server first before starting the client because the current implementation requires this sequence for it to run properly (likely needs to be fixed/changed later). 
+
+```
+% cd server; ./TestServer xxx xxx xxxx
+```
+
+Then running the client is done as:
+
+```
+% XXXX
+```
+
+At this point, pointing a Web browser to http://xxxx.x.x.x.x.xxxxx
+
