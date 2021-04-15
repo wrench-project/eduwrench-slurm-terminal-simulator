@@ -37,7 +37,6 @@ Command line options for TestServer:
 --nodes : Number of simulated nodes. Default is 2.
 --cores : Number of simulated cores per node. Default is 1.
 --tracefile <filename> : The tracefile to be used by the simulated server to simulate other users/background tasks.
---
 ```
 
 Running the client at this point is pointing a Web browser to http://localhost or http://127.0.0.1
