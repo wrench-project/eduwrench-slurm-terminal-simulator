@@ -1,0 +1,29 @@
+; Version: 2.2
+; Computer: Intel iPSC/860
+; Installation: NASA Ames Research Center
+;
+; Acknowledge: Bill Nitzberg
+; Information: http://www.nas.nasa.gov/
+;              http://www.cs.huji.ac.il/labs/parallel/workload/
+;
+; Conversion: Dror Feitelson (feit@cs.huji.ac.il) 29 Nov 2011
+; MaxJobs: 42264
+; MaxRecords: 42264
+; Preemption: No
+; UnixStartTime: 749458803
+; TimeZone: -28800
+; TimeZoneString: US/Pacific
+; StartTime: Fri Oct 01 00:00:03 PDT 1993
+; EndTime:   Fri Dec 31 23:03:45 PST 1993
+; MaxNodes: 128
+; MaxProcs: 128
+; Note: There is no information on wait times - the given submit
+;       times are actually startDaemon times
+; Note: group 1 is normal users
+;       group 2 is system personnel
+; Note: there is no data about batch queues
+; MaxQueues: 2
+; Queue:  0 interactive 
+; Queue:  1 batch       
+;
+    1        0     -1   3600  128     -1    -1   -1     -1    -1 -1   1   1  -1  1 -1 -1 -1
