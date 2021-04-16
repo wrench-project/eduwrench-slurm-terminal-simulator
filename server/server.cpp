@@ -374,14 +374,15 @@ int main(int argc, char **argv)
             // Handling of tracefile input
             if(flag == "--tracefile")
             {
-                tracefile = flag;
+                tracefile = std::string(argv[i]);
                 // Check if tracefile is loadable otherwise return error.
                 try {
                     wrench::TraceFileLoader::loadFromTraceFile(tracefile, false, 0);
                 } catch(std::invalid_argument &e) {
-                    std::printf("Invalid tracefile\n");
+                    std::printf("Invalid tracefile (%s)\n",e.what());
                     return -1;
                 }
+                continue;
             }
 
             // Handle flags requiring numeric values

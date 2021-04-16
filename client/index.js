@@ -46,7 +46,8 @@ window.onload = main;
 // Miscellaneous values
 let openedFile = "";
 let jobNum = 1;
-let serverAddress = "192.168.0.20/api";
+//let serverAddress = "192.168.0.20/api";
+let serverAddress = "localhost/api";
 
 // Function used to pad zeroes to the left of the value.
 function padZero(val) {
