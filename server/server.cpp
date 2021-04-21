@@ -449,7 +449,9 @@ int main(int argc, char **argv)
     // blocks the web server from running otherwise.
     std::thread server_thread(init_server, port_number);
 
-    // Start the simulation
+    // Start the simulation. Currently cannot start the simulation in a different thread or else it will
+    // seg fault. Most likely related to how simgrid handles threads so the web server will have to started
+    // on a different thread.
     simulation.launch();
     return 0;
 }
