@@ -605,7 +605,9 @@ async function handleEvents(events) {
 
         // Checks if job has been completed and creates a binary file representative of output file.
         if(status == "StandardJobCompletedEvent") {
-            filesystem.createBinary(jobName.split("_").slice(1).join("_") + ".out", time * 1000);
+            let fileName = jobName.split("_").slice(1).join("_") + ".out";
+            filesystem.createFile(fileName, time * 1000);
+            filesystem.saveFile(fileName, "Job successfully completed");
         }
     }
 }
