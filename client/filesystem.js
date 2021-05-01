@@ -189,7 +189,7 @@ function rm(name, recursive = false) {
     }
 
     // Delete of a directory in which we are right now is not allowed
-    if (this.isOrisInInDirectory(this.currentDir, name)) {
+    if (this.isInDirectory(this.currentDir, name) || this.isSameDirectory(this.currentDir, name)) {
         return `Cannot rm current working directory`;
     }
 
