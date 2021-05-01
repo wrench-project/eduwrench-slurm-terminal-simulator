@@ -21,13 +21,13 @@ If you want to clean up the files, then just remove the build folder.
 ## Building the client
 After checking if you have nodejs and npm installed enter the client directory and run `npm ci`. Do not run `npm install` unless all libraries installed by npm have been checked to work then in that case, make sure to update the package.json and package-lock.json files.  
   
-Make sure to change the serverAddress variable on line 49 in the index.js file to the correct ip address to wherever the server is running which is most likely localhost.  
+**Make sure to change the serverAddress variable on line 49 in the index.js file to the correct ip address to wherever the server is running which is most likely localhost.**
   
 With node_modules folder in the directory, run the shell script setup.sh to bundle up the javascript and the needed libraries.
 
 ## Running
 
-You need to start the server first before starting the client because the current implementation requires this sequence for it to run properly (likely needs to be fixed/changed later). Super user permission is required because you will be starting on port 80. For whatever reason, if the server does not run on port 80, then the client cannot make REST API requests which are necessary in the operation.
+Superuser permission may be required because the server listens on port 80. (For whatever reason, if the server does not run on port 80, then the client cannot make the necessary REST API requests.)
 
 
 ```

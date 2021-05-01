@@ -46,8 +46,8 @@ window.onload = main;
 // Miscellaneous values
 let openedFile = "";
 let jobNum = 1;
-let serverAddress = "192.168.0.20/api";
-//let serverAddress = "localhost/api";
+//let serverAddress = "192.168.0.20/api";
+let serverAddress = "localhost/api";
 
 // Function used to pad zeroes to the left of the value.
 function padZero(val) {
@@ -607,7 +607,7 @@ async function handleEvents(events) {
         if(status == "StandardJobCompletedEvent") {
             let fileName = jobName.split("_").slice(1).join("_") + ".out";
             filesystem.create(fileName, time * 1000);
-            filesystem.saveFile(fileName, "Job successfully completed");
+            filesystem.save(fileName, "Job successfully completed");
         }
     }
 }
