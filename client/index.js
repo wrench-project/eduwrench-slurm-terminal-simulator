@@ -573,9 +573,9 @@ function initializeTerminal() {
     termBuffer = term.buffer.active;
 
     // Add pre-existing files into filesystem
-    filesystem.create("batch.slurm", 0);
-    filesystem.createBinary("parallel_program", 0);
-    filesystem.create("README", 0);
+    filesystem.createFile("batch.slurm", 0, false, false);
+    filesystem.createFile("parallel_program", 0, true, false);
+    filesystem.createFile("README", 0, false, false);
 
     // Add text to files
     let batchSlurm = "#!/bin/bash\n#SBATCH --nodes=" + slurmNodes;
