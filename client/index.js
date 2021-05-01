@@ -46,8 +46,8 @@ window.onload = main;
 // Miscellaneous values
 let openedFile = "";
 let jobNum = 1;
-//let serverAddress = "192.168.0.20/api";
-let serverAddress = "localhost/api";
+let serverAddress = "192.168.0.20/api";
+//let serverAddress = "localhost/api";
 
 // Function used to pad zeroes to the left of the value.
 function padZero(val) {
@@ -606,7 +606,7 @@ async function handleEvents(events) {
         // Checks if job has been completed and creates a binary file representative of output file.
         if(status == "StandardJobCompletedEvent") {
             let fileName = jobName.split("_").slice(1).join("_") + ".out";
-            filesystem.createFile(fileName, time * 1000);
+            filesystem.create(fileName, time * 1000);
             filesystem.saveFile(fileName, "Job successfully completed");
         }
     }
@@ -659,27 +659,33 @@ function waitNext() {
 /**
  * Adds 1 minute to clock and updates server.
  */
-function add1() {
+async function add1() {
     simTime.setTime(simTime.getTime() + 60000);
-    fetch(`http://${serverAddress}/add1`, { method: 'POST' });
+    let res = await fetch(`http://${serverAddress}/add1`, { method: 'POST' });
+    res = await res.json();
+    handleEvents(res.events);
     updateClock();
 }
 
 /**
  * Adds 10 minute to clock and updates server.
  */
-function add10() {
+async function add10() {
     simTime.setTime(simTime.getTime() + 600000);
-    fetch(`http://${serverAddress}/add10`, { method: 'POST' });
+    let res = await fetch(`http://${serverAddress}/add10`, { method: 'POST' });
+    res = await res.json();
+    handleEvents(res.events);
     updateClock();
 }
 
 /**
  * Adds 1 hour to clock and updates server.
  */
-function add60() {
+async function add60() {
     simTime.setTime(simTime.getTime() + 3600000);
-    fetch(`http://${serverAddress}/add60`, { method: 'POST' });
+    let res = await fetch(`http://${serverAddress}/add60`, { method: 'POST' });
+    res = await res.json();
+    handleEvents(res.events);
     updateClock();
 }
 

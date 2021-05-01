@@ -44,11 +44,6 @@ wrench::Workflow workflow;
  */
 std::shared_ptr<wrench::WorkflowManager> wms;
 
-/**
- * @brief Vector to be used to hold server events.
- */
-std::vector<std::string> events;
-
 // GET PATHS
 
 /**
@@ -86,6 +81,7 @@ void getQuery(const Request& req, Response& res)
 {
     // Create queue to hold event statuses
     std::queue<std::string> status;
+    std::vector<std::string> events;
 
     // Retrieves event statuses from servers and 
     wms->getEventStatuses(status, (get_time() - time_start) / 1000);
@@ -102,9 +98,6 @@ void getQuery(const Request& req, Response& res)
     body["events"] = event_list;
     res.set_header("Access-Control-Allow-Origin", "*");
     res.set_content(body.dump(), "application/json");
-
-    // Clear the current event queue since all events have been loaded into the body.
-    events.clear();
 }
 
 /**
@@ -165,6 +158,7 @@ void add1(const Request& req, Response& res)
 {
     std::printf("Path: %s\nBody: %s\n\n", req.path.c_str(), req.body.c_str());
     std::queue<std::string> status;
+    std::vector<std::string> events;
     time_start -= 60000;
 
     // Retrieve the event statuses during the 1 minute skip period.
@@ -177,7 +171,9 @@ void add1(const Request& req, Response& res)
     }
 
     json body;
+    auto event_list = events;
     body["time"] = get_time() - time_start;
+    body["events"] = event_list;
     res.set_header("access-control-allow-origin", "*");
     res.set_content(body.dump(), "application/json");
 }
@@ -192,6 +188,7 @@ void add10(const Request& req, Response& res)
 {
     std::printf("Path: %s\nBody: %s\n\n", req.path.c_str(), req.body.c_str());
     std::queue<std::string> status;
+    std::vector<std::string> events;
     time_start -= 60000 * 10;
 
     // Retrieve the event statuses during the 10 minute skip period.
@@ -204,7 +201,9 @@ void add10(const Request& req, Response& res)
     }
 
     json body;
+    auto event_list = events;
     body["time"] = get_time() - time_start;
+    body["events"] = event_list;
     res.set_header("access-control-allow-origin", "*");
     res.set_content(body.dump(), "application/json");
 }
@@ -219,6 +218,7 @@ void add60(const Request& req, Response& res)
 {
     std::printf("Path: %s\nBody: %s\n\n", req.path.c_str(), req.body.c_str());
     std::queue<std::string> status;
+    std::vector<std::string> events;
     time_start -= 60000 * 60;
 
     // Retrieve the event statuses during the 1 hour skip period.
@@ -227,12 +227,13 @@ void add60(const Request& req, Response& res)
     while(!status.empty())
     {
         events.push_back(status.front());
-        std::printf("%s\n", status.front().c_str());
         status.pop();
     }
 
     json body;
+    auto event_list = events;
     body["time"] = get_time() - time_start;
+    body["events"] = event_list;
     res.set_header("access-control-allow-origin", "*");
     res.set_content(body.dump(), "application/json");
 }
