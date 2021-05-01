@@ -16,6 +16,7 @@ export class Filesystem {
         this.getPath = getPath;
         this.ls = ls;
         this.cd = cd;
+        this.pwd = pwd;
         this.mkdir = mkdir;
         this.rm = rm;
         this.open = openFile;
@@ -23,20 +24,34 @@ export class Filesystem {
         this.createBinary = createBinaryFile;
         this.save = saveFile;
         this.getDate = date;
+        this.normalize = normalize;
     }
 }
 
+
+
+
+
 /**
- * Retrieves the current direcotry path (like pwd) of the filesystem.
+ * Retrieves the current directory path (like pwd) of the filesystem.
  * @returns String containing working directory path.
  */
 function getPath() {
-    let output = "~";
-    // Iterates through the path (implemented as an array of strings) to create a correctly formatted string.
-    for(const p of this.path) {
-        output += "/" + p;
+    let output = "";
+    if (this.path.length === 0) {
+        output = "/";
+    } else {
+        // Iterates through the path (implemented as an array of strings) to
+        // create a correctly formatted string.
+        for (const p of this.path) {
+            output += "/" + p;
+        }
     }
     return output;
+}
+
+function pwd() {
+    return this.getPath();
 }
 
 /**
@@ -45,6 +60,11 @@ function getPath() {
  * @returns List of files/directories if directory. File name if file name.
  */
 function ls(loc = null) {
+    // let test = ["/a/v////", ".", "..", "..../", "///../../../aa", "a/b/c/../././././///d"]
+    // for (const x of test) {
+    //     console.log("NORMALIZED: " + x + "  " + this.normalize(x))
+    // }
+
     let output = "";
     // Checks if exists. If null, current working directory.
     if(loc == null) {
@@ -222,7 +242,7 @@ function createBinaryFile(name, time) {
  * @returns True if success false if no file.
  */
 function saveFile(fileName, data) {
-    if(this.currentDir[fileName].type == "text") {
+    if(this.currentDir[fileName].type === "text") {
         this.currentDir[fileName].data = data;
         return true;
     }
@@ -239,4 +259,34 @@ function date(fileName) {
         return "";
     }
     return this.currentDir[fileName].created;
+}
+
+function normalize(unclean_path) {
+    let clean_path = unclean_path + 'a';
+
+    if (clean_path.charAt(0) !== '/') {
+        clean_path = this.getPath() + "/" + clean_path;
+    }
+
+    clean_path = clean_path.replace(/\\\\/g, '/');
+    const parts = clean_path.split('/');
+    const slashed = parts[0] === '';
+    for (let i = 1; i < parts.length; i++) {
+        if (parts[i] === '.' || parts[i] === '') {
+            parts.splice(i--, 1);
+        }
+    }
+    for (let i = 1; i < parts.length; i++) {
+        if (parts[i] !== '..') continue;
+        if (i > 0 && parts[i - 1] !== '..' && parts[i - 1] !== '.') {
+            parts.splice(--i, 2);
+            i--;
+        }
+    }
+    clean_path = parts.join('/');
+    if (slashed && clean_path[0] !== '/')
+        clean_path = '/' + clean_path;
+    else if (clean_path.length === 0)
+        clean_path = '.';
+    return clean_path;
 }

@@ -263,8 +263,9 @@ async function processCommand() {
     // Retrieves the current line number of the terminal. Currently might have a bug in the library since it is
     // experimental for the version being used.
     let lineNum = termBuffer.cursorY + termBuffer.viewportY;
-    // Splits up the current line into parts based on the space while removing the unneeded parts of it. 
-    let currentLine = termBuffer.getLine(lineNum).translateToString(true).trim().split(/^~.*?\$ /)[1].split(" ");
+    // Splits up the current line into parts based on the space while removing the unneeded parts of it.
+    // let currentLine = termBuffer.getLine(lineNum).translateToString(true).trim().split(/^~.*?\$ /)[1].split(" ");
+    let currentLine = termBuffer.getLine(lineNum).translateToString(true).trim().split(/^.*?\$ /)[1].split(" ");
     // Since the first command line argument is the command set it as a separate variable.
     let command = currentLine[0];
     
@@ -272,12 +273,12 @@ async function processCommand() {
 
     // Clears the terminal. Currently might have a bug where the line where clear is called isn't cleared
     // but ignorable.
-    if(command == "clear") {
+    if(command === "clear") {
         term.clear();
         return;
     }
     // List files in the filesystem in specified directory.
-    if(command == "ls") {
+    if(command === "ls") {
         let ls;
         // If multiple command line arguments, request the faked filesystem to retrieve those filenames,
         // otherwise if only ls, then the current directory.
@@ -287,8 +288,21 @@ async function processCommand() {
             ls = filesystem.ls();
         }
         // If it contains filenames, print them to console.
-        if(ls != "") {
+        if(ls !== "") {
             term.write(ls + "\r\n");
+        }
+        return;
+    }
+    // Print the current working directory
+    if(command === "pwd") {
+        let pwd;
+
+        // If multiple command line arguments error
+        if(currentLine.length > 1) {
+            term.write("Too many arguments\r\n");
+        } else {
+            pwd = filesystem.pwd(currentLine[1]);
+            term.write(pwd + "\r\n");
         }
         return;
     }
@@ -574,7 +588,7 @@ function initializeTerminal() {
 
     // Finalize setup
     fitAddon.fit();
-    term.write("Terminal initialized...\r\n\r\n~$ ")
+    term.write("Terminal initialized...\r\n\r\n/$ ")
     term.onData(processInput);
     term.focus();
 }
