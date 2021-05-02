@@ -483,21 +483,32 @@ async function processCommand() {
         }
         return;
     }
+
     // Implements equivalent of date -r in linux systems to print date of creation
     if(command === "date") {
-        // Since the command requires an argument checks for that otherwise prints error.
-        if(currentLine.length > 1) {
-            let f = filesystem.getDate(currentLine[1]);
-            if(f === "") {
-                term.write("date: file does not exist\r\n");
+        const print_date = function(t) {
+            let d = new Date(t);
+            let time = padZero(d.getUTCHours()) + ":" + padZero(d.getUTCMinutes()) + ":" + padZero(d.getUTCSeconds()) + " UTC";
+            term.write(padZero(d.getUTCMonth() + 1) + "/" + padZero(d.getUTCDate()) + " " + time + "\r\n");
+        };
+
+        if (currentLine.length === 1) {
+            print_date(simTime.getTime());
+        } else if (currentLine.length === 3) {
+            // Since the command requires an argument checks for that otherwise prints error.
+            if (currentLine[1] !== "-r") {
+                term.write("Usage: date [-r <path>]\r\n");
             } else {
-                // Prints date without printing the year (because of implementation would be 1970)
-                let d = new Date(f);
-                let time = padZero(d.getUTCHours()) + ":" + padZero(d.getUTCMinutes()) + ":" + padZero(d.getUTCSeconds()) + " UTC";
-                term.write(padZero(d.getUTCMonth() + 1) + "/" + padZero(d.getUTCDate()) + " " + time +"\r\n");
+                let f = filesystem.getDate(currentLine[2]);
+                if (f === "") {
+                    term.write("date: file does not exist\r\n");
+                } else {
+                    // Prints date without printing the year
+                    print_date(f);
+                }
             }
         } else {
-            term.write("date: missing argument\r\n");
+            term.write("Usage: date [-r <path>]\r\n");
         }
         return;
     }
@@ -551,11 +562,11 @@ function processInput(seq) {
     switch(seq) {
         // Case to handle Ctrl-C to cancel input
         case '\x03':
-            term.write(`^C\r\n${filesystem.getPath()}$ `);
+            term.write(`^C\r\n${filesystem.getWorkingDir()}$ `);
             break;
         // Case to handle backspace
         case '\x7f':
-            if(termBuffer.cursorX > filesystem.getPath().length + 2) {
+            if(termBuffer.cursorX > filesystem.getWorkingDir().length + 2) {
                 term.write('\b \b');
             }
             break;
@@ -563,7 +574,7 @@ function processInput(seq) {
         case '\r':
             term.write('\r\n')
             processCommand();
-            term.write(`${filesystem.getPath()}$ `);
+            term.write(`${filesystem.getWorkingDir()}$ `);
             break;
         // Otherwise write to console.
         default:

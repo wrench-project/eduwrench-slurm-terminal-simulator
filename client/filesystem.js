@@ -29,7 +29,6 @@ export class Filesystem {
         this.createFile = createFile;
         this.saveFile = saveFile;
         this.getDate = date;
-        this.getPath = getPath;
         this.normalizePath = normalizePath;
         this.getAbsolutePath = getAbsolutePath;
         this.isInDirectory = isInDirectory;
@@ -391,6 +390,10 @@ function normalizePath(unclean_path) {
     else if (clean_path.length === 0)
         clean_path = '.';
     return clean_path;
+}
+
+function getWorkingDir() {
+    return this.currentDir;
 }
 
 /**
