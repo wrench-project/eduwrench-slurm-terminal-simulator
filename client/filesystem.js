@@ -23,7 +23,8 @@ export class Filesystem {
         this.pwd = pwd;
         this.mkdir = mkdir;
         this.rm = rm;
-        this.open = openFile;
+        this.cp = cp;
+        this.openFile = openFile;
         this.createFile = createFile;
         this.save = saveFile;
         this.getDate = date;
@@ -33,6 +34,7 @@ export class Filesystem {
         this.isInDirectory = isInDirectory;
         this.isSameDirectory = isSameDirectory;
         this.getFileName = getFileName;
+        this.getDirPath = getDirPath;
     }
 }
 
@@ -87,7 +89,7 @@ function ls(loc = null) {
     loc = this.getAbsolutePath(loc);
 
 
-    if(this.filesystem[loc] == null) {
+    if(!(loc in this.filesystem)) {
         return "No such file or directory";
     }
 
@@ -123,13 +125,13 @@ function cd(loc) {
     }
     loc = this.getAbsolutePath(loc)
 
-    if (this.filesystem[loc] == null) {
+    if (!(loc in this.filesystem)) {
         return false;
     }
 
-    if (this.filesystem[loc].type != "")
+    if (this.filesystem[loc].type !== "")
 
-    this.currentDir = loc;
+        this.currentDir = loc;
     return true;
 }
 
@@ -143,18 +145,24 @@ function mkdir(name, time) {
 
     name = this.getAbsolutePath(name);
 
-    // Checks if name already exists.
-    if(this.filesystem[name] == null) {
-        // Creates the object needed to represent a directory.
-        this.filesystem[name] = {
-            type: "dir",
-            created: time,
-            data: {}
-        };
-        return "";
-    } else {
-        return `Cannot create directory '${name}': File exists`;
+    if (name in this.filesystem) {
+        return "cp: directory already exists";
     }
+
+    // Check that all parent directories exist
+    let parent_path = this.getDirPath(name);
+    if (!(parent_path in this.filesystem)) {
+        return "cp: operation not permitted";
+    }
+
+    // Create the directory
+    this.filesystem[name] = {
+        type: "dir",
+        created: time,
+        deletable: true,
+        data: {}
+    };
+    return "";
 }
 
 /**
@@ -168,7 +176,7 @@ function rm(name, recursive = false) {
     name = this.getAbsolutePath(name);
 
     // Checks if exists.
-    if(this.filesystem[name] == null) {
+    if(!(name in this.filesystem)) {
         return "No such file or directory";
     }
 
@@ -206,20 +214,101 @@ function rm(name, recursive = false) {
 }
 
 /**
+ * Copy files or directory, just like cp
+ * @param {Source path} srcpath
+ * @param {Destination path} dstpath
+ * @param {Creation time in milliseconds} time
+ * @returns Error string. Empty string if successful.
+ */
+function cp(srcpath, dstpath, time) {
+
+    srcpath = this.getAbsolutePath(srcpath);
+    dstpath = this.getAbsolutePath(dstpath);
+
+    // Checks that the src exists.
+    if(!(srcpath in this.filesystem)) {
+        return "No such file or directory";
+    }
+
+    // Check that the dst is different
+    if (srcpath === dstpath) {
+        return "cp: source and destination are identical (not copied)";
+    }
+
+    if (this.filesystem[srcpath].type === "dir") {
+        return "cp: copying directories not supported yet";
+    }
+
+    if (this.filesystem[dstpath] != null) {
+        // The destination already exist
+
+        // src: file, dst: file
+        if (this.filesystem[srcpath].type === "file" && this.filesystem[dstpath].type === "file") {
+            if (this.filesystem[dstpath].deletable) {
+                delete this.filesystem[dstpath];
+                this.filesystem[dstpath] = {
+                    type: this.filesystem[srcpath].type,
+                    created: time,
+                    deletable: true,
+                    data: this.filesystem[srcpath].data
+                };
+                return "";
+            } else {
+                return "cp: operation not permitted";
+            }
+        }
+
+        // src: file, dst: dir
+        if (this.filesystem[srcpath].type === "file" && this.filesystem[dstpath].type === "dir") {
+            let new_path = this.getAbsolutePath(dstpath + this.getFileName(this.filesystem[srcpath]))
+            if (this.filesystem[new_path] != null && !this.filesystem[new_path].deletable) {
+                return "cp: operation not permitted";
+            }
+            this.filesystem[new_path] = {
+                type: this.filesystem[srcpath].type,
+                created: time,
+                deletable: true,
+                data: this.filesystem[srcpath].data
+            }
+            return "";
+        }
+
+    } else {
+        // The destination does not exist, so make sure it's only the last  path element that
+        // does not exist
+        let dstdir = this.getDirPath(dstpath);
+        if (!(dstdir in this.filesystem)) {
+            return "cp: operation not permitted";
+        }
+        // create the file
+        this.filesystem[dstpath] = {
+            type: this.filesystem[srcpath].type,
+            created: time,
+            deletable: true,
+            data: this.filesystem[srcpath].data
+        }
+        return ""
+
+    }
+}
+
+/**
  * Opens a file in the simulated filesystem.
  * @param {File name} name
  * @returns Data in the file so all the text inside the file. -1 if binary otherwise null if directory or doesn't exist.
  */
 function openFile(name) {
+
+    name = this.getAbsolutePath(name);
+    if (!(name in this.filesystem)) {
+        return null;
+    }
+
     // If an editable file, return the text.
     if(this.filesystem[name].type === "text") {
         return this.filesystem[name].data;
     }
-    // Fail if binary or directory or doesn't exist.
-    if(this.filesystem[name].type === "bin") {
-        return -1;
-    }
-    return null;
+    return -1;
 }
 
 /**
@@ -233,7 +322,7 @@ function openFile(name) {
 function createFile(name, time, binary, deletable) {
     name = this.getAbsolutePath(name);
 
-    if(this.filesystem[name] == null) {
+    if(!(name in this.filesystem)) {
         this.filesystem[name] = {
             type: (binary ? "binary" : "text"),
             created: time,
@@ -267,7 +356,7 @@ function saveFile(name, data) {
  */
 function date(name) {
     name = this.getAbsolutePath(name);
-    if(this.filesystem[name] == null) {
+    if(!(name in this.filesystem)) {
         return "";
     }
     return this.filesystem[name].created;
@@ -324,4 +413,12 @@ function getFileName(path) {
     path = this.getAbsolutePath(path);
     let tokens = path.split("/");
     return tokens[tokens.length - 1];
+}
+
+function getDirPath(path) {
+    path = this.getAbsolutePath(path);
+    let tokens = path.split("/");
+    let filename =  tokens[tokens.length - 1];
+    path = path.replace(filename, "");
+    return this.getAbsolutePath(path);
 }

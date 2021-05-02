@@ -85,8 +85,8 @@ function exitFile() {
 
 /**
  * Opens up the batch configuration file.
- * @param {Name of file to open} filename 
- * @param {Text in the file to be opened} text 
+ * @param {Name of file to open} filename
+ * @param {Text in the file to be opened} text
  */
 function editBatchFile(filename, text) {
     // Makes sure the text is not directly editable.
@@ -109,7 +109,7 @@ function editBatchFile(filename, text) {
 /**
  * Shows text edit area, save button, and save/close button.
  * @param {Name of file} filename
- * @param {Text of document} text 
+ * @param {Text of document} text
  */
 function editFile(filename, text) {
     // Sets up the text area to be representative of file with environmental variables set.
@@ -146,7 +146,7 @@ function changeBatch() {
 
 /**
  * Sends batch file info to server for simulation. Async because it uses await
- * @param {Configuration File} config 
+ * @param {Configuration File} config
  */
 async function sendBatch(config) {
     // Splits the content of the batch configuration file by new lines.
@@ -172,7 +172,7 @@ async function sendBatch(config) {
     // Parses the return value and decides what to generate/write
     res = await res.json();
     if(!res.success) {
-        filesystem.create(".err", simTime.getTime());
+        filesystem.createFile(".err", simTime.getTime());
         filesystem.save(".err", "Number of nodes exceeds what is available in system");
     } else {
         // Writes to terminal the job name. Since the server returns "standard_job_x" we need to remove the standard
@@ -183,7 +183,7 @@ async function sendBatch(config) {
 
 /**
  * Used to cancel the simulated job running or waiting through a POST request
- * @param {Name of the job to be canceled} jobName 
+ * @param {Name of the job to be canceled} jobName
  */
 function cancelJob(jobName) {
     // Sets up the body
@@ -268,7 +268,7 @@ async function processCommand() {
     let currentLine = termBuffer.getLine(lineNum).translateToString(true).trim().split(/^.*?\$ /)[1].split(" ");
     // Since the first command line argument is the command set it as a separate variable.
     let command = currentLine[0];
-    
+
     // Check for which command to execute
 
     // Clears the terminal. Currently might have a bug where the line where clear is called isn't cleared
@@ -308,7 +308,7 @@ async function processCommand() {
     }
     // Future implementation: Possible to shift the multiple directory creation to filesystem. Can pass multiple parameters as an array.
     // Implements the make directory command
-    if(command == "mkdir") {
+    if(command === "mkdir") {
         // Since the command requires an argument checks for that otherwise prints error.
         if(currentLine.length > 1) {
             // If multiple directories are to be made loop through arguments and create them.
@@ -316,7 +316,7 @@ async function processCommand() {
                 // Creates the directory while providing the current simulated time.
                 let f = filesystem.mkdir(currentLine[i], simTime.getTime());
                 // If filesystem returns an error, print out error.
-                if(f != "") {
+                if(f !== "") {
                     term.write(f + "\r\n");
                 }
             }
@@ -326,15 +326,15 @@ async function processCommand() {
         return;
     }
     // Command used to create a file. Doesn't actually update the file updated date (since that doesn't exist in this version).
-    if(command == "touch") {
+    if(command === "touch") {
         // Since the command requires an argument checks for that otherwise prints error.
         if(currentLine.length > 1) {
             // If multiple files are to be made loop through arguments and create them.
             for(let i = 1; i < currentLine.length; i++) {
                 // Creates the file while providing the current simulated time.
-                let f = filesystem.create(currentLine[i], simTime.getTime());
+                let f = filesystem.createFile(currentLine[i], simTime.getTime());
                 // If filesystem returns an error, print out error.
-                if(f != "") {
+                if(f !== "") {
                     term.write(f + "\r\n");
                 }
             }
@@ -343,33 +343,46 @@ async function processCommand() {
         }
         return;
     }
+
+    if(command === "cp") {
+        if (currentLine.length !== 3) {
+            term.write("Missing argument\r\n");
+            return;
+        }
+        let f = filesystem.cp(currentLine[1], currentLine[2]);
+        if (f !== "") {
+            term.write(f + "\r\n");
+        }
+        return;
+    }
+
     // Removes files and/or directories.
-    if(command == "rm") {
+    if(command === "rm") {
         // Since the command requires an argument checks for that otherwise prints error.
-        if(currentLine.length == 1) {
+        if(currentLine.length === 1) {
             term.write("Missing argument\r\n");
             return;
         }
         // Handles single argument rm.
-        if(currentLine.length == 2) {
+        if(currentLine.length === 2) {
             // If missing file or directory name, prints error since flag isn't one.
-            if(currentLine[1] == "-r") {
+            if(currentLine[1] === "-r") {
                 term.write("Missing argument\r\n");
                 return;
             }
             // Removes file if error occurs like removing directory then writes error.
             let f = filesystem.rm(currentLine[1]);
-            if(f != "") {
+            if(f !== "") {
                 term.write(f + "\r\n");
             }
             return;
         }
         // Handles recursive rm
-        if(currentLine[1] == "-r") {
+        if(currentLine[1] === "-r") {
             // Removes all the files using filesystem
             for(let i = 2; i < currentLine.length; i++) {
                 let f = filesystem.rm(currentLine[i], true);
-                if(f != "") {
+                if(f !== "") {
                     term.write(f + "\r\n");
                 }
             }
@@ -378,36 +391,36 @@ async function processCommand() {
         // Handle multiple arguments non-recursive
         for(let i = 2; i < currentLine.length; i++) {
             let f = filesystem.rm(currentLine[i]);
-            if(f != "") {
+            if(f !== "") {
                 term.write(f + "\r\n");
             }
         }
     }
     // Prints file contents to terminal
-    if(command == "cat") {
+    if(command === "cat") {
         // Since the command requires an argument checks for that otherwise prints error.
         if(currentLine.length > 1) {
             // Handling for multiple files to print
             for(let i = 1; i < currentLine.length; i++) {
-                let f = filesystem.open(currentLine[i]);
+                let f = filesystem.openFile(currentLine[i]);
                 // Makes sure it isn't a "binary" since that shouldn't be opened
-                if (f == -1) {
-                    term.write("File is binary\r\n");
+                if (f === -1) {
+                    term.write("cat: operation not permitted\r\n");
                 } else if(f != null) {
                     // Replaces the new line with carriage return and new line or else won't print to terminal correctly.
                     f = f.replace(/\n/g, '\r\n');
                     term.write(f + "\r\n");
                 } else {
-                    term.write("File not found or is directory\r\n");
+                    term.write("cat: file not found\r\n");
                 }
             }
         } else {
-            term.write("Missing argument\r\n");
+            term.write("cat: missing argument\r\n");
         }
         return;
     }
     // Calls directory change
-    if(command == "cd") {
+    if(command === "cd") {
         // Since the command requires an argument checks for that otherwise prints error.
         if(currentLine.length > 1) {
             if(!filesystem.cd(currentLine[1])) {
@@ -419,49 +432,49 @@ async function processCommand() {
         return;
     }
     // Allows editing of files
-    if(command == "edit") {
+    if(command === "edit") {
         // Since the command requires an argument checks for that otherwise prints error.
         if(currentLine.length > 1) {
-            let f = filesystem.open(currentLine[1]);
+            let f = filesystem.openFile(currentLine[1]);
             if(f != null) {
                 // Hardcoded file representing a batch config file which will open in a custom manner.
                 // Otherwise opens it normally unless it is a "binary" file.
-                if(currentLine[1] == "batch.slurm") {
+                if(currentLine[1].endsWith(".slurm")) {
                     editBatchFile(currentLine[1], f);
-                } else if(f == -1) {
-                    term.write("File is binary\r\n");
+                } else if(f === -1) {
+                    term.write("edit: file is binary\r\n");
                 } else {
                     editFile(currentLine[1], f);
                 }
             } else {
-                term.write("File not found or is directory\r\n");
+                term.write("edit: operation not permitted\r\n");
             }
-        return;
+            return;
         }
     }
     // Command to send the batch file.
-    if(command == "sbatch") {
+    if(command === "sbatch") {
         // Since the command requires an argument checks for that otherwise prints error.
         if(currentLine.length > 1) {
-            let f = filesystem.open(currentLine[1]);
+            let f = filesystem.openFile(currentLine[1]);
             // Checks if it is the hard-coded config file.
-            if(f != null && currentLine[1] == "batch.slurm") {
+            if(f != null && currentLine[1].endsWith(".slurm")) {
                 await sendBatch(f);
             } else {
-                term.write("Not batch file\r\n");
+                term.write("sbatch: batch file must have .slurm extension\r\n");
             }
         } else {
-            term.write("Missing argument\r\n");
+            term.write("sbatch: missing argument\r\n");
         }
         return;
     }
     // Command to retrieve and print the queue
-    if(command == "squeue") {
+    if(command === "squeue") {
         getQueue();
         return;
     }
     // Command to cancel a job.
-    if(command == "scancel") {
+    if(command === "scancel") {
         // Since the command requires an argument checks for that otherwise prints error.
         if(currentLine.length > 1) {
             cancelJob(currentLine[1]);
@@ -471,7 +484,7 @@ async function processCommand() {
         return;
     }
     // Implements equivalent of date -r in linux systems to print date of creation
-    if(command == "date") {
+    if(command === "date") {
         // Since the command requires an argument checks for that otherwise prints error.
         if(currentLine.length > 1) {
             let f = filesystem.getDate(currentLine[1]);
@@ -497,25 +510,25 @@ async function processCommand() {
 function handleArrowKeys(seq) {
     let currentLine = termBuffer.getLine(termBuffer.cursorY).translateToString(true);
     // Up and down in the future can theoretically get previous commands but not implemented for simplicity.
-    if (seq == '\u001B\u005B\u0041') {
+    if (seq === '\u001B\u005B\u0041') {
         // COMMENTED OUT DEBUGGING CODE TO BE REMOVED
-        //console.log('up'); 
+        console.log('up');
     }
-    if (seq == '\u001B\u005B\u0042') {
+    if (seq === '\u001B\u005B\u0042') {
         // COMMENTED OUT DEBUGGING CODE TO BE REMOVED
         // console.log('down'); 
     }
 
     // Moves the cursor left or right.
-    if (seq == '\u001B\u005B\u0043') {
-        if(termBuffer.cursorX < currentLine.length) { 
+    if (seq === '\u001B\u005B\u0043') {
+        if(termBuffer.cursorX < currentLine.length) {
             term.write(seq);
         }
     }
-    if (seq == '\u001B\u005B\u0044') {
+    if (seq === '\u001B\u005B\u0044') {
         if(termBuffer.cursorX > 3) {
             term.write(seq);
-        } 
+        }
     }
 }
 
@@ -524,7 +537,7 @@ const notControl = /^[\S\s]$/;
 
 /**
  * Processes and executes the character commands when inputted.
- * @param {Input typed into the terminal, generally a single character} seq 
+ * @param {Input typed into the terminal, generally a single character} seq
  */
 function processInput(seq) {
     // COMMENTED OUT DEBUGGING CODE TO BE REMOVED
@@ -605,8 +618,8 @@ async function queryServer() {
 
 /**
  * Handles all events generated by server and creates corresponding files for success.
- * @param {Array of events containing complete and failures from server} events 
- * @param {Current server time to represent what time output file will be created} time 
+ * @param {Array of events containing complete and failures from server} events
+ * @param {Current server time to represent what time output file will be created} time
  */
 async function handleEvents(events) {
     // Loop through array of events
@@ -620,7 +633,7 @@ async function handleEvents(events) {
         // Checks if job has been completed and creates a binary file representative of output file.
         if(status == "StandardJobCompletedEvent") {
             let fileName = jobName.split("_").slice(1).join("_") + ".out";
-            filesystem.create(fileName, time * 1000);
+            filesystem.createFile(fileName, time * 1000);
             filesystem.save(fileName, "Job successfully completed");
         }
     }
@@ -708,7 +721,7 @@ async function add60() {
  */
 function main() {
     initializeTerminal();
-    
+
     // Get and set DOM elements
     clock = document.getElementById('clock');
     textArea = document.getElementById('textArea');
