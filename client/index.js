@@ -72,8 +72,11 @@ function padZero(val) {
 // Function used to pad left with white spaces
 function padIntegerWithSpace(val, max_val) {
     if (typeof(val) == 'number') {
-        let num_spaces_to_add = Math.ceil(max_val/10) - Math.ceil(val/10);
-        return " ".repeat(num_spaces_to_add) + val;
+        let num_digits_val = Math.floor(Math.log10(val));
+        let num_digits_max_val = Math.floor(Math.log10(max_val));
+        if (num_digits_max_val >  num_digits_val) {
+            val =  " ".repeat(num_digits_max_val - num_digits_val) + val;
+        }
     }
     return val;
 }
@@ -301,15 +304,31 @@ function getQueue() {
 /**
  * Runs specified commands and faked programs.
  */
-async function processCommand() {
-    // Splits up the current line into parts based on the space while removing the unneeded parts of it
-    let currentLine = getCurrentCommandLine().trim().split(" ");
-    // Since the first command line argument is the command set it as a separate variable.
-    let command = currentLine[0];
+async function processCommand(commandLine) {
 
-    if (command === "") {
+    // Command recall from history
+    if(commandLine.startsWith("!")) {
+        let number = parseInt(commandLine.split("!")[1]);
+        if (isNaN(number) || (number < 1) || (number > history.length)) {
+            term.write("event not found\r\n");
+            return;
+        }
+        let tokens = commandLine.split(" ");
+        tokens[0] = history[number-1];
+        commandLine = tokens.join(" ");
+    }
+
+    if (commandLine !== "") {
+        history.push(commandLine);
+    } else {
         return;
     }
+
+    // Splits up the current line into parts based on the space while removing the unneeded parts of it
+    let commandLineTokens = commandLine.split(" ");
+    // Since the first command line argument is the command set it as a separate variable.
+    let command = commandLineTokens[0];
+
     // Check for which command to execute
 
     // Clears the terminal. Currently might have a bug where the line where clear is called isn't cleared
@@ -322,18 +341,19 @@ async function processCommand() {
     // Print command-history
     if(command === "history") {
         for (let i = Math.max(0, history.length - historyDepth); i < history.length; i++) {
-            term.write(" " + padIntegerWithSpace(i+1) + "  " + history[i] + "\r\n");
+            term.write(" " + padIntegerWithSpace(i+1, history.length ) + "  " + history[i] + "\r\n");
         }
         return;
     }
+
 
     // List files in the filesystem in specified directory.
     if(command === "ls") {
         let ls;
         // If multiple command line arguments, request the faked filesystem to retrieve those filenames,
         // otherwise if only ls, then the current directory.
-        if(currentLine.length > 1) {
-            ls = filesystem.ls(currentLine[1]);
+        if(commandLineTokens.length > 1) {
+            ls = filesystem.ls(commandLineTokens[1]);
         } else {
             ls = filesystem.ls();
         }
@@ -348,10 +368,10 @@ async function processCommand() {
         let pwd;
 
         // If multiple command line arguments error
-        if(currentLine.length > 1) {
-            term.write("Too many arguments\r\n");
+        if(commandLineTokens.length > 1) {
+            term.write("pwd: too many arguments\r\n");
         } else {
-            pwd = filesystem.getWorkingDir(currentLine[1]);
+            pwd = filesystem.getWorkingDir(commandLineTokens[1]);
             term.write(pwd + "\r\n");
         }
         return;
@@ -360,11 +380,11 @@ async function processCommand() {
     // Implements the make directory command
     if(command === "mkdir") {
         // Since the command requires an argument checks for that otherwise prints error.
-        if(currentLine.length > 1) {
+        if(commandLineTokens.length > 1) {
             // If multiple directories are to be made loop through arguments and create them.
-            for(let i = 1; i < currentLine.length; i++) {
+            for(let i = 1; i < commandLineTokens.length; i++) {
                 // Creates the directory while providing the current simulated time.
-                let f = filesystem.mkdir(currentLine[i], simTime.getTime());
+                let f = filesystem.mkdir(commandLineTokens[i], simTime.getTime());
                 // If filesystem returns an error, print out error.
                 if(f !== "") {
                     term.write(f + "\r\n");
@@ -378,11 +398,11 @@ async function processCommand() {
     // Command used to create a file. Doesn't actually update the file updated date (since that doesn't exist in this version).
     if(command === "touch") {
         // Since the command requires an argument checks for that otherwise prints error.
-        if(currentLine.length > 1) {
+        if(commandLineTokens.length > 1) {
             // If multiple files are to be made loop through arguments and create them.
-            for(let i = 1; i < currentLine.length; i++) {
+            for(let i = 1; i < commandLineTokens.length; i++) {
                 // Creates the file while providing the current simulated time.
-                let f = filesystem.createFile(currentLine[i], simTime.getTime());
+                let f = filesystem.createFile(commandLineTokens[i], simTime.getTime());
                 // If filesystem returns an error, print out error.
                 if(f !== "") {
                     term.write(f + "\r\n");
@@ -395,11 +415,11 @@ async function processCommand() {
     }
 
     if(command === "cp") {
-        if (currentLine.length !== 3) {
+        if (commandLineTokens.length !== 3) {
             term.write("cp: missing argument\r\n");
             return;
         }
-        let f = filesystem.copyFile(currentLine[1], currentLine[2]);
+        let f = filesystem.copyFile(commandLineTokens[1], commandLineTokens[2]);
         if (f !== "") {
             term.write(f + "\r\n");
         }
@@ -409,29 +429,29 @@ async function processCommand() {
     // Removes files and/or directories.
     if(command === "rm") {
         // Since the command requires an argument checks for that otherwise prints error.
-        if(currentLine.length === 1) {
-            term.write("Missing argument\r\n");
+        if(commandLineTokens.length === 1) {
+            term.write("rm: missing argument\r\n");
             return;
         }
         // Handles single argument rm.
-        if(currentLine.length === 2) {
+        if(commandLineTokens.length === 2) {
             // If missing file or directory name, prints error since flag isn't one.
-            if(currentLine[1] === "-r") {
-                term.write("Missing argument\r\n");
+            if(commandLineTokens[1] === "-r") {
+                term.write("rm: missing argument\r\n");
                 return;
             }
             // Removes file if error occurs like removing directory then writes error.
-            let f = filesystem.removeFile(currentLine[1]);
+            let f = filesystem.removeFile(commandLineTokens[1]);
             if(f !== "") {
                 term.write(f + "\r\n");
             }
             return;
         }
         // Handles recursive rm
-        if(currentLine[1] === "-r") {
+        if(commandLineTokens[1] === "-r") {
             // Removes all the files using filesystem
-            for(let i = 2; i < currentLine.length; i++) {
-                let f = filesystem.removeFile(currentLine[i], true);
+            for(let i = 2; i < commandLineTokens.length; i++) {
+                let f = filesystem.removeFile(commandLineTokens[i], true);
                 if(f !== "") {
                     term.write(f + "\r\n");
                 }
@@ -439,8 +459,8 @@ async function processCommand() {
             return;
         }
         // Handle multiple arguments non-recursive
-        for(let i = 2; i < currentLine.length; i++) {
-            let f = filesystem.removeFile(currentLine[i]);
+        for(let i = 2; i < commandLineTokens.length; i++) {
+            let f = filesystem.removeFile(commandLineTokens[i]);
             if(f !== "") {
                 term.write(f + "\r\n");
             }
@@ -449,10 +469,10 @@ async function processCommand() {
     // Prints file contents to terminal
     if(command === "cat") {
         // Since the command requires an argument checks for that otherwise prints error.
-        if(currentLine.length > 1) {
+        if(commandLineTokens.length > 1) {
             // Handling for multiple files to print
-            for(let i = 1; i < currentLine.length; i++) {
-                let f = filesystem.openFile(currentLine[i]);
+            for(let i = 1; i < commandLineTokens.length; i++) {
+                let f = filesystem.openFile(commandLineTokens[i]);
                 // Makes sure it isn't a "binary" since that shouldn't be opened
                 if (f === -1) {
                     term.write("cat: operation not permitted\r\n");
@@ -472,29 +492,29 @@ async function processCommand() {
     // Calls directory change
     if(command === "cd") {
         // Since the command requires an argument checks for that otherwise prints error.
-        if(currentLine.length > 1) {
-            if(!filesystem.changeWorkingDir(currentLine[1])) {
-                term.write("Cannot navigate to directory\r\n");
+        if(commandLineTokens.length > 1) {
+            if(!filesystem.changeWorkingDir(commandLineTokens[1])) {
+                term.write("cd: cannot navigate to directory\r\n");
             }
         } else {
-            term.write("Missing argument\r\n");
+            term.write("cd: missing argument\r\n");
         }
         return;
     }
     // Allows editing of files
     if(command === "edit") {
         // Since the command requires an argument checks for that otherwise prints error.
-        if(currentLine.length > 1) {
-            let f = filesystem.openFile(currentLine[1]);
+        if(commandLineTokens.length > 1) {
+            let f = filesystem.openFile(commandLineTokens[1]);
             if(f != null) {
                 // Hardcoded file representing a batch config file which will open in a custom manner.
                 // Otherwise opens it normally unless it is a "binary" file.
-                if(currentLine[1].endsWith(".slurm")) {
-                    editBatchFile(currentLine[1], f);
+                if(commandLineTokens[1].endsWith(".slurm")) {
+                    editBatchFile(commandLineTokens[1], f);
                 } else if(f === -1) {
                     term.write("edit: file is binary\r\n");
                 } else {
-                    editFile(currentLine[1], f);
+                    editFile(commandLineTokens[1], f);
                 }
             } else {
                 term.write("edit: operation not permitted\r\n");
@@ -505,10 +525,10 @@ async function processCommand() {
     // Command to send the batch file.
     if(command === "sbatch") {
         // Since the command requires an argument checks for that otherwise prints error.
-        if(currentLine.length > 1) {
-            let f = filesystem.openFile(currentLine[1]);
+        if(commandLineTokens.length > 1) {
+            let f = filesystem.openFile(commandLineTokens[1]);
             // Checks if it is the hard-coded config file.
-            if(f != null && currentLine[1].endsWith(".slurm")) {
+            if(f != null && commandLineTokens[1].endsWith(".slurm")) {
                 await sendBatch(f);
             } else {
                 term.write("sbatch: batch file must have .slurm extension\r\n");
@@ -526,8 +546,8 @@ async function processCommand() {
     // Command to cancel a job.
     if(command === "scancel") {
         // Since the command requires an argument checks for that otherwise prints error.
-        if(currentLine.length > 1) {
-            cancelJob(currentLine[1]);
+        if(commandLineTokens.length > 1) {
+            cancelJob(commandLineTokens[1]);
         } else {
             term.write("squeue: missing argument\r\n");
         }
@@ -542,14 +562,14 @@ async function processCommand() {
             term.write(padZero(d.getUTCMonth() + 1) + "/" + padZero(d.getUTCDate()) + " " + time + "\r\n");
         };
 
-        if (currentLine.length === 1) {
+        if (commandLineTokens.length === 1) {
             print_date(simTime.getTime());
-        } else if (currentLine.length === 3) {
+        } else if (commandLineTokens.length === 3) {
             // Since the command requires an argument checks for that otherwise prints error.
-            if (currentLine[1] !== "-r") {
+            if (commandLineTokens[1] !== "-r") {
                 term.write("Usage: date [-r <path>]\r\n");
             } else {
-                let f = filesystem.getDate(currentLine[2]);
+                let f = filesystem.getDate(commandLineTokens[2]);
                 if (f === "") {
                     term.write("date: file does not exist\r\n");
                 } else {
@@ -616,7 +636,7 @@ const notControl = /^[\S\s]$/;
  * Processes and executes the character commands when inputted.
  * @param seq: Input typed into the terminal, generally a single character
  */
-function processInput(seq) {
+async function processInput(seq) {
     // COMMENTED OUT DEBUGGING CODE TO BE REMOVED
     // console.log(seq.length + " " + seq.charCodeAt(0).toString(16));
 
@@ -638,9 +658,12 @@ function processInput(seq) {
             break;
         // Case to trigger command processing
         case '\r':
+            let commandLine = getCurrentCommandLine().trim();
             term.write('\r\n')
-            history.push(getCurrentCommandLine().trim());
-            processCommand();
+            let executed_command_line;
+            let p = processCommand(commandLine);
+            executed_command_line = await p;
+
             historyCursor = -1;
             term.write(`${filesystem.getWorkingDir()}$ `);
             break;
