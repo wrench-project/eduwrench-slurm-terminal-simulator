@@ -249,9 +249,16 @@ namespace wrench {
         // Loops through intermediary queue and extracts the needed information to convert into a string
         // before finally inserting into queue which needs to be returned. Front-end will handle parsing
         // of informationi so information is passed as a comma-separated string.
-        for(auto const q : i_queue)
+        for(auto const q : i_queue) {
+//            std::cerr << wrench::Simulation::getCurrentSimulatedDate() << "\n";
+//            std::cerr << std::get<0>(q) + ',' + std::get<1>(q) + ',' + std::to_string(std::get<2>(q)) +
+//                                         ',' + std::to_string(std::get<3>(q)) + ',' +
+//                                         ',' + std::to_string(std::get<4>(q)) + ',' +
+//                                         ',' + std::to_string(std::get<5>(q)) + ','
+//                                          + std::to_string(std::get<6>(q)) << "\n";
             queue.push_back(std::get<0>(q) + ',' + std::get<1>(q) + ',' + std::to_string(std::get<2>(q)) +
                 ',' + std::to_string(std::get<4>(q)) + ',' + std::to_string(std::get<6>(q)));
+        }
         return queue;
     }
 }

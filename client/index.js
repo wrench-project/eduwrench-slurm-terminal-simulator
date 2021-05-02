@@ -66,7 +66,7 @@ function padZero(val) {
  */
 function exitFile() {
     // Saves file to filesystem
-    filesystem.save(openedFile, textEditor.innerText);
+    filesystem.saveFile(openedFile, textEditor.innerText);
 
     // Adjust the editing area and environmental values
     textArea.contentEditable = false;
@@ -85,8 +85,8 @@ function exitFile() {
 
 /**
  * Opens up the batch configuration file.
- * @param {Name of file to open} filename
- * @param {Text in the file to be opened} text
+ * @param filename: Name of file to open
+ * @param text: Text in the file to be opened
  */
 function editBatchFile(filename, text) {
     // Makes sure the text is not directly editable.
@@ -108,8 +108,8 @@ function editBatchFile(filename, text) {
 
 /**
  * Shows text edit area, save button, and save/close button.
- * @param {Name of file} filename
- * @param {Text of document} text
+ * @param filename: Name of file
+ * @param text: Text of document
  */
 function editFile(filename, text) {
     // Sets up the text area to be representative of file with environmental variables set.
@@ -146,7 +146,7 @@ function changeBatch() {
 
 /**
  * Sends batch file info to server for simulation. Async because it uses await
- * @param {Configuration File} config
+ * @param config: Configuration File
  */
 async function sendBatch(config) {
     // Splits the content of the batch configuration file by new lines.
@@ -173,7 +173,7 @@ async function sendBatch(config) {
     res = await res.json();
     if(!res.success) {
         filesystem.createFile(".err", simTime.getTime());
-        filesystem.save(".err", "Number of nodes exceeds what is available in system");
+        filesystem.saveFile(".err", "Number of nodes exceeds what is available in system");
     } else {
         // Writes to terminal the job name. Since the server returns "standard_job_x" we need to remove the standard
         // section hence the split and slice.
@@ -183,7 +183,7 @@ async function sendBatch(config) {
 
 /**
  * Used to cancel the simulated job running or waiting through a POST request
- * @param {Name of the job to be canceled} jobName
+ * @param jobName: Name of the job to be canceled
  */
 function cancelJob(jobName) {
     // Sets up the body
@@ -301,7 +301,7 @@ async function processCommand() {
         if(currentLine.length > 1) {
             term.write("Too many arguments\r\n");
         } else {
-            pwd = filesystem.pwd(currentLine[1]);
+            pwd = filesystem.getWorkingDir(currentLine[1]);
             term.write(pwd + "\r\n");
         }
         return;
@@ -349,7 +349,7 @@ async function processCommand() {
             term.write("Missing argument\r\n");
             return;
         }
-        let f = filesystem.cp(currentLine[1], currentLine[2]);
+        let f = filesystem.copyFile(currentLine[1], currentLine[2]);
         if (f !== "") {
             term.write(f + "\r\n");
         }
@@ -371,7 +371,7 @@ async function processCommand() {
                 return;
             }
             // Removes file if error occurs like removing directory then writes error.
-            let f = filesystem.rm(currentLine[1]);
+            let f = filesystem.removeFile(currentLine[1]);
             if(f !== "") {
                 term.write(f + "\r\n");
             }
@@ -381,7 +381,7 @@ async function processCommand() {
         if(currentLine[1] === "-r") {
             // Removes all the files using filesystem
             for(let i = 2; i < currentLine.length; i++) {
-                let f = filesystem.rm(currentLine[i], true);
+                let f = filesystem.removeFile(currentLine[i], true);
                 if(f !== "") {
                     term.write(f + "\r\n");
                 }
@@ -390,7 +390,7 @@ async function processCommand() {
         }
         // Handle multiple arguments non-recursive
         for(let i = 2; i < currentLine.length; i++) {
-            let f = filesystem.rm(currentLine[i]);
+            let f = filesystem.removeFile(currentLine[i]);
             if(f !== "") {
                 term.write(f + "\r\n");
             }
@@ -423,7 +423,7 @@ async function processCommand() {
     if(command === "cd") {
         // Since the command requires an argument checks for that otherwise prints error.
         if(currentLine.length > 1) {
-            if(!filesystem.cd(currentLine[1])) {
+            if(!filesystem.changeWorkingDir(currentLine[1])) {
                 term.write("Cannot navigate to directory\r\n");
             }
         } else {
@@ -479,7 +479,7 @@ async function processCommand() {
         if(currentLine.length > 1) {
             cancelJob(currentLine[1]);
         } else {
-            term.write("Missing argument\r\n");
+            term.write("squeue: missing argument\r\n");
         }
         return;
     }
@@ -489,7 +489,7 @@ async function processCommand() {
         if(currentLine.length > 1) {
             let f = filesystem.getDate(currentLine[1]);
             if(f === "") {
-                term.write("Does not exist\r\n");
+                term.write("date: file does not exist\r\n");
             } else {
                 // Prints date without printing the year (because of implementation would be 1970)
                 let d = new Date(f);
@@ -497,11 +497,11 @@ async function processCommand() {
                 term.write(padZero(d.getUTCMonth() + 1) + "/" + padZero(d.getUTCDate()) + " " + time +"\r\n");
             }
         } else {
-            term.write("Missing argument\r\n");
+            term.write("date: missing argument\r\n");
         }
         return;
     }
-    term.write(`Command '${command}' not found.\r\n`);
+    term.write(`command '${command}' not found.\r\n`);
 }
 
 /**
@@ -570,7 +570,7 @@ function processInput(seq) {
             // Since arrow keys are handled differently and there are other control characters not implemented
             if(notControl.test(seq)) {
                 term.write(seq);
-            } else if(seq.length == 3 && seq.charAt(0) == '\x1b') {
+            } else if(seq.length === 3 && seq.charAt(0) === '\x1b') {
                 handleArrowKeys(seq);
             }
     }
@@ -595,9 +595,9 @@ function initializeTerminal() {
     batchSlurm += "\n#SBATCH --tasks-per-node=1\n#SBATCH --cpus-per-task=10\n#SBATCH --time ";
     batchSlurm += "00:01:00";
     batchSlurm += "\n#SBATCH --output=job-%A.err\n#SBATCH --output=job-%A.out\nsrun ./parallel_program";
-    filesystem.save("batch.slurm", batchSlurm);
-    filesystem.save("parallel_program", "This is binary.");
-    filesystem.save("README", "To be added...");
+    filesystem.saveFile("batch.slurm", batchSlurm);
+    filesystem.saveFile("parallel_program", "This is binary.");
+    filesystem.saveFile("README", "To be added...");
 
     // Finalize setup
     fitAddon.fit();
@@ -631,10 +631,10 @@ async function handleEvents(events) {
         let jobName = e_parse[3].slice(0, -1);
 
         // Checks if job has been completed and creates a binary file representative of output file.
-        if(status == "StandardJobCompletedEvent") {
+        if(status === "StandardJobCompletedEvent") {
             let fileName = jobName.split("_").slice(1).join("_") + ".out";
             filesystem.createFile(fileName, time * 1000);
-            filesystem.save(fileName, "Job successfully completed");
+            filesystem.saveFile(fileName, "Job successfully completed");
         }
     }
 }
@@ -651,7 +651,7 @@ function updateClock() {
     }
     if(hour > 12) {
         hour -= 12;
-    } else if(hour == 0) {
+    } else if(hour === 0) {
         hour = 12;
     }
     clock.innerText = `${hour}${simTime.toISOString().substr(13,6)} ${AMPM}`;
