@@ -15,6 +15,10 @@ let termBuffer;
 // Creates faked filesystem
 const filesystem = new Filesystem();
 
+// Create command history
+let history = []
+let historyCursor = -1;
+
 // Holds current simulation time
 let simTime = new Date(0);
 
@@ -49,16 +53,44 @@ let jobNum = 1;
 //let serverAddress = "192.168.0.20/api";
 let serverAddress = "localhost/api";
 
+/**********************************************************************/
+/* HELPER FUNCTIONS                                                   */
+/**********************************************************************/
+
 // Function used to pad zeroes to the left of the value.
 function padZero(val) {
     // Checks if it is a string and if a number, if the number is less than 10.
     // This means this function cannot pad values with three digits unless it is a string.
     // If file is converted from javascript to typescript, it will be simple to solve.
-    if(val.length == 1 || (typeof(val) == 'number' && val < 10)) {
+    if(val.length === 1 || (typeof(val) == 'number' && val < 10)) {
         val = "0" + val;
     }
     return val;
 }
+
+// Function to get the current terminal command line
+function getCurrentCommandLine() {
+    // Retrieves the current line number of the terminal. Currently might have a bug in the library since it is
+    // experimental for the version being used.
+    let lineNum = termBuffer.cursorY + termBuffer.viewportY;
+    // Return the trimmed line
+    return termBuffer.getLine(lineNum).translateToString(true).split(/^.*?\$ /)[1];
+}
+
+// Function to erase the current command line
+function eraseCurrentCommandLine() {
+    let total_num_characters = getCurrentCommandLine().length;
+    let to_move_to_the_right = total_num_characters - termBuffer.cursorX + 3;
+    let to_erase = total_num_characters;
+    // console.log("In ERASE: total_num: " + total_num_characters + "  mote_right: " + to_move_to_the_right + "  to_erase: " + to_erase);
+    for (let i=0; i < to_move_to_the_right; i++) {
+        term.write(" ");
+    }
+    for (let i=0; i < to_erase; i++) {
+        term.write('\b \b');
+    }
+}
+
 
 /**
  * Saves the file to fake filesystem and returns control to terminal
@@ -260,15 +292,14 @@ function getQueue() {
  * Runs specified commands and faked programs.
  */
 async function processCommand() {
-    // Retrieves the current line number of the terminal. Currently might have a bug in the library since it is
-    // experimental for the version being used.
-    let lineNum = termBuffer.cursorY + termBuffer.viewportY;
-    // Splits up the current line into parts based on the space while removing the unneeded parts of it.
-    // let currentLine = termBuffer.getLine(lineNum).translateToString(true).trim().split(/^~.*?\$ /)[1].split(" ");
-    let currentLine = termBuffer.getLine(lineNum).translateToString(true).trim().split(/^.*?\$ /)[1].split(" ");
+    // Splits up the current line into parts based on the space while removing the unneeded parts of it
+    let currentLine = getCurrentCommandLine().trim().split(" ");
     // Since the first command line argument is the command set it as a separate variable.
     let command = currentLine[0];
 
+    if (command === "") {
+        return;
+    }
     // Check for which command to execute
 
     // Clears the terminal. Currently might have a bug where the line where clear is called isn't cleared
@@ -321,7 +352,7 @@ async function processCommand() {
                 }
             }
         } else {
-            term.write("Missing argument\r\n");
+            term.write("mkdir: missing argument\r\n");
         }
         return;
     }
@@ -339,14 +370,14 @@ async function processCommand() {
                 }
             }
         } else {
-            term.write("Missing argument\r\n");
+            term.write("touch: missing argument\r\n");
         }
         return;
     }
 
     if(command === "cp") {
         if (currentLine.length !== 3) {
-            term.write("Missing argument\r\n");
+            term.write("cp: missing argument\r\n");
             return;
         }
         let f = filesystem.copyFile(currentLine[1], currentLine[2]);
@@ -519,23 +550,39 @@ async function processCommand() {
  * Process what happens when arrow key commands are executed.
  */
 function handleArrowKeys(seq) {
-    let currentLine = termBuffer.getLine(termBuffer.cursorY).translateToString(true);
-    // Up and down in the future can theoretically get previous commands but not implemented for simplicity.
+    let currentLine = getCurrentCommandLine();
+
+    // UP ARROW
     if (seq === '\u001B\u005B\u0041') {
-        // COMMENTED OUT DEBUGGING CODE TO BE REMOVED
-        console.log('up');
-    }
-    if (seq === '\u001B\u005B\u0042') {
-        // COMMENTED OUT DEBUGGING CODE TO BE REMOVED
-        // console.log('down'); 
+        if (history.length === 0 || historyCursor === 0) {
+            return;
+        }
+        if (historyCursor === -1) {
+            historyCursor = history.length -1;
+        } else {
+            historyCursor -= 1;
+        }
+        eraseCurrentCommandLine();
+        term.write(history[historyCursor]);
     }
 
-    // Moves the cursor left or right.
+    // DOWN ARROW
+    if (seq === '\u001B\u005B\u0042') {
+        if ((historyCursor === -1) || (historyCursor === history.length -1)) {
+            return;
+        }
+        historyCursor += 1;
+        eraseCurrentCommandLine();
+        term.write(history[historyCursor]);
+    }
+
+    // RIGHT ARROW
     if (seq === '\u001B\u005B\u0043') {
         if(termBuffer.cursorX < currentLine.length) {
             term.write(seq);
         }
     }
+    // LEFT ARROW
     if (seq === '\u001B\u005B\u0044') {
         if(termBuffer.cursorX > 3) {
             term.write(seq);
@@ -548,7 +595,7 @@ const notControl = /^[\S\s]$/;
 
 /**
  * Processes and executes the character commands when inputted.
- * @param {Input typed into the terminal, generally a single character} seq
+ * @param seq: Input typed into the terminal, generally a single character
  */
 function processInput(seq) {
     // COMMENTED OUT DEBUGGING CODE TO BE REMOVED
@@ -573,7 +620,9 @@ function processInput(seq) {
         // Case to trigger command processing
         case '\r':
             term.write('\r\n')
+            history.push(getCurrentCommandLine().trim());
             processCommand();
+            historyCursor = -1;
             term.write(`${filesystem.getWorkingDir()}$ `);
             break;
         // Otherwise write to console.
@@ -629,8 +678,8 @@ async function queryServer() {
 
 /**
  * Handles all events generated by server and creates corresponding files for success.
- * @param {Array of events containing complete and failures from server} events
- * @param {Current server time to represent what time output file will be created} time
+ * @param events: Array of events containing complete and failures from server
+ * @param time: Current server time to represent what time output file will be created
  */
 async function handleEvents(events) {
     // Loop through array of events
