@@ -18,6 +18,7 @@ const filesystem = new Filesystem();
 // Create command history
 let history = []
 let historyCursor = -1;
+const historyDepth = 16;
 
 // Holds current simulation time
 let simTime = new Date(0);
@@ -64,6 +65,15 @@ function padZero(val) {
     // If file is converted from javascript to typescript, it will be simple to solve.
     if(val.length === 1 || (typeof(val) == 'number' && val < 10)) {
         val = "0" + val;
+    }
+    return val;
+}
+
+// Function used to pad left with white spaces
+function padIntegerWithSpace(val, max_val) {
+    if (typeof(val) == 'number') {
+        let num_spaces_to_add = Math.ceil(max_val/10) - Math.ceil(val/10);
+        return " ".repeat(num_spaces_to_add) + val;
     }
     return val;
 }
@@ -308,6 +318,15 @@ async function processCommand() {
         term.clear();
         return;
     }
+
+    // Print command-history
+    if(command === "history") {
+        for (let i = Math.max(0, history.length - historyDepth); i < history.length; i++) {
+            term.write(" " + padIntegerWithSpace(i+1) + "  " + history[i] + "\r\n");
+        }
+        return;
+    }
+
     // List files in the filesystem in specified directory.
     if(command === "ls") {
         let ls;
