@@ -308,10 +308,16 @@ async function processCommand(commandLine) {
 
     // Command recall from history
     if(commandLine.startsWith("!")) {
-        let number = parseInt(commandLine.split("!")[1]);
-        if (isNaN(number) || (number < 1) || (number > history.length)) {
-            term.write("event not found\r\n");
-            return;
+        let number;
+        if (commandLine.charAt(1) === "!") {
+            number = history.length;
+        } else {
+            let next_token = commandLine.split("!")[1];
+            number = parseInt(next_token);
+            if (isNaN(number) || (number < 1) || (number > history.length)) {
+                term.write("event not found\r\n");
+                return;
+            }
         }
         let tokens = commandLine.split(" ");
         tokens[0] = history[number-1];
@@ -415,8 +421,12 @@ async function processCommand(commandLine) {
     }
 
     if(command === "cp") {
-        if (commandLineTokens.length !== 3) {
+        if (commandLineTokens.length < 3) {
             term.write("cp: missing argument\r\n");
+            return;
+        }
+        if (commandLineTokens.length > 3) {
+            term.write("cp: to many arguments\r\n");
             return;
         }
         let f = filesystem.copyFile(commandLineTokens[1], commandLineTokens[2]);

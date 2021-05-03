@@ -424,10 +424,12 @@ function getDirPath(path) {
     return this.getAbsolutePath(path);
 }
 
-/*
- *  /zZX/zx??X/X/x/AAAAABBB
- *  /zZX/zx??X/X/x/AAAAACCC
- */
+/**
+ *  Function to process a tab completion request
+ *  @param partial_path: the path that should be tab-completed
+ *  @return a list of either one tab-completed path, or multiple options that user can
+ *          from to continue with tab-completion.
+ **/
 function tabCompletion(partial_path) {
 
     console.log("PARTIAL PATH " + partial_path);
