@@ -501,8 +501,8 @@ function tabCompletion(partial_path) {
             return [to_return];
         }
         if (this.getAbsolutePath(to_return) in this.contents &&
-        this.contents[this.getAbsolutePath(to_return)].type === "dir" &&
-        !(to_return).endsWith("/")) {
+            this.contents[this.getAbsolutePath(to_return)].type === "dir" &&
+            !(to_return).endsWith("/")) {
             return [to_return + "/"];
         }
     }
