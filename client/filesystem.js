@@ -78,38 +78,39 @@ function isSameDirectory(dir1, dir2) {
 /**
  * Lists items in the working directory like ls.
  * @param loc: Directory or file name
- * @returns List of files/directories if directory. File name if file name.
+ * @returns a list of two items, the first one is an error message ("" if all ok), and the second one
+ * is a list of file names.
  */
 function listFiles(loc = null) {
 
-    let output = "";
     if (loc == null) {
         loc = this.currentDir
     }
     loc = this.getAbsolutePath(loc);
 
     if(!(loc in this.contents)) {
-        return "No such file or directory";
+        return ["No such file or directory", []];
     }
 
     // It's a file: just print the filename
     if(this.contents[loc].type !== "dir") {
-        return loc;
+        return ["", [loc]];
     }
 
     // It's a directory: loops through all items in the file system
     // (whatever, it's not like we'll have thousands of items)
+    let toReturn = ["", []];
     for(const key in this.contents) {
         if (this.isInDirectory(key, loc) && !this.isSameDirectory(key, loc)) {
             if (this.contents[key].type !== "dir") {
-                output += this.getFileName(key) + " \t";
+                toReturn[1].push(this.getFileName(key));
             } else {
-                output += this.getFileName(key) + "/ \t";
+                toReturn[1].push(this.getFileName(key) + "/");
             }
         }
     }
-
-    return output;
+    console.log(toReturn);
+    return toReturn;
 }
 
 /**
@@ -149,8 +150,8 @@ function mkdir(name, time) {
     }
 
     // Check that all parent directories exist
-    let parent_path = this.getDirPath(name);
-    if (!(parent_path in this.contents)) {
+    let parentPath = this.getDirPath(name);
+    if (!(parentPath in this.contents)) {
         return "cp: operation not permitted";
     }
 
@@ -259,11 +260,11 @@ function copyFile(srcpath, dstpath, time) {
 
         // src: file, dst: dir
         if (this.contents[srcpath].type === "file" && this.contents[dstpath].type === "dir") {
-            let new_path = this.getAbsolutePath(dstpath + this.getFileName(this.contents[srcpath]))
-            if (this.contents[new_path] != null && !this.contents[new_path].deletable) {
+            let newPath = this.getAbsolutePath(dstpath + this.getFileName(this.contents[srcpath]))
+            if (this.contents[newPath] != null && !this.contents[newPath].deletable) {
                 return "cp: operation not permitted";
             }
-            this.contents[new_path] = {
+            this.contents[newPath] = {
                 type: this.contents[srcpath].type,
                 created: time,
                 deletable: true,
@@ -361,18 +362,18 @@ function date(name) {
 
 /**
  * String manipulation to make paths minimal
- * @param unclean_path: Unclean path
+ * @param uncleanPath: Unclean path
  * @returns Clean Path
  */
-function normalizePath(unclean_path) {
-    let clean_path = unclean_path;
+function normalizePath(uncleanPath) {
+    let cleanPath = uncleanPath;
 
-    if (clean_path.charAt(0) !== '/') {
-        clean_path = this.currentDir + "/" + clean_path;
+    if (cleanPath.charAt(0) !== '/') {
+        cleanPath = this.currentDir + "/" + cleanPath;
     }
 
-    clean_path = clean_path.replace(/\\\\/g, '/');
-    const parts = clean_path.split('/');
+    cleanPath = cleanPath.replace(/\\\\/g, '/');
+    const parts = cleanPath.split('/');
     const slashed = parts[0] === '';
     for (let i = 1; i < parts.length; i++) {
         if (parts[i] === '.' || parts[i] === '') {
@@ -386,12 +387,12 @@ function normalizePath(unclean_path) {
             i--;
         }
     }
-    clean_path = parts.join('/');
-    if (slashed && clean_path[0] !== '/')
-        clean_path = '/' + clean_path;
-    else if (clean_path.length === 0)
-        clean_path = '.';
-    return clean_path;
+    cleanPath = parts.join('/');
+    if (slashed && cleanPath[0] !== '/')
+        cleanPath = '/' + cleanPath;
+    else if (cleanPath.length === 0)
+        cleanPath = '.';
+    return cleanPath;
 }
 
 function getWorkingDir() {
@@ -426,35 +427,34 @@ function getDirPath(path) {
 
 /**
  *  Function to process a tab completion request
- *  @param partial_path: the path that should be tab-completed
+ *  @param partialPath: the path that should be tab-completed
  *  @return a list of either one tab-completed path, or multiple options that user can
  *          from to continue with tab-completion.
  **/
-function tabCompletion(partial_path) {
+function tabCompletion(partialPath) {
 
     // This function is kind of a mess, but it works (we think). Tab completion is
     // not as easy as it seems.
 
-    // console.log("PARTIAL PATH " + partial_path);
+    // console.log("PARTIAL PATH " + partialPath);
     // If partial path has a slash at the end, return directory content
-    if (partial_path.endsWith("/")) {
-        let file_names = this.getFileNamesInDir(partial_path);
-        // console.log("file_names = " + file_names);
-        if (file_names.length === 1) {
-            return [partial_path + file_names[0]];
+    if (partialPath.endsWith("/")) {
+        let fileNames = this.getFileNamesInDir(partialPath);
+        if (fileNames.length === 1) {
+            return [partialPath + fileNames[0]];
         } else {
-            return file_names;
+            return fileNames;
         }
     }
 
-    let absolute_path = this.getAbsolutePath(partial_path);
-    // console.log(absolute_path);
+    let absolutePath = this.getAbsolutePath(partialPath);
+    // console.log(absolutePath);
     // Get all the matches
-    // console.log("ABSOLUTE PATH " + absolute_path);
+    // console.log("ABSOLUTE PATH " + absolutePath);
     let matches = []
     for (let key in this.contents) {
-        if (!key.startsWith(absolute_path)) continue;
-        key = key.replace(absolute_path,"");
+        if (!key.startsWith(absolutePath)) continue;
+        key = key.replace(absolutePath,"");
         let index = key.indexOf("/");
         if (index > -1) {
             key = key.substr(0, index);
@@ -469,66 +469,66 @@ function tabCompletion(partial_path) {
     matches = [...new Set(matches)];
 
     if (matches.length === 0) {
-        return [partial_path + ""];
+        return [partialPath + ""];
     }
 
     // Cleanup the matches to avoid matches that have other matches + "/" as prefixes
-    let cleaned_up = []
+    let cleanedUp = []
     for (const m of matches) {
-        let to_add = true;
+        let toAdd = true;
         for (const other_m of matches) {
             if (m === other_m) continue;
             if (m.startsWith(other_m + "/")) {
-                to_add = false;
+                toAdd = false;
                 break;
             }
         }
-        if (to_add) {
-            cleaned_up.push(m);
+        if (toAdd) {
+            cleanedUp.push(m);
         }
     }
 
-    matches = cleaned_up;
+    matches = cleanedUp;
 
     if (matches.length === 0) {
-        return [partial_path];
+        return [partialPath];
     }
 
     if (matches.length === 1) {
-        let to_return = partial_path + matches[0];
-        if (this.getAbsolutePath(to_return) in this.contents &&
-            this.contents[this.getAbsolutePath(to_return)].type !== "dir") {
-            return [to_return];
+        let toReturn = partialPath + matches[0];
+        if (this.getAbsolutePath(toReturn) in this.contents &&
+            this.contents[this.getAbsolutePath(toReturn)].type !== "dir") {
+            return [toReturn];
         }
-        if (this.getAbsolutePath(to_return) in this.contents &&
-            this.contents[this.getAbsolutePath(to_return)].type === "dir" &&
-            !(to_return).endsWith("/")) {
-            return [to_return + "/"];
+        if (this.getAbsolutePath(toReturn) in this.contents &&
+            this.contents[this.getAbsolutePath(toReturn)].type === "dir" &&
+            !(toReturn).endsWith("/")) {
+            return [toReturn + "/"];
         }
     }
 
     // Computes the longest common prefix until a "/"
-    let longest_common_prefix = matches[0];
+    let longestCommonPrefix = matches[0];
     for (const key of matches) {
-        longest_common_prefix = longestCommonPrefix(longest_common_prefix, key);
+        longestCommonPrefix = computeLongestCommonPrefix(longestCommonPrefix, key);
     }
 
-    if (longest_common_prefix.length === 0) {
-        let to_return = [];
+    if (longestCommonPrefix.length === 0) {
+        let toReturn = [];
         for (const m of matches) {
-            to_return.push(this.getFileName(partial_path + m));
+            toReturn.push(this.getFileName(partialPath + m));
         }
-        return to_return;
+        return toReturn;
     }
 
-    let to_return = [partial_path + longest_common_prefix];
+    let toReturn = [partialPath + longestCommonPrefix];
     if (matches.length === 1 &&
-        this.getAbsolutePath(to_return[0]) in this.contents &&
-        this.contents[this.getAbsolutePath(to_return[0])].type === "dir" &&
-        !to_return[0].endsWith("/")) {
-        to_return[0] += "/";
+        this.getAbsolutePath(toReturn[0]) in this.contents &&
+        this.contents[this.getAbsolutePath(toReturn[0])].type === "dir" &&
+        !toReturn[0].endsWith("/")) {
+        toReturn[0] += "/";
     }
-    return to_return;
+    return toReturn;
 }
 
 /**
@@ -537,7 +537,7 @@ function tabCompletion(partial_path) {
  * @param str2: second string
  * @returns a string
  */
-function longestCommonPrefix(str1, str2) {
+function computeLongestCommonPrefix(str1, str2) {
 
     let length = Math.min(str1.length, str2.length);
     let i;
@@ -555,14 +555,14 @@ function longestCommonPrefix(str1, str2) {
  * @returns a list of filenames
  */
 function getFileNamesInDir(dirpath) {
-    let absolute_path = this.getAbsolutePath(dirpath) + "/";
-    let to_return = [];
+    let absolutePath = this.getAbsolutePath(dirpath) + "/";
+    let toReturn = [];
     for (const key in this.contents) {
-        if (!key.startsWith(absolute_path)) continue;
-        let rest = key.replace(absolute_path,"");
+        if (!key.startsWith(absolutePath)) continue;
+        let rest = key.replace(absolutePath,"");
         if (rest.indexOf("/") === -1) {
-            to_return.push(rest);
+            toReturn.push(rest);
         }
     }
-    return to_return;
+    return toReturn;
 }

@@ -376,9 +376,27 @@ async function processCommand(commandLine) {
             term.write("ls: too many arguments\r\n");
             return;
         }
-        // If it contains filenames, print them to console.
-        if(ls !== "") {
-            term.write(ls + "\r\n");
+        if (ls[0] !== "") {
+            term.write(ls[0]+"\r\n");
+            return;
+        }
+        // If no error, print file names to console.
+        const maxColumn = 80;
+        if (ls[0] === "") {
+            let columnsUsed = 0;
+            for (const name of ls[1]) {
+                if (name.length < maxColumn && columnsUsed + name.length > maxColumn) {
+                    term.write("\r\n");
+                    term.write(name + "    ");
+                    columnsUsed = 0;
+                } else {
+                    term.write(name + "    ");
+                }
+                columnsUsed += name.length + 4;
+            }
+            if (columnsUsed > 0) {
+                term.write("\r\n");
+            }
         }
         return;
     }
@@ -580,14 +598,14 @@ async function processCommand(commandLine) {
 
     // Implements equivalent of date -r in linux systems to print date of creation
     if(command === "date") {
-        const print_date = function(t) {
+        const printDate = function(t) {
             let d = new Date(t);
             let time = padZero(d.getUTCHours()) + ":" + padZero(d.getUTCMinutes()) + ":" + padZero(d.getUTCSeconds()) + " UTC";
             term.write(padZero(d.getUTCMonth() + 1) + "/" + padZero(d.getUTCDate()) + " " + time + "\r\n");
         };
 
         if (commandLineTokens.length === 1) {
-            print_date(simTime.getTime());
+            printDate(simTime.getTime());
         } else if (commandLineTokens.length === 3) {
             // Since the command requires an argument checks for that otherwise prints error.
             if (commandLineTokens[1] !== "-r") {
@@ -598,7 +616,7 @@ async function processCommand(commandLine) {
                     term.write("date: file does not exist\r\n");
                 } else {
                     // Prints date without printing the year
-                    print_date(f);
+                    printDate(f);
                 }
             }
         } else {
@@ -615,10 +633,10 @@ async function processCommand(commandLine) {
 function handleTab() {
     let currentLine = getCurrentCommandLine();
     let tokens = currentLine.trim().split(" ");
-    let last_word = tokens[tokens.length - 1];
-    let completion = filesystem.tabCompletion(last_word);
+    let lastWord = tokens[tokens.length - 1];
+    let completion = filesystem.tabCompletion(lastWord);
     if (completion.length === 1) {
-        term.write("\b \b".repeat(last_word.length));
+        term.write("\b \b".repeat(lastWord.length));
         term.write(completion[0]);
     } else {
         term.write("\r\n");
@@ -708,9 +726,9 @@ async function processInput(seq) {
         case '\r':
             let commandLine = getCurrentCommandLine().trim();
             term.write('\r\n')
-            let executed_command_line;
+            let executedCommandLine;
             let p = processCommand(commandLine);
-            executed_command_line = await p;
+            executedCommandLine = await p;
 
             historyCursor = -1;
             term.write(`${filesystem.getWorkingDir()}$ `);
@@ -795,10 +813,10 @@ async function handleEvents(events) {
     // Loop through array of events
     for(const e of events) {
         // Parse through events
-        let e_parse = e.split(" ");
-        let time = Math.round(parseFloat(e_parse[0]));
-        let status = e_parse[1];
-        let jobName = e_parse[3].slice(0, -1);
+        let eParse = e.split(" ");
+        let time = Math.round(parseFloat(eParse[0]));
+        let status = eParse[1];
+        let jobName = eParse[3].slice(0, -1);
 
         // Checks if job has been completed and creates a binary file representative of output file.
         if(status === "StandardJobCompletedEvent") {
