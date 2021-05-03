@@ -534,12 +534,14 @@ async function processCommand(commandLine) {
     // Calls directory change
     if(command === "cd") {
         // Since the command requires an argument checks for that otherwise prints error.
-        if(commandLineTokens.length > 1) {
+        if(commandLineTokens.length === 2) {
             if(!filesystem.changeWorkingDir(commandLineTokens[1])) {
                 term.write("cd: cannot navigate to directory\r\n");
             }
+        } else if (commandLineTokens.length === 1) {
+            filesystem.changeWorkingDir("/");
         } else {
-            term.write("cd: missing argument\r\n");
+            term.write("cd: too many argument\r\n");
         }
         return;
     }
