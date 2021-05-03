@@ -432,11 +432,14 @@ function getDirPath(path) {
  **/
 function tabCompletion(partial_path) {
 
-    console.log("PARTIAL PATH " + partial_path);
+    // This function is kind of a mess, but it works (we think). Tab completion is
+    // not as easy as it seems.
+
+    // console.log("PARTIAL PATH " + partial_path);
     // If partial path has a slash at the end, return directory content
     if (partial_path.endsWith("/")) {
-        let file_names =  this.getFileNamesInDir(partial_path);
-        console.log("file_names = " + file_names);
+        let file_names = this.getFileNamesInDir(partial_path);
+        // console.log("file_names = " + file_names);
         if (file_names.length === 1) {
             return [partial_path + file_names[0]];
         } else {
@@ -444,11 +447,10 @@ function tabCompletion(partial_path) {
         }
     }
 
-
     let absolute_path = this.getAbsolutePath(partial_path);
     // console.log(absolute_path);
     // Get all the matches
-    console.log("ABSOLUTE PATH " + absolute_path);
+    // console.log("ABSOLUTE PATH " + absolute_path);
     let matches = []
     for (let key in this.contents) {
         if (!key.startsWith(absolute_path)) continue;
@@ -463,21 +465,11 @@ function tabCompletion(partial_path) {
     // Remove duplicates
     matches = [...new Set(matches)];
 
-    console.log("FOUND " + matches.length + " MATCHES: ");
-    for (const m of matches) {
-        console.log("    MATCH: '" + m + "'");
-    }
-
     // Remove duplicates
     matches = [...new Set(matches)];
 
     if (matches.length === 0) {
         return [partial_path + ""];
-    }
-
-    console.log("---> " + matches.length);
-    for (const m of matches) {
-        console.log("   ---> " + m);
     }
 
     // Cleanup the matches to avoid matches that have other matches + "/" as prefixes
@@ -515,7 +507,6 @@ function tabCompletion(partial_path) {
         }
     }
 
-
     // Computes the longest common prefix until a "/"
     let longuest_common_prefix = matches[0];
     for (const key of matches) {
@@ -540,6 +531,12 @@ function tabCompletion(partial_path) {
     return to_return;
 }
 
+/**
+ * @brief Function that returns the longest common prefix between two strings
+ * @param str1: first string
+ * @param str2: second string
+ * @returns a string
+ */
 function longuestCommonPrefix(str1, str2) {
 
     let length = Math.min(str1.length, str2.length);
@@ -552,16 +549,18 @@ function longuestCommonPrefix(str1, str2) {
     return  str1.substring(0, i);
 }
 
+/**
+ * @brief Function that returns the names of files in a given directory
+ * @param dirpath: path to the directory
+ * @returns a list of filenames
+ */
 function getFileNamesInDir(dirpath) {
     let absolute_path = this.getAbsolutePath(dirpath) + "/";
     let to_return = [];
     for (const key in this.contents) {
         if (!key.startsWith(absolute_path)) continue;
-        console.log("KEY = " + key);
         let rest = key.replace(absolute_path,"");
-        console.log("REST = " + rest);
         if (rest.indexOf("/") === -1) {
-            console.log("RETURNING = " + rest);
             to_return.push(rest);
         }
     }
