@@ -197,10 +197,10 @@ function cancelJob(jobName) {
         .then(res => {
             // Prints the cancellation success
             let status = "Successfully cancelled " + jobName;
-            if(!res.status) {
+            if(!res.success) {
                 status = "Job cannot be cancelled. Does not exist or no permission."
             }
-            term.write(status + "\r\n" + `${filesystem.getPath()}$ `);
+            term.write("\r" + status + "\r\n" + `${filesystem.getPath()}$ `);
         });
 }
 
