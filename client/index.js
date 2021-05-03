@@ -54,6 +54,13 @@ let jobNum = 1;
 //let serverAddress = "192.168.0.20/api";
 let serverAddress = "localhost/api";
 
+// Unsupported commands with error messages
+let unsupportedCommands = {};
+unsupportedCommands["vi"] = "(use the 'edit' command)";
+unsupportedCommands["nano"] = "(use the 'edit' command)";
+unsupportedCommands["jedit"] = "(use the 'edit' command)";
+unsupportedCommands["emacs"] = "(use the 'edit' command)";
+
 /**********************************************************************/
 /* HELPER FUNCTIONS                                                   */
 /**********************************************************************/
@@ -70,12 +77,12 @@ function padZero(val) {
 }
 
 // Function used to pad left with white spaces
-function padIntegerWithSpace(val, max_val) {
+function padIntegerWithSpace(val, maxVal) {
     if (typeof(val) == 'number') {
-        let num_digits_val = Math.floor(Math.log10(val));
-        let num_digits_max_val = Math.floor(Math.log10(max_val));
-        if (num_digits_max_val >  num_digits_val) {
-            val =  " ".repeat(num_digits_max_val - num_digits_val) + val;
+        let numDigitsVal = Math.floor(Math.log10(val));
+        let numDigitsMaxVal = Math.floor(Math.log10(maxVal));
+        if (numDigitsMaxVal >  numDigitsVal) {
+            val =  " ".repeat(numDigitsMaxVal - numDigitsVal) + val;
         }
     }
     return val;
@@ -92,14 +99,13 @@ function getCurrentCommandLine() {
 
 // Function to erase the current command line
 function eraseCurrentCommandLine() {
-    let total_num_characters = getCurrentCommandLine().length;
-    let to_move_to_the_right = total_num_characters - termBuffer.cursorX + 3;
-    let to_erase = total_num_characters;
-    // console.log("In ERASE: total_num: " + total_num_characters + "  mote_right: " + to_move_to_the_right + "  to_erase: " + to_erase);
-    for (let i=0; i < to_move_to_the_right; i++) {
+    let totalNumCharacters = getCurrentCommandLine().length;
+    let toMoveToTheRight = totalNumCharacters - termBuffer.cursorX + 3;
+    let toErase = totalNumCharacters;
+    for (let i=0; i < toMoveToTheRight; i++) {
         term.write(" ");
     }
-    for (let i=0; i < to_erase; i++) {
+    for (let i=0; i < toErase; i++) {
         term.write('\b \b');
     }
 }
@@ -335,7 +341,11 @@ async function processCommand(commandLine) {
     // Since the first command line argument is the command set it as a separate variable.
     let command = commandLineTokens[0];
 
-    // Check for which command to execute
+    // Check for unsupported commands
+    if (command in unsupportedCommands) {
+        term.write("command '" + command + "' is not supported " + unsupportedCommands[command] + "\r\n");
+        return;
+    }
 
     // Clears the terminal. Currently might have a bug where the line where clear is called isn't cleared
     // but ignorable.
