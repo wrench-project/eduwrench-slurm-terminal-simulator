@@ -490,7 +490,8 @@ async function processCommand(commandLine) {
                 if (f === -1) {
                     term.write("cat: operation not permitted\r\n");
                 } else if(f != null) {
-                    // Replaces the new line with carriage return and new line or else won't print to terminal correctly.
+                    // Replaces the new line with carriage return and new line
+                    // or else won't print to terminal correctly.
                     f = f.replace(/\n/g, '\r\n');
                     term.write(f + "\r\n");
                 } else {
@@ -735,8 +736,28 @@ function initializeTerminal() {
     batchSlurm += "00:01:00";
     batchSlurm += "\n#SBATCH --output=job-%A.err\n#SBATCH --output=job-%A.out\nsrun ./parallel_program";
     filesystem.saveFile("batch.slurm", batchSlurm);
+
     filesystem.saveFile("parallel_program", "This is binary.");
-    filesystem.saveFile("README", "To be added...");
+
+
+    let READMEText = "This terminal supports simple versions of the following commands:\n";
+    READMEText += "  - clear (clear the terminal)\n";
+    READMEText += "  - pwd (show working directory)\n";
+    READMEText += "  - cd <path> (change working directory)\n";
+    READMEText += "  - ls [path] (list files)\n";
+    READMEText += "  - cat <path to file> (show file content)\n";
+    READMEText += "  - cp <path> <path> (copy files)\n";
+    READMEText += "  - rm [-r] <path> (remove files)\n";
+    READMEText += "  - date [-r <path>] (show current date or a file's last modification date)\n";
+    READMEText += "  - history (show command history, support !! and !x to recall commands)\n";
+    READMEText += " It also supports simple versions of the following Slurm commands\n";
+    READMEText += "  - sbatch <path to .slurm file> (submit a batch job)\n";
+    READMEText += "  - squeue (show batch queue)\n";
+    READMEText += "  - scancel <job name> (cancel batch job)\n";
+    READMEText += "Finally, it supports a non-standard command to edit files:\n";
+    READMEText += "  - edit <path to file>\n";
+
+    filesystem.saveFile("README", READMEText);
 
     // Finalize setup
     fitAddon.fit();
