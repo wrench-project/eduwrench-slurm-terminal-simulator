@@ -358,10 +358,13 @@ async function processCommand(commandLine) {
         let ls;
         // If multiple command line arguments, request the faked filesystem to retrieve those filenames,
         // otherwise if only ls, then the current directory.
-        if(commandLineTokens.length > 1) {
-            ls = filesystem.ls(commandLineTokens[1]);
+        if(commandLineTokens.length === 2) {
+            ls = filesystem.listFiles(commandLineTokens[1]);
+        } else if (commandLineTokens.length === 1) {
+            ls = filesystem.listFiles();
         } else {
-            ls = filesystem.ls();
+            term.write("ls: too many arguments\r\n");
+            return;
         }
         // If it contains filenames, print them to console.
         if(ls !== "") {

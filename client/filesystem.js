@@ -19,7 +19,7 @@ export class Filesystem {
             deletable: false,
             data: ""
         };
-        this.ls = ls;
+        this.listFiles = listFiles;
         this.changeWorkingDir = changeWorkingDir;
         this.getWorkingDir = getWorkingDir;
         this.mkdir = mkdir;
@@ -80,7 +80,7 @@ function isSameDirectory(dir1, dir2) {
  * @param loc: Directory or file name
  * @returns List of files/directories if directory. File name if file name.
  */
-function ls(loc = null) {
+function listFiles(loc = null) {
 
     let output = "";
     if (loc == null) {
