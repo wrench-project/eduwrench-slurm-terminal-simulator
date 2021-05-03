@@ -35,6 +35,8 @@ export class Filesystem {
         this.isSameDirectory = isSameDirectory;
         this.getFileName = getFileName;
         this.getDirPath = getDirPath;
+        this.tabCompletion = tabCompletion;
+        this.getFileNamesInDir = getFileNamesInDir;
     }
 }
 
@@ -420,4 +422,146 @@ function getDirPath(path) {
     let filename =  tokens[tokens.length - 1];
     path = path.replace(filename, "");
     return this.getAbsolutePath(path);
+}
+
+/*
+ *  /zZX/zx??X/X/x/AAAAABBB
+ *  /zZX/zx??X/X/x/AAAAACCC
+ */
+function tabCompletion(partial_path) {
+
+    console.log("PARTIAL PATH " + partial_path);
+    // If partial path has a slash at the end, return directory content
+    if (partial_path.endsWith("/")) {
+        let file_names =  this.getFileNamesInDir(partial_path);
+        console.log("file_names = " + file_names);
+        if (file_names.length === 1) {
+            return [partial_path + file_names[0]];
+        } else {
+            return file_names;
+        }
+    }
+
+
+    let absolute_path = this.getAbsolutePath(partial_path);
+    // console.log(absolute_path);
+    // Get all the matches
+    console.log("ABSOLUTE PATH " + absolute_path);
+    let matches = []
+    for (let key in this.contents) {
+        if (!key.startsWith(absolute_path)) continue;
+        key = key.replace(absolute_path,"");
+        let index = key.indexOf("/");
+        if (index > -1) {
+            key = key.substr(0, index);
+        }
+        matches.push(key);
+    }
+
+    // Remove duplicates
+    matches = [...new Set(matches)];
+
+    console.log("FOUND " + matches.length + " MATCHES: ");
+    for (const m of matches) {
+        console.log("    MATCH: '" + m + "'");
+    }
+
+    // Remove duplicates
+    matches = [...new Set(matches)];
+
+    if (matches.length === 0) {
+        return [partial_path + ""];
+    }
+
+    console.log("---> " + matches.length);
+    for (const m of matches) {
+        console.log("   ---> " + m);
+    }
+
+    // Cleanup the matches to avoid matches that have other matches + "/" as prefixes
+    let cleaned_up = []
+    for (const m of matches) {
+        let to_add = true;
+        for (const other_m of matches) {
+            if (m === other_m) continue;
+            if (m.startsWith(other_m + "/")) {
+                to_add = false;
+                break;
+            }
+        }
+        if (to_add) {
+            cleaned_up.push(m);
+        }
+    }
+
+    matches = cleaned_up;
+
+    if (matches.length === 0) {
+        return [partial_path];
+    }
+
+    if (matches.length === 1) {
+        let to_return = partial_path + matches[0];
+        if (this.getAbsolutePath(to_return) in this.contents &&
+            this.contents[this.getAbsolutePath(to_return)].type !== "dir") {
+            return [to_return];
+        }
+        if (this.getAbsolutePath(to_return) in this.contents &&
+        this.contents[this.getAbsolutePath(to_return)].type === "dir" &&
+        !(to_return).endsWith("/")) {
+            return [to_return + "/"];
+        }
+    }
+
+
+    // Computes the longest common prefix until a "/"
+    let longuest_common_prefix = matches[0];
+    for (const key of matches) {
+        longuest_common_prefix = longuestCommonPrefix(longuest_common_prefix, key);
+    }
+
+    if (longuest_common_prefix.length === 0) {
+        let to_return = [];
+        for (const m of matches) {
+            to_return.push(this.getFileName(partial_path + m));
+        }
+        return to_return;
+    }
+
+    let to_return = [partial_path + longuest_common_prefix];
+    if (matches.length === 1 &&
+        this.getAbsolutePath(to_return[0]) in this.contents &&
+        this.contents[this.getAbsolutePath(to_return[0])].type === "dir" &&
+        !to_return[0].endsWith("/")) {
+        to_return[0] += "/";
+    }
+    return to_return;
+}
+
+function longuestCommonPrefix(str1, str2) {
+
+    let length = Math.min(str1.length, str2.length);
+    let i;
+    for (i=0; i < length; i++) {
+        if (str1.charAt(i) !== str2.charAt(i)) {
+            break;
+        }
+    }
+    return  str1.substring(0, i);
+}
+
+function getFileNamesInDir(dirpath) {
+    let absolute_path = this.getAbsolutePath(dirpath) + "/";
+    let to_return = [];
+    for (const key in this.contents) {
+        if (!key.startsWith(absolute_path)) continue;
+        console.log("KEY = " + key);
+        let rest = key.replace(absolute_path,"");
+        console.log("REST = " + rest);
+        if (rest.indexOf("/") === -1) {
+            console.log("RETURNING = " + rest);
+            to_return.push(rest);
+        }
+    }
+    return to_return;
 }

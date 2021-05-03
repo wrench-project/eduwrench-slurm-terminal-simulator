@@ -222,7 +222,7 @@ async function sendBatch(config) {
     } else {
         // Writes to terminal the job name. Since the server returns "standard_job_x" we need to remove the standard
         // section hence the split and slice.
-        term.write('\r' + res.jobID.split("_").slice(1).join("_") + "\r\n" + `${filesystem.getPath()}$ `);
+        term.write('\r' + res.jobID.split("_").slice(1).join("_") + "\r\n" + `${filesystem.getWorkingDir()}$ `);
     }
 }
 
@@ -245,7 +245,7 @@ function cancelJob(jobName) {
             if(!res.status) {
                 status = "Job cannot be cancelled. Does not exist or no permission."
             }
-            term.write(status + "\r\n" + `${filesystem.getPath()}$ `);
+            term.write(status + "\r\n" + `${filesystem.getWorkingDir()}$ `);
         });
 }
 
@@ -297,7 +297,7 @@ function getQueue() {
                 // Write to terminal the job
                 term.write(`${jobName} ${user} ${nodes} ${sTime} ${status}` + "\r\n");
             }
-            term.write(`${filesystem.getPath()}$ `);
+            term.write(`${filesystem.getWorkingDir()}$ `);
         });
 }
 
@@ -586,6 +586,27 @@ async function processCommand(commandLine) {
 }
 
 /**
+ * Process TAB completion
+ */
+function handleTab() {
+    let currentLine = getCurrentCommandLine();
+    let tokens = currentLine.trim().split(" ");
+    let last_word = tokens[tokens.length - 1];
+    let completion = filesystem.tabCompletion(last_word);
+    if (completion.length === 1) {
+        term.write("\b \b".repeat(last_word.length));
+        term.write(completion[0]);
+    } else {
+        term.write("\r\n");
+        for (const c of completion) {
+            term.write(c + "\r\n");
+        }
+        term.write(`${filesystem.getWorkingDir()}$ `);
+        term.write(currentLine);
+    }
+}
+
+/**
  * Process what happens when arrow key commands are executed.
  */
 function handleArrowKeys(seq) {
@@ -657,6 +678,9 @@ async function processInput(seq) {
             }
             break;
         // Case to trigger command processing
+        case '\t':
+            handleTab();
+            break;
         case '\r':
             let commandLine = getCurrentCommandLine().trim();
             term.write('\r\n')
