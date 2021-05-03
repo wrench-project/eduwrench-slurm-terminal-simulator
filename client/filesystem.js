@@ -508,12 +508,12 @@ function tabCompletion(partial_path) {
     }
 
     // Computes the longest common prefix until a "/"
-    let longuest_common_prefix = matches[0];
+    let longest_common_prefix = matches[0];
     for (const key of matches) {
-        longuest_common_prefix = longuestCommonPrefix(longuest_common_prefix, key);
+        longest_common_prefix = longestCommonPrefix(longest_common_prefix, key);
     }
 
-    if (longuest_common_prefix.length === 0) {
+    if (longest_common_prefix.length === 0) {
         let to_return = [];
         for (const m of matches) {
             to_return.push(this.getFileName(partial_path + m));
@@ -521,7 +521,7 @@ function tabCompletion(partial_path) {
         return to_return;
     }
 
-    let to_return = [partial_path + longuest_common_prefix];
+    let to_return = [partial_path + longest_common_prefix];
     if (matches.length === 1 &&
         this.getAbsolutePath(to_return[0]) in this.contents &&
         this.contents[this.getAbsolutePath(to_return[0])].type === "dir" &&
@@ -537,7 +537,7 @@ function tabCompletion(partial_path) {
  * @param str2: second string
  * @returns a string
  */
-function longuestCommonPrefix(str1, str2) {
+function longestCommonPrefix(str1, str2) {
 
     let length = Math.min(str1.length, str2.length);
     let i;
