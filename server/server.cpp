@@ -387,17 +387,15 @@ auto in = [](const auto &min, const auto &max, char const * const opt_name){
 // Main function
 int main(int argc, char **argv)
 {
-    // If using port 80, need to start server with super user permissions
-    int port_number = 80;
-    int node_count = 4;
-    int core_count = 1;
+    int port_number;
+    int node_count;
+    int core_count;
     std::string tracefile;
 
     // Let WRENCH grab its own command-line arguments
     simulation.init(&argc, argv);
 
-
-//    int opt;
+    // Parse command-line arguments
     po::options_description desc("Allowed options");
     desc.add_options()
             ("help", "show help message")
@@ -405,14 +403,14 @@ int main(int argc, char **argv)
                     in(1, INT_MAX, "pp_work")), "number of compute nodes in the cluster")
             ("cores", po::value<int>()->default_value(1)->notifier(
                     in(1, INT_MAX, "pp_work")), "number of cores per compute node")
-            ("tracefile", po::value<std::string>()->default_value(""), "background workload trace file")
+            ("tracefile", po::value<std::string>()->default_value("none"), "background workload trace file")
             ("pp_name", po::value<std::string>()->default_value("parallel_program"), "parallel program name")
             ("pp_work", po::value<int>()->default_value(3600)->notifier(
                     in(1, INT_MAX, "pp_work")), "parallel program work in seconds")
             ("pp_eff", po::value<double>()->default_value(1.0)->notifier(
                     in(0.0, 1.0, "pp_eff")), "parallel program efficiency")
             ("port", po::value<int>()->default_value(80)->notifier(
-                    in(1, INT_MAX, "pp_work")), "server port")
+                    in(1, INT_MAX, "pp_work")), "server port (if 80, may need to sudo)")
             ;
 
     po::variables_map vm;
@@ -429,7 +427,7 @@ int main(int argc, char **argv)
     pp_name = vm["pp_name"].as<std::string>();
     pp_work = vm["pp_work"].as<int>();
     pp_eff = vm["pp_eff"].as<double>();
-
+    port_number = vm["port"].as<int>();
 
     if (vm.count("help")) {
         cout << desc << "\n";
@@ -437,7 +435,7 @@ int main(int argc, char **argv)
     }
 
     // Check validity of the tracefile, if any
-    if (!tracefile.empty()) {
+    if (tracefile != "none") {
         try {
             wrench::TraceFileLoader::loadFromTraceFile(tracefile, false, 0);
         } catch(std::invalid_argument &e) {
@@ -472,7 +470,7 @@ int main(int argc, char **argv)
         "WMSHost", {"/"}, {{wrench::SimpleStorageServiceProperty::BUFFER_SIZE, "10000000"}}, {}));
 
     std::shared_ptr<wrench::BatchComputeService> batch_service;
-    if (tracefile.empty()) {
+    if (tracefile == "none") {
         batch_service = simulation.add(
                 new wrench::BatchComputeService("ComputeNode_0", nodes, "",
                                                 {},
