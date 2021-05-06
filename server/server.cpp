@@ -53,8 +53,8 @@ std::shared_ptr<wrench::WorkflowManager> wms;
  * Ugly globals
  */
 std::string pp_name;
-int pp_work;
-double pp_eff;
+int pp_seqwork;
+int pp_parwork;
 
 
 // GET PATHS
@@ -269,7 +269,7 @@ void addJob(const Request& req, Response& res)
     // Retrieve task creation info from request body
     auto requested_duration = req_body["job"]["durationInSec"].get<double>();
     auto num_nodes = req_body["job"]["numNodes"].get<int>();
-    double actual_duration = ((double)pp_work) / (pp_eff * num_nodes);
+    double actual_duration = (double)pp_seqwork + ((double)pp_parwork / num_nodes);
     json body;
 
     // Pass parameters in to function to add a job.
@@ -400,17 +400,17 @@ int main(int argc, char **argv)
     desc.add_options()
             ("help", "show help message")
             ("nodes", po::value<int>()->default_value(4)->notifier(
-                    in(1, INT_MAX, "pp_work")), "number of compute nodes in the cluster")
+                    in(1, INT_MAX, "nodes")), "number of compute nodes in the cluster")
             ("cores", po::value<int>()->default_value(1)->notifier(
-                    in(1, INT_MAX, "pp_work")), "number of cores per compute node")
+                    in(1, INT_MAX, "cores")), "number of cores per compute node")
             ("tracefile", po::value<std::string>()->default_value("none"), "background workload trace file")
             ("pp_name", po::value<std::string>()->default_value("parallel_program"), "parallel program name")
-            ("pp_work", po::value<int>()->default_value(3600)->notifier(
-                    in(1, INT_MAX, "pp_work")), "parallel program work in seconds")
-            ("pp_eff", po::value<double>()->default_value(1.0)->notifier(
-                    in(0.0, 1.0, "pp_eff")), "parallel program efficiency")
+            ("pp_seqwork", po::value<int>()->default_value(3600)->notifier(
+                    in(1, INT_MAX, "pp_seqwork")), "parallel program's sequential work in seconds")
+            ("pp_parwork", po::value<int>()->default_value(3600)->notifier(
+                    in(1, INT_MAX, "pp_parwork")), "parallel program's parallelizable work in seconds")
             ("port", po::value<int>()->default_value(80)->notifier(
-                    in(1, INT_MAX, "pp_work")), "server port (if 80, may need to sudo)")
+                    in(1, INT_MAX, "port")), "server port (if 80, may need to sudo)")
             ;
 
     po::variables_map vm;
@@ -425,8 +425,8 @@ int main(int argc, char **argv)
     core_count = vm["cores"].as<int>();
     tracefile = vm["tracefile"].as<std::string>();
     pp_name = vm["pp_name"].as<std::string>();
-    pp_work = vm["pp_work"].as<int>();
-    pp_eff = vm["pp_eff"].as<double>();
+    pp_seqwork = vm["pp_seqwork"].as<int>();
+    pp_parwork = vm["pp_parwork"].as<int>();
     port_number = vm["port"].as<int>();
 
     if (vm.count("help")) {
@@ -450,8 +450,9 @@ int main(int argc, char **argv)
         cerr << " Background workload from " + tracefile << "\n";
     }
     cerr << "\n";
-    cerr << "Parallel program is called " << pp_name << ".\nIts work is " << pp_work << " seconds ";
-    cerr << "and its parallel efficiency is " << pp_eff << "\n";
+    cerr << "Parallel program is called " << pp_name << ".\n";
+    cerr << "Its sequential work is " << pp_seqwork << " seconds.\n";
+    cerr << "Its parallel work is " << pp_parwork << " seconds\n";
 
     // XML generated then read.
     write_xml(node_count, core_count);

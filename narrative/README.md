@@ -50,10 +50,11 @@ this pedagogic module, we assume that Slurm is installed on a cluster to
 which you want to submit jobs.  We picked Slurm due to its popularity, but
 the same concepts apply to all batch schedulers.
 
-**Disclaimer**: This module in no way provides comprehensive Slurm training. 
+**Disclaimer**: This module does not provides comprehensive Slurm training.
 The intent is to introduce you to batch scheduling in general, using Slurm
-as an example. *And in fact, you will be only exposed to a small
-and simplified subset of the Slurm functionality.*
+as an example. You will be only exposed to a small and simplified subset of
+the Slurm functionality. This module is thus a good first step on the way
+to becoming an expert Slurm user.
 
 ---
 
