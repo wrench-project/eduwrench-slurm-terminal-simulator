@@ -28,7 +28,8 @@ export class Filesystem {
         this.openFile = openFile;
         this.createFile = createFile;
         this.saveFile = saveFile;
-        this.getDate = date;
+        this.fileExists = fileExists;
+        this.getDate = getDate;
         this.normalizePath = normalizePath;
         this.getAbsolutePath = getAbsolutePath;
         this.isInDirectory = isInDirectory;
@@ -111,6 +112,22 @@ function listFiles(loc = null) {
     }
     // console.log(toReturn);
     return toReturn;
+}
+
+/**
+ * Returns whether a path exists, and if it does, what type it is
+ * @param loc: some path
+ * @returns [true/false, type: string].
+ */
+function fileExists(loc) {
+
+    loc = this.getAbsolutePath(loc);
+
+    if(!(loc in this.contents)) {
+        return [false, ""];
+    } else {
+        return [true, this.contents[loc].type];
+    }
 }
 
 /**
@@ -356,7 +373,7 @@ function saveFile(name, data) {
  * @param name: Name of file
  * @returns Time created in milliseconds
  */
-function date(name) {
+function getDate(name) {
     name = this.getAbsolutePath(name);
     if(!(name in this.contents)) {
         return "";

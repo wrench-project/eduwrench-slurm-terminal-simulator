@@ -641,7 +641,18 @@ async function processCommand(commandLine) {
         }
         return;
     }
-    term.write(`command '${command}' not found.\r\n`);
+
+    // The user must have typed a path?
+    let f = filesystem.fileExists(command);
+    if (f[0] == true) {
+        if (f[1] === "bin") {
+            term.write(`cannot execute programs on the cluster's head node\r\n`);
+        } else {
+            term.write(`operation not allowed\r\n`);
+        }
+    } else {
+        term.write(`command '${command}' not found.\r\n`);
+    }
 }
 
 /**
