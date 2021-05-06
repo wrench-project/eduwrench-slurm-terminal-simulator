@@ -50,7 +50,7 @@ window.onload = main;
 
 // Miscellaneous values
 let openedFile = "";
-let jobNum = 1;
+// let jobNum = 1;
 //let serverAddress = "192.168.0.20/api";
 let serverAddress = "localhost/api";
 
@@ -208,10 +208,11 @@ async function sendBatch(config) {
     let sec = parseInt(dur[0]) * 3600 + parseInt(dur[1]) * 60 + parseInt(dur[2]);
     let nodes = parseInt(config[1].split('=')[1]);
 
+    // console.log("jobNum = " + jobNum);
     // Sets the body of the request
     let body = {
         job: {
-            jobName: `${jobNum}`,
+            jobName: `0`, // not used
             durationInSec: sec,
             numNodes: nodes
         }
@@ -223,12 +224,15 @@ async function sendBatch(config) {
     // Parses the return value and decides what to generate/write
     res = await res.json();
     if(!res.success) {
-        filesystem.createFile(".err", simTime.getTime());
-        filesystem.saveFile(".err", "Number of nodes exceeds what is available in system");
+        // filesystem.createFile(".err", simTime.getTime());
+        // filesystem.saveFile(".err", "Number of nodes exceeds what is available in system");
+        term.write("sbatch: requested number of nodes exceeds available number of nodes\r\n");
     } else {
         // Writes to terminal the job name. Since the server returns "standard_job_x" we need to remove the standard
         // section hence the split and slice.
-        term.write('\r' + res.jobID.split("_").slice(1).join("_") + "\r\n" + `${filesystem.getWorkingDir()}$ `);
+        // term.write('\r' + res.jobID.split("_").slice(1).join("_") + "\r\n" + `${filesystem.getWorkingDir()}$ `);
+        let job_name = res.jobID.split("_").slice(1).join("_");
+        term.write('\r' + job_name + "\r\n");
     }
 }
 
@@ -500,12 +504,13 @@ async function processCommand(commandLine) {
             return;
         }
         // Handle multiple arguments non-recursive
-        for(let i = 2; i < commandLineTokens.length; i++) {
+        for(let i = 1; i < commandLineTokens.length; i++) {
             let f = filesystem.removeFile(commandLineTokens[i]);
             if(f !== "") {
                 term.write(f + "\r\n");
             }
         }
+        return;
     }
     // Prints file contents to terminal
     if(command === "cat") {
@@ -570,10 +575,13 @@ async function processCommand(commandLine) {
     if(command === "sbatch") {
         // Since the command requires an argument checks for that otherwise prints error.
         if(commandLineTokens.length > 1) {
-            let f = filesystem.openFile(commandLineTokens[1]);
+            let filename = commandLineTokens[1];
+            let f = filesystem.openFile(filename);
             // Checks if it is the hard-coded config file.
             if(f != null && commandLineTokens[1].endsWith(".slurm")) {
                 await sendBatch(f);
+            } else if (f == null) {
+                term.write("sbatch: file not found\r\n");
             } else {
                 term.write("sbatch: batch file must have .slurm extension\r\n");
             }
@@ -682,7 +690,7 @@ function handleArrowKeys(seq) {
 
     // RIGHT ARROW
     if (seq === '\u001B\u005B\u0043') {
-        if(termBuffer.cursorX < currentLine.length) {
+        if(termBuffer.cursorX < `${filesystem.getWorkingDir()}$ `.length + currentLine.length) {
             term.write(seq);
         }
     }

@@ -109,7 +109,7 @@ function listFiles(loc = null) {
             }
         }
     }
-    console.log(toReturn);
+    // console.log(toReturn);
     return toReturn;
 }
 

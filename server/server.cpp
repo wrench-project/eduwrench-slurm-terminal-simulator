@@ -251,6 +251,7 @@ void addJob(const Request& req, Response& res)
 
     // Retrieve task creation info from request body
     std::string job_name = req_body["job"]["jobName"].get<std::string>();
+    std::cerr << "JOB NAME: " << job_name << "\n";
     double duration = req_body["job"]["durationInSec"].get<double>();
     int num_nodes = req_body["job"]["numNodes"].get<int>();
 
