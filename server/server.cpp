@@ -93,7 +93,7 @@ void getQuery(const Request& req, Response& res)
     std::queue<std::string> status;
     std::vector<std::string> events;
 
-    // Retrieves event statuses from servers and 
+    // Retrieves event statuses from servers and
     wms->getEventStatuses(status, (get_time() - time_start) / 1000);
 
     while(!status.empty())
@@ -392,7 +392,7 @@ int main(int argc, char **argv)
             ("cores", po::value<int>()->default_value(1), "number of cores per compute node (default: 1)")
             ("tracefile", po::value<std::string>()->default_value(""), "background workload trace file (default: none)")
             ("pp_name", po::value<std::string>()->default_value("parallel_program"), "parallel program name (default: parallel_program)")
-            ("pp_work", po::value<int>()->default_value(3600), "parallel program work in seconds (default: 60)")
+            ("pp_work", po::value<int>()->default_value(3600), "parallel program work in seconds (default: 3600)")
             ("pp_eff", po::value<double>()->default_value(1.0), "parallel program efficiency (default: 1.0)")
             ("port", po::value<int>()->default_value(80), "server port (default: 80)")
             ;

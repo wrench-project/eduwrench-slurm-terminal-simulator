@@ -3,6 +3,9 @@
 #include <random>
 #include <iostream>
 
+WRENCH_LOG_CATEGORY(workflow_manager, "Log category for WorkflowManager");
+
+
 namespace wrench {
 
     // Struct to hold information on tracefile jobs to be added in
@@ -47,6 +50,7 @@ namespace wrench {
 
         auto batch_service = *(this->getAvailableComputeServices<BatchComputeService>().begin());
 
+        double time_origin = this->simulation->getCurrentSimulatedDate();
         // Main loop handling the WMS implementation.
         while(true)
         {
@@ -141,9 +145,9 @@ namespace wrench {
         if(num_nodes > node_count)
             return "";
 
-        cerr << "requested " << requested_duration << "\n";
-        cerr << "num_nodes " << num_nodes << "\n";
-        cerr << "actual " << actual_duration << "\n";
+//        cerr << "requested " << requested_duration << "\n";
+//        cerr << "num_nodes " << num_nodes << "\n";
+//        cerr << "actual " << actual_duration << "\n";
 
 
         // Create tasks and add to workflow.
@@ -159,6 +163,8 @@ namespace wrench {
         service_specific_args["-N"] = std::to_string(num_nodes);
         service_specific_args["-c"] = std::to_string(1);
         service_specific_args["-u"] = "slurm_user";
+
+//        WRENCH_INFO("SUBMITTING : -t = %s", service_specific_args["-t"].c_str());
 
         // Lock the queue to prevent deadlock. Put into queue due to simulation and web server on separate threads.
         queue_mutex.lock();
@@ -232,8 +238,8 @@ namespace wrench {
             events.pop();
 
             queue_mutex.unlock();
-        }        
-        server_time = time;
+        }
+        server_time = (double)time;
     }
 
     /**

@@ -43,3 +43,4 @@ Command line options for TestServer:
 
 Running the client at this point is pointing a Web browser to http://localhost or http://127.0.0.1
 
+Note that if the client was already running, then it will connect to the server, but timing between client and server will be non-sensical. 
