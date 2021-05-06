@@ -8,6 +8,7 @@ set(CMAKE_CXX_STANDARD 11)
 
 set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${CMAKE_SOURCE_DIR}/CmakeModules/")
 
+
 # Add needed packages
 find_package(nlohmann_json 3.2.0 REQUIRED)
 #find_package(pugixml)
