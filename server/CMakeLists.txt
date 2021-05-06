@@ -17,6 +17,9 @@ find_library(WRENCH_LIBRARY NAMES wrench)
 find_library(WRENCH_PEGASUS_WORKFLOW_PARSER_LIBRARY NAMES wrenchpegasusworkflowparser)
 find_library(PUGIXML_LIBRARY NAMES pugixml)
 
+FIND_PACKAGE( Boost COMPONENTS program_options REQUIRED )
+INCLUDE_DIRECTORIES( ${Boost_INCLUDE_DIR} )
+
 include_directories(src/ include/ ${SimGrid_INCLUDE_DIR}/include /usr/local/include /opt/local/include /usr/local/include/wrench)
 
 
@@ -37,5 +40,6 @@ target_link_libraries(TestServer
         ${WRENCH_PEGASUS_WORKFLOW_PARSER_LIBRARY}
         ${SimGrid_LIBRARY}
         ${PUGIXML_LIBRARY}
+        ${Boost_LIBRARIES}
         )
 

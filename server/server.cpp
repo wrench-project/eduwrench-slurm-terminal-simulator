@@ -7,6 +7,8 @@
 #include <vector>
 #include <thread>
 
+#include <boost/program_options.hpp>
+
 #include <nlohmann/json.hpp>
 #include <wrench.h>
 #include <wrench/util/TraceFileLoader.h>
@@ -362,46 +364,56 @@ int main(int argc, char **argv)
 {
     // If using port 80, need to start server with super user permissions
     int port_number = 80;
-    int node_count = 2;
+    int node_count = 4;
     int core_count = 1;
     std::string tracefile;
 
-    // Command line argument handling
-    if(argc > 1 && (argc - 1) % 2 == 0)
-    {
-        for(int i = 1; i < argc; i++)
-        {
-            std::string flag = argv[i++];
-            // Handling of tracefile input
-            if(flag == "--tracefile")
-            {
-                tracefile = std::string(argv[i]);
-                // Check if tracefile is loadable otherwise return error.
-                try {
-                    wrench::TraceFileLoader::loadFromTraceFile(tracefile, false, 0);
-                } catch(std::invalid_argument &e) {
-                    std::printf("Invalid tracefile (%s)\n",e.what());
-                    return -1;
-                }
-                continue;
-            }
+    namespace po = boost::program_options;
 
-            // Handle flags requiring numeric values
-            int flag_val;
-            try {
-                flag_val = std::stoi(argv[i]);
-            } catch(const std::exception&) {
-                std::printf("Flag %s needs to be an integer\n", argv[i-1]);
-                return -1;
-            }
-            if(flag == "--cores")
-                core_count = flag_val;
-            else if(flag == "--port")
-                port_number = flag_val;
-            else if(flag == "--nodes")
-                node_count = flag_val;
+//    int opt;
+    po::options_description desc("Allowed options");
+    desc.add_options()
+            ("help", "show help message")
+            ("nodes", po::value<int>()->default_value(4), "number of compute nodes in the cluster (default: 4)")
+            ("cores", po::value<int>()->default_value(1), "number of cores per compute node (default: 1)")
+            ("tracefile", po::value<std::string>()->default_value(""), "background workload trace file (default: none)")
+            ("port", po::value<int>()->default_value(80), "server port (default: 80)")
+            ;
+
+    po::variables_map vm;
+    try {
+        po::store(po::parse_command_line(argc, argv, desc), vm);
+        po::notify(vm);
+    } catch (std::exception &e) {
+        cerr << "Error: " << e.what() << "\n";
+        return 1;
+    }
+    node_count = vm["nodes"].as<int>();
+    core_count = vm["cores"].as<int>();
+    tracefile = vm["tracefile"].as<std::string>();
+
+
+    if (vm.count("help")) {
+        cout << desc << "\n";
+        return 1;
+    }
+
+    // Check validity of the tracefile, if any
+    if (!tracefile.empty()) {
+        try {
+            wrench::TraceFileLoader::loadFromTraceFile(tracefile, false, 0);
+        } catch(std::invalid_argument &e) {
+            std::printf("Invalid tracefile (%s)\n",e.what());
+            return -1;
         }
     }
+
+    // Print some logging
+    cerr << "Simulating a cluster with " << node_count << " " << core_count << "-core nodes.";
+    if (!tracefile.empty()) {
+        cerr << " Background workload from " + tracefile << "\n";
+    }
+    cerr << "\n";
 
     // XML generated then read.
     write_xml(node_count, core_count);
@@ -410,14 +422,29 @@ int main(int argc, char **argv)
     // Initialize WRENCH
     simulation.init(&argc, argv);
     simulation.instantiatePlatform(simgrid_config);
+
     // Generate vector containing variable number of compute nodes
     std::vector<std::string> nodes = {"ComputeNode_0"};
     for(int i = 1; i < node_count; ++i)
         nodes.push_back("ComputeNode_" + std::to_string(i));
+
     // Construct all services
     auto storage_service = simulation.add(new wrench::SimpleStorageService(
         "WMSHost", {"/"}, {{wrench::SimpleStorageServiceProperty::BUFFER_SIZE, "10000000"}}, {}));
-    auto batch_service = simulation.add(new wrench::BatchComputeService("ComputeNode_0", nodes, "", {{wrench::BatchComputeServiceProperty::SIMULATED_WORKLOAD_TRACE_FILE, tracefile}}, {}));
+
+    std::shared_ptr<wrench::BatchComputeService> batch_service;
+    if (tracefile.empty()) {
+        batch_service = simulation.add(
+                new wrench::BatchComputeService("ComputeNode_0", nodes, "",
+                                                {},
+                                                {}));
+    } else {
+        batch_service = simulation.add(
+                new wrench::BatchComputeService("ComputeNode_0", nodes, "",
+                                                {{wrench::BatchComputeServiceProperty::SIMULATED_WORKLOAD_TRACE_FILE, tracefile}},
+                                                {}));
+    }
+
     wms = simulation.add(new wrench::WorkflowManager({batch_service}, {storage_service}, "WMSHost", nodes.size(), core_count));
 
     // Add workflow to wms
