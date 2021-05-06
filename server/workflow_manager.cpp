@@ -134,13 +134,14 @@ namespace wrench {
     std::string WorkflowManager::addJob(const std::string& job_name, const double& duration,
                                   const unsigned int& num_nodes)
     {
+        static long task_id = 0;
         // Check if valid number of nodes.
         if(num_nodes > node_count)
             return "";
         // Create tasks and add to workflow.
         auto task = this->getWorkflow()->addTask(
-            job_name + "_task_" + std::to_string(server_time), duration, 1, 1, 0.0);
-        
+            job_name + "_task_" + std::to_string(task_id++), duration, 1, 1, 0.0);
+
         // Create a job
         auto job = job_manager->createStandardJob(task, {});
 

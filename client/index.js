@@ -65,6 +65,10 @@ unsupportedCommands["emacs"] = "(use the 'edit' command)";
 /* HELPER FUNCTIONS                                                   */
 /**********************************************************************/
 
+function prompt() {
+    return `${filesystem.getWorkingDir()}$ `;
+}
+
 // Function used to pad zeroes to the left of the value.
 function padZero(val) {
     // Checks if it is a string and if a number, if the number is less than 10.
@@ -226,11 +230,10 @@ async function sendBatch(config) {
     if(!res.success) {
         // filesystem.createFile(".err", simTime.getTime());
         // filesystem.saveFile(".err", "Number of nodes exceeds what is available in system");
-        term.write("sbatch: requested number of nodes exceeds available number of nodes\r\n");
+        term.write("sbatch: requested number of nodes exceeds available number of nodes (fix your .slurm file)\r\n");
     } else {
         // Writes to terminal the job name. Since the server returns "standard_job_x" we need to remove the standard
         // section hence the split and slice.
-        // term.write('\r' + res.jobID.split("_").slice(1).join("_") + "\r\n" + `${filesystem.getWorkingDir()}$ `);
         let job_name = res.jobID.split("_").slice(1).join("_");
         term.write('\r' + job_name + "\r\n");
     }
@@ -255,7 +258,7 @@ function cancelJob(jobName) {
             if(!res.success) {
                 status = "Job cannot be cancelled. Does not exist or no permission."
             }
-            term.write("\r" + status + "\r\n" + `${filesystem.getWorkingDir()}$ `);
+            term.write("\r" + status + "\r\n" + prompt());
         });
 }
 
@@ -307,7 +310,7 @@ function getQueue() {
                 // Write to terminal the job
                 term.write(`${jobName} ${user} ${nodes} ${sTime} ${status}` + "\r\n");
             }
-            term.write(`${filesystem.getWorkingDir()}$ `);
+            term.write(prompt());
         });
 }
 
@@ -653,7 +656,7 @@ function handleTab() {
         for (const c of completion) {
             term.write(c + "\r\n");
         }
-        term.write(`${filesystem.getWorkingDir()}$ `);
+        term.write(prompt());
         term.write(currentLine);
     }
 }
@@ -690,7 +693,7 @@ function handleArrowKeys(seq) {
 
     // RIGHT ARROW
     if (seq === '\u001B\u005B\u0043') {
-        if(termBuffer.cursorX < `${filesystem.getWorkingDir()}$ `.length + currentLine.length) {
+        if(termBuffer.cursorX < prompt().length + currentLine.length) {
             term.write(seq);
         }
     }
@@ -721,7 +724,7 @@ async function processInput(seq) {
     switch(seq) {
         // Case to handle Ctrl-C to cancel input
         case '\x03':
-            term.write(`^C\r\n${filesystem.getWorkingDir()}$ `);
+            term.write(`^C\r\n` + prompt());
             break;
         // Case to handle backspace
         case '\x7f':
@@ -741,7 +744,7 @@ async function processInput(seq) {
             executedCommandLine = await p;
 
             historyCursor = -1;
-            term.write(`${filesystem.getWorkingDir()}$ `);
+            term.write(prompt());
             break;
         // Otherwise write to console.
         default:
@@ -918,6 +921,10 @@ async function add60() {
  * Entry function to run after the HTML has fully loaded.
  */
 function main() {
+
+    // HERE DO A fetch REQUEST TO THE SERVER TO GET INFO:
+    // Parallel efficiency, runtime, program name
+
     initializeTerminal();
 
     // Get and set DOM elements

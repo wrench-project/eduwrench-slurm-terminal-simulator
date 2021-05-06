@@ -251,7 +251,6 @@ void addJob(const Request& req, Response& res)
 
     // Retrieve task creation info from request body
     std::string job_name = req_body["job"]["jobName"].get<std::string>();
-    std::cerr << "JOB NAME: " << job_name << "\n";
     double duration = req_body["job"]["durationInSec"].get<double>();
     int num_nodes = req_body["job"]["numNodes"].get<int>();
 
@@ -259,7 +258,7 @@ void addJob(const Request& req, Response& res)
 
     // Pass parameters in to function to add a job.
     std::string jobID = wms->addJob(job_name, duration, num_nodes);
-    
+
     // Retrieve the return value from adding ajob to determine if successful.
     if(jobID != "")
     {
@@ -269,10 +268,11 @@ void addJob(const Request& req, Response& res)
     }
     else
     {
+    std::cerr << "In the else\n";
         body["time"] = get_time() - time_start;
         body["success"] = false;
     }
-    
+
     res.set_header("access-control-allow-origin", "*");
     res.set_content(body.dump(), "application/json");
 }
