@@ -835,13 +835,12 @@ async function handleEvents(events) {
         let status = eParse[1];
         let jobName = eParse[3].slice(0, -1);
 
-        console.log("---> event = " + status);
         // Checks if job has been completed and creates a binary file representative of output file.
         if(status === "StandardJobCompletedEvent") {
             let fileName = jobName.split("_").slice(1).join("_") + ".out";
             filesystem.createFile(fileName, time * 1000);
             filesystem.saveFile(fileName, "Job successfully completed");
-        } else if (status == "StandardJobFailedEvent") {
+        } else if (status === "StandardJobFailedEvent") {
             let fileName = jobName.split("_").slice(1).join("_") + ".err";
             filesystem.createFile(fileName, time * 1000);
             filesystem.saveFile(fileName, "Program killed due to job expiring");
