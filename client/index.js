@@ -760,7 +760,7 @@ async function processInput(seq) {
 /**
  * Initializes the terminal to be usable on webapp.
  */
-function initializeTerminal() {
+function initializeTerminal(pp_name, pp_work, pp_eff) {
     term.open(document.getElementById('terminal'));
     term.setOption('cursorBlink', true);
     // Currently experimental hence this weird calling approach which does not match xterm docs
@@ -768,17 +768,17 @@ function initializeTerminal() {
 
     // Add pre-existing files into filesystem
     filesystem.createFile("batch.slurm", 0, false, false);
-    filesystem.createFile("parallel_program", 0, true, false);
+    filesystem.createFile(pp_name, 0, true, false);
     filesystem.createFile("README", 0, false, false);
 
     // Add text to files
     let batchSlurm = "#!/bin/bash\n#SBATCH --nodes=" + slurmNodes;
     batchSlurm += "\n#SBATCH --tasks-per-node=1\n#SBATCH --cpus-per-task=10\n#SBATCH --time ";
     batchSlurm += "00:01:00";
-    batchSlurm += "\n#SBATCH --output=job-%A.err\n#SBATCH --output=job-%A.out\nsrun ./parallel_program";
+    batchSlurm += "\n#SBATCH --output=job-%A.err\n#SBATCH --output=job-%A.out\nsrun ./" + pp_name;
     filesystem.saveFile("batch.slurm", batchSlurm);
 
-    filesystem.saveFile("parallel_program", "This is binary.");
+    filesystem.saveFile(pp_name, "This is binary.");
 
 
     let READMEText = "This terminal supports simple versions of the following commands:\n";
@@ -922,10 +922,20 @@ async function add60() {
  */
 function main() {
 
-    // HERE DO A fetch REQUEST TO THE SERVER TO GET INFO:
-    // Parallel efficiency, runtime, program name
+    // Set up functions which need to be updated every specified interval
+    setInterval(updateClockAndQueryServer, 1000);
 
-    initializeTerminal();
+    let response;
+
+    // Initialize server clock
+    fetch(`http://${serverAddress}/start`, { method: 'POST' })
+        .then(res => res.json())
+        .then(res => {
+            // Prints the cancellation success
+            // term.write("\r" + res["pp_name"] + "\r\n" + prompt());
+             initializeTerminal(res["pp_name"], res["pp_work"], res["pp_eff"]);
+        });
+
 
     // Get and set DOM elements
     clock = document.getElementById('clock');
@@ -940,11 +950,6 @@ function main() {
     slurmMinutesInput = document.getElementById('slurmMinutes');
     slurmSecondsInput = document.getElementById('slurmSeconds');
 
-    // Set up functions which need to be updated every specified interval
-    setInterval(updateClockAndQueryServer, 1000);
-
-    // Initialize server clock
-    fetch(`http://${serverAddress}/start`, { method: 'POST' });
 
     // Setup event handlers
     add1Button.addEventListener("click", add1, false);

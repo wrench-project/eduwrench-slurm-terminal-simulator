@@ -46,6 +46,14 @@ wrench::Workflow workflow;
  */
 std::shared_ptr<wrench::WorkflowManager> wms;
 
+/**
+ * Ugly globals
+ */
+std::string pp_name;
+int pp_work;
+double pp_eff;
+
+
 // GET PATHS
 
 /**
@@ -134,6 +142,12 @@ void start(const Request& req, Response& res)
 
     time_start = get_time();
     res.set_header("access-control-allow-origin", "*");
+
+    json body;
+    body["pp_name"] = pp_name;
+    body["pp_work"] = pp_work;
+    body["pp_eff"] = pp_eff;
+    res.set_content(body.dump(), "application/json");
 }
 
 /**
@@ -377,6 +391,9 @@ int main(int argc, char **argv)
             ("nodes", po::value<int>()->default_value(4), "number of compute nodes in the cluster (default: 4)")
             ("cores", po::value<int>()->default_value(1), "number of cores per compute node (default: 1)")
             ("tracefile", po::value<std::string>()->default_value(""), "background workload trace file (default: none)")
+            ("pp_name", po::value<std::string>()->default_value("parallel_program"), "parallel program name (default: parallel_program)")
+            ("pp_work", po::value<int>()->default_value(60), "parallel program work in seconds (default: 60)")
+            ("pp_eff", po::value<double>()->default_value(1.0), "parallel program efficiency (default: 1.0)")
             ("port", po::value<int>()->default_value(80), "server port (default: 80)")
             ;
 
@@ -391,6 +408,9 @@ int main(int argc, char **argv)
     node_count = vm["nodes"].as<int>();
     core_count = vm["cores"].as<int>();
     tracefile = vm["tracefile"].as<std::string>();
+    pp_name = vm["pp_name"].as<std::string>();
+    pp_work = vm["pp_work"].as<int>();
+    pp_eff = vm["pp_eff"].as<double>();
 
 
     if (vm.count("help")) {
@@ -414,6 +434,8 @@ int main(int argc, char **argv)
         cerr << " Background workload from " + tracefile << "\n";
     }
     cerr << "\n";
+    cerr << "Parallel program is called " << pp_name << ", its work is " << pp_work << " seconds ";
+    cerr << "and its parallel efficiency is " << pp_eff << "\n";
 
     // XML generated then read.
     write_xml(node_count, core_count);
