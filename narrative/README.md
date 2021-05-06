@@ -84,19 +84,19 @@ In your working directory on the cluster's front-end node there is:
     speedup behavior: **It runs in $2 + 20/n$ hours when executed on $n$ nodes**
     (typical Amdahl's Law behavior). So for instance, running 
     *myprogram* on 5 nodes takes 6 hours.
-  - A so-called "batch script", stored in file XXX.slurm, which is to be
+  - A so-called "batch script", stored in file batch.slurm, which is to be
     passed to the Slurm **sbatch**.  This batch script specifies the desired
     number nodes and duration for running *myprogram* as a job on the cluster.
 
-The **sbatch** command is used to submit jobs. It takes a batch script as a single command-line
-argument. When invoked, it submits the the corresponding job to the batch scheduler
-and prints an integer job ID after being invoked, say 1234.
-After the job is done, two files are created: 1234.out and 1234.err.
-1234.out contains the standard output of *myprogram*, and 1234.err the
-standard error.  For our purposes, if *myprogram* has completed
-successfully, the .out file contains some success message and the .err file
-is empty. If instead *myprogram* has failed, then .out file is empty and
-the .err file contains some failure message.  
+The **sbatch** command is used to submit jobs. It takes a batch script as a
+single command-line argument. When invoked, it submits the 
+corresponding job to the batch scheduler and prints an integer job ID after
+being invoked, say 1234.  After the job is done, two files are created:
+1234.out and 1234.err.  1234.out contains the standard output of
+*myprogram*, and 1234.err the standard error.  For our purposes, if
+*myprogram* has completed successfully, the .out file contains some success
+message and the .err file is empty. If instead *myprogram* has failed, then
+.out file is empty and the .err file contains some failure message.
 
 In the real world, *myprogram* would generate additional meaningful output
 files.  Also, on the activity below your will submit multiple jobs to run

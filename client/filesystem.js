@@ -180,6 +180,8 @@ function removeFile(name, recursive = false) {
         return "No such file or directory";
     }
 
+    console.log(this.contents[name]);
+
     // Deletable?
     if (this.contents[name].deletable === false) {
         return "Operation not permitted";
@@ -211,6 +213,7 @@ function removeFile(name, recursive = false) {
         delete this.contents[name];
         return "";
     }
+    return "Internal error (shouldn't have happened)";
 }
 
 /**
@@ -322,11 +325,12 @@ function createFile(name, time, binary, deletable) {
 
     if(!(name in this.contents)) {
         this.contents[name] = {
-            type: (binary ? "binary" : "text"),
+            type: (binary ? "bin" : "text"),
             created: time,
             deletable: deletable,
             data: ""
         };
+        console.log("CREATED: " + name + " " + this.contents[name].created);
         return "";
     }
     return `Cannot create file '${name}': File exists`;

@@ -471,7 +471,7 @@ async function processCommand(commandLine) {
             term.write("cp: to many arguments\r\n");
             return;
         }
-        let f = filesystem.copyFile(commandLineTokens[1], commandLineTokens[2]);
+        let f = filesystem.copyFile(commandLineTokens[1], commandLineTokens[2], simTime.getTime());
         if (f !== "") {
             term.write(f + "\r\n");
         }
@@ -773,7 +773,8 @@ function initializeTerminal() {
     // Add pre-existing files into filesystem
     filesystem.createFile("batch.slurm", 0, false, false);
     filesystem.createFile(pp_name, 0, true, false);
-    filesystem.createFile("README", 0, false, false);
+    filesystem.createFile("README_shell", 0, false, false);
+    filesystem.createFile("README_slurm", 0, false, false);
 
     // Add text to files
     let batchSlurm = "#!/bin/bash\n#SBATCH --nodes=" + slurmNodes;
@@ -781,11 +782,10 @@ function initializeTerminal() {
     batchSlurm += "00:01:00";
     batchSlurm += "\n#SBATCH --output=job-%A.err\n#SBATCH --output=job-%A.out\nsrun ./" + pp_name;
     filesystem.saveFile("batch.slurm", batchSlurm);
-
     filesystem.saveFile(pp_name, "This is binary.");
 
-
-    let READMEText = "This terminal supports simple versions of the following commands:\n";
+    // README.terminal text
+    let READMEText = "This terminal supports simple versions of the following Shell commands:\n";
     READMEText += "  - clear (clear the terminal)\n";
     READMEText += "  - pwd (show working directory)\n";
     READMEText += "  - cd <path> (change working directory)\n";
@@ -794,15 +794,16 @@ function initializeTerminal() {
     READMEText += "  - cp <path> <path> (copy files)\n";
     READMEText += "  - rm [-r] <path> (remove files)\n";
     READMEText += "  - date [-r <path>] (show current date or a file's last modification date)\n";
-    READMEText += "  - history (show command history, support !! and !x to recall commands)\n";
-    READMEText += " It also supports simple versions of the following Slurm commands\n";
+    READMEText += "  - history (show command history, support !! and !# to recall commands)\n";
+    READMEText += "  - edit <path to file> (edit a file)";
+    filesystem.saveFile("README_shell", READMEText);
+
+    // README.slurm text
+    READMEText = "This terminal supports simple versions of the following Slurm commands:\n";
     READMEText += "  - sbatch <path to .slurm file> (submit a batch job)\n";
     READMEText += "  - squeue (show batch queue)\n";
-    READMEText += "  - scancel <job name> (cancel batch job)\n";
-    READMEText += "Finally, it supports a non-standard command to edit files:\n";
-    READMEText += "  - edit <path to file>\n";
-
-    filesystem.saveFile("README", READMEText);
+    READMEText += "  - scancel <job name> (cancel batch job)";
+    filesystem.saveFile("README_slurm", READMEText);
 
     // Finalize setup
     fitAddon.fit();
