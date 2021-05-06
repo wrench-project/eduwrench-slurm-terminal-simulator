@@ -268,7 +268,6 @@ void addJob(const Request& req, Response& res)
     }
     else
     {
-    std::cerr << "In the else\n";
         body["time"] = get_time() - time_start;
         body["success"] = false;
     }
