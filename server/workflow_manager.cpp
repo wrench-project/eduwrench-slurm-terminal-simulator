@@ -127,27 +127,35 @@ namespace wrench {
      * @brief Adds a job to the simulation
      * 
      * @param job_name Name of job to be added (currently not in use)
-     * @param duration How long the job should run in flops.
+     * @param requested_duration How long the job should run in seconds.
      * @param num_nodes Number of nodes requested.
+     * @param actual_duration How long the job will run in seconds.
      * @return std::string Name of job or empty string if failed to create.
      */
-    std::string WorkflowManager::addJob(const std::string& job_name, const double& duration,
-                                  const unsigned int& num_nodes)
+    std::string WorkflowManager::addJob(const double& requested_duration,
+                                  const unsigned int& num_nodes,
+                                  const double &actual_duration)
     {
         static long task_id = 0;
         // Check if valid number of nodes.
         if(num_nodes > node_count)
             return "";
+
+        cerr << "requested " << requested_duration << "\n";
+        cerr << "num_nodes " << num_nodes << "\n";
+        cerr << "actual " << actual_duration << "\n";
+
+
         // Create tasks and add to workflow.
         auto task = this->getWorkflow()->addTask(
-            job_name + "_task_" + std::to_string(task_id++), duration, 1, 1, 0.0);
+            "task_" + std::to_string(task_id++), actual_duration, 1, 1, 0.0);
 
         // Create a job
         auto job = job_manager->createStandardJob(task, {});
 
         // Set up the command line arguments of slurm to submit job.
         std::map<std::string, std::string> service_specific_args;
-        service_specific_args["-t"] = std::to_string(duration);
+        service_specific_args["-t"] = std::to_string(std::ceil(requested_duration/60)); // In MINUTES!
         service_specific_args["-N"] = std::to_string(num_nodes);
         service_specific_args["-c"] = std::to_string(1);
         service_specific_args["-u"] = "slurm_user";

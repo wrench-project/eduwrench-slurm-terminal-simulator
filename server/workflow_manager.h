@@ -21,8 +21,8 @@ namespace wrench {
             const int core_count
         );
 
-        std::string addJob(const std::string& job_name, const double& duration,
-                     const unsigned int& num_nodes);
+        std::string addJob(const double& requested_duration,
+                     const unsigned int& num_nodes, const double& actual_duration);
         
         bool cancelJob(const std::string& job_name);
         

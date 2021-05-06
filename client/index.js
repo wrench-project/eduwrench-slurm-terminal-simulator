@@ -45,6 +45,9 @@ let slurmHour = 0;
 let slurmMinute = 1;
 let slurmSeconds = 0;
 
+// parallel program characteristics
+let pp_name;
+
 // Once HTML is loaded run main function
 window.onload = main;
 
@@ -195,7 +198,7 @@ function changeBatch() {
     let batchSlurm = "#!/bin/bash\n#SBATCH --nodes=" + slurmNodesText;
     batchSlurm += "\n#SBATCH --tasks-per-node=1\n#SBATCH --cpus-per-task=10\n#SBATCH --time ";
     batchSlurm += slurmHourText + ":" + slurmMinuteText + ":" + slurmSecondsText;
-    batchSlurm += "\n#SBATCH --output=job-%A.err\n#SBATCH --output=job-%A.out\nsrun ./parallel_program";
+    batchSlurm += "\n#SBATCH --output=job-%A.err\n#SBATCH --output=job-%A.out\nsrun ./" + pp_name;
     textEditor.innerText = batchSlurm;
 }
 
@@ -211,15 +214,16 @@ async function sendBatch(config) {
     let dur = config[4].split(' ')[2].split(':');
     let sec = parseInt(dur[0]) * 3600 + parseInt(dur[1]) * 60 + parseInt(dur[2]);
     let nodes = parseInt(config[1].split('=')[1]);
+    let parallel_program = config[7].split('/')[1];
+
 
     // console.log("jobNum = " + jobNum);
     // Sets the body of the request
     let body = {
         job: {
-            jobName: `0`, // not used
             durationInSec: sec,
             numNodes: nodes
-        }
+        },
     }
 
     // Sends a POST request to the server to add a new job
@@ -760,7 +764,7 @@ async function processInput(seq) {
 /**
  * Initializes the terminal to be usable on webapp.
  */
-function initializeTerminal(pp_name, pp_work, pp_eff) {
+function initializeTerminal() {
     term.open(document.getElementById('terminal'));
     term.setOption('cursorBlink', true);
     // Currently experimental hence this weird calling approach which does not match xterm docs
@@ -831,11 +835,18 @@ async function handleEvents(events) {
         let status = eParse[1];
         let jobName = eParse[3].slice(0, -1);
 
+        console.log("---> event = " + status);
         // Checks if job has been completed and creates a binary file representative of output file.
         if(status === "StandardJobCompletedEvent") {
             let fileName = jobName.split("_").slice(1).join("_") + ".out";
             filesystem.createFile(fileName, time * 1000);
             filesystem.saveFile(fileName, "Job successfully completed");
+        } else if (status == "StandardJobFailedEvent") {
+            let fileName = jobName.split("_").slice(1).join("_") + ".err";
+            filesystem.createFile(fileName, time * 1000);
+            filesystem.saveFile(fileName, "Program killed due to job expiring");
+        } else {
+            console.log("Unknown event status: " + status);
         }
     }
 }
@@ -927,13 +938,14 @@ function main() {
 
     let response;
 
-    // Initialize server clock
+    // Initialize server clock and retrieve parallel program info
     fetch(`http://${serverAddress}/start`, { method: 'POST' })
         .then(res => res.json())
         .then(res => {
             // Prints the cancellation success
             // term.write("\r" + res["pp_name"] + "\r\n" + prompt());
-             initializeTerminal(res["pp_name"], res["pp_work"], res["pp_eff"]);
+            pp_name = res["pp_name"];
+            initializeTerminal();
         });
 
 

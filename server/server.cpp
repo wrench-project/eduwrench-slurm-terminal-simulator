@@ -145,8 +145,6 @@ void start(const Request& req, Response& res)
 
     json body;
     body["pp_name"] = pp_name;
-    body["pp_work"] = pp_work;
-    body["pp_eff"] = pp_eff;
     res.set_content(body.dump(), "application/json");
 }
 
@@ -266,14 +264,13 @@ void addJob(const Request& req, Response& res)
     std::printf("Path: %s\nBody: %s\n\n", req.path.c_str(), req.body.c_str());
 
     // Retrieve task creation info from request body
-    std::string job_name = req_body["job"]["jobName"].get<std::string>();
-    double duration = req_body["job"]["durationInSec"].get<double>();
+    double requested_duration = req_body["job"]["durationInSec"].get<double>();
     int num_nodes = req_body["job"]["numNodes"].get<int>();
-
+    double actual_duration = ((double)pp_work) / (pp_eff * num_nodes);
     json body;
 
     // Pass parameters in to function to add a job.
-    std::string jobID = wms->addJob(job_name, duration, num_nodes);
+    std::string jobID = wms->addJob(requested_duration, num_nodes, actual_duration);
 
     // Retrieve the return value from adding ajob to determine if successful.
     if(jobID != "")
@@ -382,6 +379,9 @@ int main(int argc, char **argv)
     int core_count = 1;
     std::string tracefile;
 
+    // Let WRENCH grab its own command-line arguments
+    simulation.init(&argc, argv);
+
     namespace po = boost::program_options;
 
 //    int opt;
@@ -392,7 +392,7 @@ int main(int argc, char **argv)
             ("cores", po::value<int>()->default_value(1), "number of cores per compute node (default: 1)")
             ("tracefile", po::value<std::string>()->default_value(""), "background workload trace file (default: none)")
             ("pp_name", po::value<std::string>()->default_value("parallel_program"), "parallel program name (default: parallel_program)")
-            ("pp_work", po::value<int>()->default_value(60), "parallel program work in seconds (default: 60)")
+            ("pp_work", po::value<int>()->default_value(3600), "parallel program work in seconds (default: 60)")
             ("pp_eff", po::value<double>()->default_value(1.0), "parallel program efficiency (default: 1.0)")
             ("port", po::value<int>()->default_value(80), "server port (default: 80)")
             ;
@@ -434,15 +434,14 @@ int main(int argc, char **argv)
         cerr << " Background workload from " + tracefile << "\n";
     }
     cerr << "\n";
-    cerr << "Parallel program is called " << pp_name << ", its work is " << pp_work << " seconds ";
+    cerr << "Parallel program is called " << pp_name << ".\nIts work is " << pp_work << " seconds ";
     cerr << "and its parallel efficiency is " << pp_eff << "\n";
 
     // XML generated then read.
     write_xml(node_count, core_count);
     std::string simgrid_config = "config.xml";
 
-    // Initialize WRENCH
-    simulation.init(&argc, argv);
+    // Instantiate Simulated Platform
     simulation.instantiatePlatform(simgrid_config);
 
     // Generate vector containing variable number of compute nodes
@@ -500,7 +499,7 @@ int main(int argc, char **argv)
     std::thread server_thread(init_server, port_number);
 
     // Start the simulation. Currently cannot start the simulation in a different thread or else it will
-    // seg fault. Most likely related to how simgrid handles threads so the web server will have to started
+    // seg fault. Most likely related to how simgrid handles threads so the web server has to started
     // on a different thread.
     simulation.launch();
     return 0;
