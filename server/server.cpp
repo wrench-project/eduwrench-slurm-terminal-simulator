@@ -8,6 +8,7 @@
 #include <thread>
 
 #include <boost/program_options.hpp>
+#include <boost/bind/bind.hpp>
 
 #include <nlohmann/json.hpp>
 #include <wrench.h>
@@ -20,6 +21,8 @@
 using httplib::Request;
 using httplib::Response;
 using json = nlohmann::json;
+
+namespace po = boost::program_options;
 
 
 httplib::Server server;
@@ -264,8 +267,8 @@ void addJob(const Request& req, Response& res)
     std::printf("Path: %s\nBody: %s\n\n", req.path.c_str(), req.body.c_str());
 
     // Retrieve task creation info from request body
-    double requested_duration = req_body["job"]["durationInSec"].get<double>();
-    int num_nodes = req_body["job"]["numNodes"].get<int>();
+    auto requested_duration = req_body["job"]["durationInSec"].get<double>();
+    auto num_nodes = req_body["job"]["numNodes"].get<int>();
     double actual_duration = ((double)pp_work) / (pp_eff * num_nodes);
     json body;
 
@@ -273,7 +276,7 @@ void addJob(const Request& req, Response& res)
     std::string jobID = wms->addJob(requested_duration, num_nodes, actual_duration);
 
     // Retrieve the return value from adding ajob to determine if successful.
-    if(jobID != "")
+    if(!jobID.empty())
     {
         body["time"] = get_time() - time_start;
         body["jobID"] = jobID;
@@ -370,6 +373,17 @@ void write_xml(int nodes, int cores)
     outputXML.close();
 }
 
+auto in = [](const auto &min, const auto &max, char const * const opt_name){
+    return [opt_name, min, max](const auto &v){
+        if(v < min || v > max){
+            throw po::validation_error
+                    (po::validation_error::invalid_option_value,
+                     opt_name, std::to_string(v));
+        }
+    };
+};
+
+
 // Main function
 int main(int argc, char **argv)
 {
@@ -382,19 +396,23 @@ int main(int argc, char **argv)
     // Let WRENCH grab its own command-line arguments
     simulation.init(&argc, argv);
 
-    namespace po = boost::program_options;
 
 //    int opt;
     po::options_description desc("Allowed options");
     desc.add_options()
             ("help", "show help message")
-            ("nodes", po::value<int>()->default_value(4), "number of compute nodes in the cluster (default: 4)")
-            ("cores", po::value<int>()->default_value(1), "number of cores per compute node (default: 1)")
-            ("tracefile", po::value<std::string>()->default_value(""), "background workload trace file (default: none)")
-            ("pp_name", po::value<std::string>()->default_value("parallel_program"), "parallel program name (default: parallel_program)")
-            ("pp_work", po::value<int>()->default_value(3600), "parallel program work in seconds (default: 3600)")
-            ("pp_eff", po::value<double>()->default_value(1.0), "parallel program efficiency (default: 1.0)")
-            ("port", po::value<int>()->default_value(80), "server port (default: 80)")
+            ("nodes", po::value<int>()->default_value(4)->notifier(
+                    in(1, INT_MAX, "pp_work")), "number of compute nodes in the cluster")
+            ("cores", po::value<int>()->default_value(1)->notifier(
+                    in(1, INT_MAX, "pp_work")), "number of cores per compute node")
+            ("tracefile", po::value<std::string>()->default_value(""), "background workload trace file")
+            ("pp_name", po::value<std::string>()->default_value("parallel_program"), "parallel program name")
+            ("pp_work", po::value<int>()->default_value(3600)->notifier(
+                    in(1, INT_MAX, "pp_work")), "parallel program work in seconds")
+            ("pp_eff", po::value<double>()->default_value(1.0)->notifier(
+                    in(0.0, 1.0, "pp_eff")), "parallel program efficiency")
+            ("port", po::value<int>()->default_value(80)->notifier(
+                    in(1, INT_MAX, "pp_work")), "server port")
             ;
 
     po::variables_map vm;
