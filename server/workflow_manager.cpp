@@ -25,20 +25,20 @@ namespace wrench {
      * @param core_count Integer value holding the number of cores per node.
      */
     WorkflowManager::WorkflowManager(
-        const std::set<std::shared_ptr<ComputeService>> &compute_services,
-        const std::set<std::shared_ptr<StorageService>> &storage_services,
-        const std::string &hostname,
-        const int node_count,
-        const int core_count) : 
-        node_count(node_count), core_count(core_count), WMS(
+            const std::set<std::shared_ptr<ComputeService>> &compute_services,
+            const std::set<std::shared_ptr<StorageService>> &storage_services,
+            const std::string &hostname,
+            const int node_count,
+            const int core_count) :
+            node_count(node_count), core_count(core_count), WMS(
             nullptr, nullptr,
             compute_services,
             storage_services,
             {}, nullptr,
             hostname,
             "WorkflowManager"
-        ) { }
-    
+    ) { }
+
     /**
      * @brief Overridden main within WMS to handle the how jobs are processed. 
      * 
@@ -55,11 +55,11 @@ namespace wrench {
         while(true)
         {
             // Add tasks onto the job_manager so it can begin processing them
-            while (!this->toSubmitJobs.empty()) 
+            while (!this->toSubmitJobs.empty())
             {
                 // Retrieves the job to be submitted and set up needed arguments.
                 auto to_submit = this->toSubmitJobs.front();
-                auto job = std::get<0>(to_submit);      
+                auto job = std::get<0>(to_submit);
                 auto service_specific_args = std::get<1>(to_submit);
 
                 // Submit the job.
@@ -137,8 +137,8 @@ namespace wrench {
      * @return std::string Name of job or empty string if failed to create.
      */
     std::string WorkflowManager::addJob(const double& requested_duration,
-                                  const unsigned int& num_nodes,
-                                  const double &actual_duration)
+                                        const unsigned int& num_nodes,
+                                        const double &actual_duration)
     {
         static long task_id = 0;
         // Check if valid number of nodes.
@@ -152,7 +152,7 @@ namespace wrench {
 
         // Create tasks and add to workflow.
         auto task = this->getWorkflow()->addTask(
-            "task_" + std::to_string(task_id++), actual_duration, 1, 1, 0.0);
+                "task_" + std::to_string(task_id++), actual_duration, 1, 1, 0.0);
 
         // Create a job
         auto job = job_manager->createStandardJob(task, {});
@@ -271,8 +271,11 @@ namespace wrench {
 //                                         ',' + std::to_string(std::get<4>(q)) + ',' +
 //                                         ',' + std::to_string(std::get<5>(q)) + ','
 //                                          + std::to_string(std::get<6>(q)) << "\n";
-            queue.push_back(std::get<0>(q) + ',' + std::get<1>(q) + ',' + std::to_string(std::get<2>(q)) +
-                ',' + std::to_string(std::get<4>(q)) + ',' + std::to_string(std::get<6>(q)));
+            queue.push_back(std::get<0>(q) + ',' +
+                            std::get<1>(q) + ',' +
+                            std::to_string(std::get<2>(q)) + ',' +
+                            std::to_string(std::get<4>(q)) + ',' +
+                            std::to_string(std::get<6>(q)));
         }
         return queue;
     }

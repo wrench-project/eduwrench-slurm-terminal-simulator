@@ -177,7 +177,6 @@ void stop(const Request& req, Response& res)
  */
 void addTime(const Request& req, Response& res)
 {
-    cerr << "IN ADDTIME\n";
     std::printf("Path: %s\nBody: %s\n\n", req.path.c_str(), req.body.c_str());
     std::queue<std::string> status;
     std::vector<std::string> events;
@@ -211,7 +210,6 @@ void addTime(const Request& req, Response& res)
  */
 void add1(const Request& req, Response& res)
 {
-    cerr << "IN ADD1\n";
     std::printf("Path: %s\nBody: %s\n\n", req.path.c_str(), req.body.c_str());
     std::queue<std::string> status;
     std::vector<std::string> events;
@@ -346,8 +344,8 @@ void cancelJob(const Request& req, Response& res)
     body["success"] = false;
     // Send cancel job to wms and set success in job cancelation if can be done.
     if(wms->cancelJob(req_body["jobName"].get<std::string>()))
-        body["success"] = true;        
-    
+        body["success"] = true;
+
     res.set_header("access-control-allow-origin", "*");
     res.set_content(body.dump(), "application/json");
 }
@@ -422,14 +420,98 @@ auto in = [](const auto &min, const auto &max, char const * const opt_name){
     };
 };
 
+int randInt(int min, int max) {
+    return rand() % (max - min + 1) + min;
+}
+
+void appendRightNowWorkloadJob(FILE *f, int num_nodes, int submit_time) {
+    static int id = 0;
+    std::string line = "";
+    line += std::to_string(id++) + " "; // job id
+    line += std::to_string(submit_time) + " "; // submit time
+    line += "0 "; // wait time
+    int run_time = 30*60 + (rand() % 500) * 60;
+    line += std::to_string(run_time) + " "; // run time
+    line += std::to_string(num_nodes) + " "; // allocated num nodes
+    line += "0 "; // cpu time used
+    line += "0 "; // memory
+    line += std::to_string(num_nodes) + " "; // requested num nodes
+    line += std::to_string(run_time + 120) + " ";
+    line += "0 "; // requested memory
+    line += "0 "; // status
+    line += std::to_string(rand() % 20) + " "; // user_id
+    fprintf(f, "%s\n", line.c_str());
+}
+
+void createRightNowWorkload(FILE *f) {
+    int sizes[3];
+
+    // Find appropriate job sizes
+    for (int j1 = 2 ; j1 < num_cluster_nodes-1; j1++) {
+        for (int j2 = j1+1 ; j2 < num_cluster_nodes-1; j2++) {
+            if (j2 == j1) continue;
+            for (int j3 = j2+1; j3 < num_cluster_nodes-1; j3++) {
+                if (j3 == j1) continue;
+                if (j3 == j2) continue;
+                if ((j1 + j2 > num_cluster_nodes) and
+                    (j1 + j3 > num_cluster_nodes) and
+                    (j2 + j3 > num_cluster_nodes)) continue;
+                bool all_good = true;
+                for (int n1 = 0; n1 < num_cluster_nodes / j1 +1 ; n1++) {
+                    for (int n2 = 0; n2 < num_cluster_nodes / j2 + 1; n2++) {
+                        for (int n3 = 0; n3 < num_cluster_nodes / j3 + 1; n3++) {
+                            if (n1 * j1 + n2 * j2 + n3 * j3  > num_cluster_nodes) continue;
+                            if (n1 * j1 + n2 * j2 + n3 * j3 == num_cluster_nodes) {
+                                all_good = false;
+                                break;
+                            }
+                            if (n1 * j1 + n2 * j2 + n3 * j3 == num_cluster_nodes-1) {
+                                all_good = false;
+                                break;
+                            }
+                        }
+                    }
+                }
+                if (all_good) {
+//                    cerr << "SIZES = " << j1 << "," << j2 << "," << j3 << "\n";
+                    sizes[0] = j1; sizes[1] = j2; sizes[2] = j3;
+                    j1 = num_cluster_nodes; j2 = num_cluster_nodes; j3 = num_cluster_nodes;
+                }
+            }
+        }
+    }
+
+    // Generate 20 jobs that arrive at time zero
+    for (int i=0; i < 20; i++) {
+        appendRightNowWorkloadJob(f, sizes[rand() % 3], 0);
+    }
+    for (int i=0; i < 1000; i++) {
+        appendRightNowWorkloadJob(f, sizes[rand() % 3], 600 * (i+1));
+    }
+
+}
+
+void createTraceFile(std::string path, std::string scheme) {
+    // Create another invalid trace file
+    auto trace_file  = fopen(path.c_str(), "w");
+    if (scheme == "rightnow") {
+        createRightNowWorkload(trace_file);
+    } else {
+        throw std::invalid_argument("Unknown tracefile_scheme " + scheme);
+    }
+//    fprintf(trace_file, "1 0 -1 3600 -1 -1 -1 4 bogus -1\n");     // INVALID FIELD
+    fclose(trace_file);
+
+}
+
+
 
 // Main function
 int main(int argc, char **argv)
 {
     int port_number;
-    int node_count;
     int core_count;
-    std::string tracefile;
+    std::string tracefile_scheme;
 
     // Let WRENCH grab its own command-line arguments
     simulation.init(&argc, argv);
@@ -462,7 +544,7 @@ int main(int argc, char **argv)
     }
     num_cluster_nodes = vm["nodes"].as<int>();
     core_count = vm["cores"].as<int>();
-    tracefile = vm["tracefile"].as<std::string>();
+    tracefile_scheme = vm["tracefile"].as<std::string>();
     pp_name = vm["pp_name"].as<std::string>();
     pp_seqwork = vm["pp_seqwork"].as<int>();
     pp_parwork = vm["pp_parwork"].as<int>();
@@ -484,16 +566,13 @@ int main(int argc, char **argv)
 //    }
 
     // Print some logging
-    cerr << "Simulating a cluster with " << num_cluster_nodes << " " << core_count << "-core nodes.";
-    if (!tracefile.empty()) {
-        cerr << " Background workload from " + tracefile << "\n";
-    }
-    cerr << "\n";
+    cerr << "Simulating a cluster with " << num_cluster_nodes << " " << core_count << "-core nodes.\n";
+    cerr << "Background workload using scheme " + tracefile_scheme << ".\n";
     cerr << "Parallel program is called " << pp_name << ".\n";
     cerr << "Its sequential work is " << pp_seqwork << " seconds.\n";
-    cerr << "Its parallel work is " << pp_parwork << " seconds\n";
+    cerr << "Its parallel work is " << pp_parwork << " seconds.\n";
 
-    // XML generated then read.
+    // XML generated then read
     write_xml(num_cluster_nodes, core_count);
     std::string simgrid_config = "config.xml";
 
@@ -507,18 +586,20 @@ int main(int argc, char **argv)
 
     // Construct all services
     auto storage_service = simulation.add(new wrench::SimpleStorageService(
-        "WMSHost", {"/"}, {{wrench::SimpleStorageServiceProperty::BUFFER_SIZE, "10000000"}}, {}));
+            "WMSHost", {"/"}, {{wrench::SimpleStorageServiceProperty::BUFFER_SIZE, "10000000"}}, {}));
 
     std::shared_ptr<wrench::BatchComputeService> batch_service;
-    if (tracefile == "none") {
+    if (tracefile_scheme == "none") {
         batch_service = simulation.add(
                 new wrench::BatchComputeService("ComputeNode_0", nodes, "",
                                                 {},
                                                 {}));
     } else {
+        std::string path_to_tracefile = "/tmp/tracefile.swf";
+        createTraceFile(path_to_tracefile, tracefile_scheme);
         batch_service = simulation.add(
                 new wrench::BatchComputeService("ComputeNode_0", nodes, "",
-                                                {{wrench::BatchComputeServiceProperty::SIMULATED_WORKLOAD_TRACE_FILE, tracefile}},
+                                                {{wrench::BatchComputeServiceProperty::SIMULATED_WORKLOAD_TRACE_FILE, path_to_tracefile}},
                                                 {}));
     }
 

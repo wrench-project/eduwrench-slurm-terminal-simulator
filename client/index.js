@@ -278,30 +278,33 @@ function getQueue() {
         .then(res => res.json())
         .then(res => {
             // Writes the table headers
-            term.write('\rJOBNAME         USER       NODES TIME         STATUS\r\n');
+            term.write('\rJOBNAME    USER       NODES  R-TIME     S-TIME        STATUS\r\n');
             // Writes to terminal each job within the queue
             for(const q of res.queue) {
+                console.log("JOB: " + q);
                 let q_parse = q.split(",");
                 // Sets job name which will display only 15 characters
-                let jobName = q_parse[1].split("_").slice(1).join("_").slice(0,15);
+                let jobName = q_parse[1].split("_").slice(1).join("_").slice(0,10);
                 // Sets user name which will display only 10 characters
                 let user = q_parse[0].slice(0,10);
                 // Sets up node count
                 let nodes = q_parse[2];
+                // Sets up requested time
+                let rTime = q_parse[3];
                 // Sets the startTime to closest whole millisecond value
                 let startTime = Math.round(parseFloat(q_parse[4]));
                 // Sets up variable if startTime is not available since job isn't running
-                let sTime = "0           "
+                let sTime = "n/a          "
                 // Sets up variable which could change if job is running or not.
                 let status = 'RUNNING';
                 // Pads the string with spaces to make sure it fits into table formatting
-                while(jobName.length < 15) {
+                while(jobName.length < 10) {
                     jobName += ' ';
                 }
                 while(user.length < 10) {
                     user += ' ';
                 }
-                while(nodes.length < 5) {
+                while(nodes.length < 6) {
                     nodes += ' ';
                 }
                 // Sets up the startTime variable correctly where if negative means it's not running.
@@ -312,10 +315,18 @@ function getQueue() {
                     let t = new Date(0);
                     t.setSeconds(startTime);
                     sTime = padZero(t.getUTCHours()) + ":" + padZero(t.getUTCMinutes()) +
-                        ":" + padZero(t.getUTCSeconds()) + " UTC";
+                        ":" + padZero(t.getUTCSeconds()) + " UTC ";
+                }
+                // Format the requested time
+                {
+                    // Finds out the time and correctly generates the UTC time
+                    let t = new Date(0);
+                    t.setSeconds(Math.round(parseFloat(rTime)));
+                    rTime = padZero(t.getUTCHours()) + ":" + padZero(t.getUTCMinutes()) +
+                        ":" + padZero(t.getUTCSeconds()) + "  ";
                 }
                 // Write to terminal the job
-                term.write(`${jobName} ${user} ${nodes} ${sTime} ${status}` + "\r\n");
+                term.write(`${jobName} ${user} ${nodes} ${rTime} ${sTime} ${status}` + "\r\n");
             }
             term.write(prompt());
         });
