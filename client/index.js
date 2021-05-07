@@ -45,8 +45,11 @@ let slurmHour = 0;
 let slurmMinute = 1;
 let slurmSeconds = 0;
 
-// parallel program characteristics
+// parallel program and clustercharacteristics
 let pp_name;
+let pp_seqwork;
+let pp_parwork;
+let num_cluster_nodes;
 
 // Once HTML is loaded run main function
 window.onload = main;
@@ -362,6 +365,18 @@ async function processCommand(commandLine) {
     // but ignorable.
     if(command === "clear") {
         term.clear();
+        return;
+    }
+
+    // Help command
+    if(command === "help") {
+        if (commandLineTokens.length === 1) {
+            printHelp("");
+        } else if (commandLineTokens.length === 2) {
+            printHelp(commandLineTokens[1]);
+        } else {
+            term.write("help: invalid number of arguments\r\n");
+        }
         return;
     }
 
@@ -788,6 +803,89 @@ async function processInput(seq) {
 }
 
 /**
+ * Justify text by arring required "\r\n" characters.
+ * @param text: the text to justify
+ * @param numColumns: the number of columns
+ * @return the justified text.
+ */
+function justifyText(text, numColumns) {
+    let words = text.split(" ");
+    let justified = "";
+    let col = 0;
+    for (let w of words) {
+        if (col + w.length + 1 < numColumns) {
+            justified += w + " ";
+            col += w.length + 1;
+        } else if (w.length > numColumns) {
+            justified += w + "\r\n";
+            col = 0;
+        } else {
+            justified += "\r\n" + w + " ";
+            col = w.length;
+        }
+        if (w.indexOf("\n") !== -1) {
+            justified += "\r";
+            col = 0;
+        }
+    }
+    return justified;
+
+}
+
+
+
+/**
+ * Print help messages
+ * @param topic: help topic
+ */
+function printHelp(topic) {
+    let helpMessage = "";
+
+    if (topic === "") {
+        helpMessage += "Invoke the help command as follows to see help on these topics:\n";
+        helpMessage += "  - help about: information about this is all about\n";
+        helpMessage += "  - help shell: information regarding which Shell commands are supported\n";
+        helpMessage += "  - help slurm: information regarding which Slurm commands are supported\n";
+    } else if (topic === "about") {
+        helpMessage += "This terminal provides a simulation of a batch-scheduled cluster's head node. ";
+        helpMessage += "This simulated cluster hosts \u001B[1m" + num_cluster_nodes + " compute nodes\u001B[0m, which can be ";
+        helpMessage += "used to execute parallel programs.\n\n "
+        helpMessage += "A parallel program called \u001B[1m" + pp_name + "\u001B[0m is located in your home ";
+        helpMessage += "directory  (at path '/'). Its \u001B[1msequential execution time\u001B[0m on one compute ";
+        helpMessage += "node is \u001B[1m" + (pp_seqwork + pp_parwork) + "\u001B[0m seconds. ";
+        helpMessage += "But \u001B[1m" + pp_parwork + " seconds\u001B[0m of execution can be \u001B[1mperfectly parallelized\u001B[0m "
+        helpMessage += "across multiple compute nodes.\n\n ";
+        helpMessage += "Your goal is to execute this program as part of a batch job you will submit to Slurm.  ";
+        helpMessage += "Refer to the pedagogic module guidelines and questions for more information about what to do.\n\n ";
+        helpMessage += "Finally, remember that this is all in simulated time, which allows you to fast forward in time at all ";
+        helpMessage += "(using the 'sleep' shell command, which returns instantly but advances the simulated time!)\n";
+    } else if (topic === "shell") {
+        helpMessage += "This terminal supports simple versions of the following Shell commands:\n\n";
+        helpMessage += "  - sleep <num seconds> (instantly advances the simulation time!)\r\n";
+        helpMessage += "  - clear (clear the terminal)\n";
+        helpMessage += "  - pwd (show working directory)\n";
+        helpMessage += "  - cd <path> (change working directory)\r\n";
+        helpMessage += "  - ls [path] (list files)\n";
+        helpMessage += "  - cat <path to file> (show file content)\r\n";
+        helpMessage += "  - cp <path> <path> (copy files)\r\n";
+        helpMessage += "  - rm [-r] <path> (remove files)\r\n";
+        helpMessage += "  - date [-r <path>] (show current date or a file's last modification date)\r\n";
+        helpMessage += "  - history (show command history, support !! and !# to recall commands)\n";
+        helpMessage += "  - edit <path to file> (edit a file)\n";
+    } else if (topic === "slurm") {
+        helpMessage += "This terminal supports simple versions of the following Slurm commands:\n\n";
+        helpMessage += "  - sbatch <path to .slurm file> (submit a batch job)\r\n";
+        helpMessage += "  - squeue (show batch queue)\n";
+        helpMessage += "  - scancel <job name> (cancel batch job)\n\n ";
+        helpMessage += "Your home directory (at path '/') contains a file batch.slurm, which contains a Slurm batch script. ";
+        helpMessage += "You can edit this file with the 'edit' shell command.\n";
+    } else {
+        helpMessage = "help: unknown help topic";
+    }
+    term.write(justifyText(helpMessage + "\r\n", 80));
+}
+
+/**
  * Initializes the terminal to be usable on webapp.
  */
 function initializeTerminal() {
@@ -799,8 +897,8 @@ function initializeTerminal() {
     // Add pre-existing files into filesystem
     filesystem.createFile("batch.slurm", 0, false, false);
     filesystem.createFile(pp_name, 0, true, false);
-    filesystem.createFile("README_shell", 0, false, false);
-    filesystem.createFile("README_slurm", 0, false, false);
+    // filesystem.createFile("README_shell", 0, false, false);
+    // filesystem.createFile("README_slurm", 0, false, false);
 
     // Add text to files
     let batchSlurm = "#!/bin/bash\n#SBATCH --nodes=" + slurmNodes;
@@ -811,25 +909,25 @@ function initializeTerminal() {
     filesystem.saveFile(pp_name, "This is binary.");
 
     // README.terminal text
-    let READMEText = "This terminal supports simple versions of the following Shell commands:\n";
-    READMEText += "  - clear (clear the terminal)\n";
-    READMEText += "  - pwd (show working directory)\n";
-    READMEText += "  - cd <path> (change working directory)\n";
-    READMEText += "  - ls [path] (list files)\n";
-    READMEText += "  - cat <path to file> (show file content)\n";
-    READMEText += "  - cp <path> <path> (copy files)\n";
-    READMEText += "  - rm [-r] <path> (remove files)\n";
-    READMEText += "  - date [-r <path>] (show current date or a file's last modification date)\n";
-    READMEText += "  - history (show command history, support !! and !# to recall commands)\n";
-    READMEText += "  - edit <path to file> (edit a file)";
-    filesystem.saveFile("README_shell", READMEText);
+    // let READMEText = "This terminal supports simple versions of the following Shell commands:\n";
+    // READMEText += "  - clear (clear the terminal)\n";
+    // READMEText += "  - pwd (show working directory)\n";
+    // READMEText += "  - cd <path> (change working directory)\n";
+    // READMEText += "  - ls [path] (list files)\n";
+    // READMEText += "  - cat <path to file> (show file content)\n";
+    // READMEText += "  - cp <path> <path> (copy files)\n";
+    // READMEText += "  - rm [-r] <path> (remove files)\n";
+    // READMEText += "  - date [-r <path>] (show current date or a file's last modification date)\n";
+    // READMEText += "  - history (show command history, support !! and !# to recall commands)\n";
+    // READMEText += "  - edit <path to file> (edit a file)";
+    // filesystem.saveFile("README_shell", READMEText);
 
     // README.slurm text
-    READMEText = "This terminal supports simple versions of the following Slurm commands:\n";
-    READMEText += "  - sbatch <path to .slurm file> (submit a batch job)\n";
-    READMEText += "  - squeue (show batch queue)\n";
-    READMEText += "  - scancel <job name> (cancel batch job)";
-    filesystem.saveFile("README_slurm", READMEText);
+    // READMEText = "This terminal supports simple versions of the following Slurm commands:\n";
+    // READMEText += "  - sbatch <path to .slurm file> (submit a batch job)\n";
+    // READMEText += "  - squeue (show batch queue)\n";
+    // READMEText += "  - scancel <job name> (cancel batch job)";
+    // filesystem.saveFile("README_slurm", READMEText);
 
     // Finalize setup
     fitAddon.fit();
@@ -985,6 +1083,9 @@ function main() {
             // Prints the cancellation success
             // term.write("\r" + res["pp_name"] + "\r\n" + prompt());
             pp_name = res["pp_name"];
+            pp_seqwork = res["pp_seqwork"];
+            pp_parwork = res["pp_parwork"];
+            num_cluster_nodes = res["num_cluster_nodes"];
             initializeTerminal();
         });
 

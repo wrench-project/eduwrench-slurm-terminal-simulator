@@ -55,6 +55,7 @@ std::shared_ptr<wrench::WorkflowManager> wms;
 std::string pp_name;
 int pp_seqwork;
 int pp_parwork;
+int num_cluster_nodes;
 
 
 // GET PATHS
@@ -148,6 +149,9 @@ void start(const Request& req, Response& res)
 
     json body;
     body["pp_name"] = pp_name;
+    body["pp_seqwork"] = pp_seqwork;
+    body["pp_parwork"] = pp_parwork;
+    body["num_cluster_nodes"] = num_cluster_nodes;
     res.set_content(body.dump(), "application/json");
 }
 
@@ -456,7 +460,7 @@ int main(int argc, char **argv)
         cerr << "Error: " << e.what() << "\n";
         return 1;
     }
-    node_count = vm["nodes"].as<int>();
+    num_cluster_nodes = vm["nodes"].as<int>();
     core_count = vm["cores"].as<int>();
     tracefile = vm["tracefile"].as<std::string>();
     pp_name = vm["pp_name"].as<std::string>();
@@ -480,7 +484,7 @@ int main(int argc, char **argv)
     }
 
     // Print some logging
-    cerr << "Simulating a cluster with " << node_count << " " << core_count << "-core nodes.";
+    cerr << "Simulating a cluster with " << num_cluster_nodes << " " << core_count << "-core nodes.";
     if (!tracefile.empty()) {
         cerr << " Background workload from " + tracefile << "\n";
     }
@@ -490,7 +494,7 @@ int main(int argc, char **argv)
     cerr << "Its parallel work is " << pp_parwork << " seconds\n";
 
     // XML generated then read.
-    write_xml(node_count, core_count);
+    write_xml(num_cluster_nodes, core_count);
     std::string simgrid_config = "config.xml";
 
     // Instantiate Simulated Platform
@@ -498,7 +502,7 @@ int main(int argc, char **argv)
 
     // Generate vector containing variable number of compute nodes
     std::vector<std::string> nodes = {"ComputeNode_0"};
-    for(int i = 1; i < node_count; ++i)
+    for(int i = 1; i < num_cluster_nodes; ++i)
         nodes.push_back("ComputeNode_" + std::to_string(i));
 
     // Construct all services
