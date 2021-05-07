@@ -12,7 +12,7 @@
 
 #include <nlohmann/json.hpp>
 #include <wrench.h>
-#include <wrench/util/TraceFileLoader.h>
+//#include <wrench/util/TraceFileLoader.h>
 
 
 // Define a long function which is used multiple times to retrieve the time
@@ -442,7 +442,7 @@ int main(int argc, char **argv)
                     in(1, INT_MAX, "nodes")), "number of compute nodes in the cluster")
             ("cores", po::value<int>()->default_value(1)->notifier(
                     in(1, INT_MAX, "cores")), "number of cores per compute node")
-            ("tracefile", po::value<std::string>()->default_value("none"), "background workload trace file")
+            ("tracefile", po::value<std::string>()->default_value("none"), "background workload trace file scheme (none, rightnow)")
             ("pp_name", po::value<std::string>()->default_value("parallel_program"), "parallel program name")
             ("pp_seqwork", po::value<int>()->default_value(3600)->notifier(
                     in(1, INT_MAX, "pp_seqwork")), "parallel program's sequential work in seconds")
@@ -473,15 +473,15 @@ int main(int argc, char **argv)
         return 1;
     }
 
-    // Check validity of the tracefile, if any
-    if (tracefile != "none") {
-        try {
-            wrench::TraceFileLoader::loadFromTraceFile(tracefile, false, 0);
-        } catch(std::invalid_argument &e) {
-            std::printf("Invalid tracefile (%s)\n",e.what());
-            return -1;
-        }
-    }
+//    // Check validity of the tracefile, if any
+//    if (tracefile != "none") {
+//        try {
+//            wrench::TraceFileLoader::loadFromTraceFile(tracefile, false, 0);
+//        } catch(std::invalid_argument &e) {
+//            std::printf("Invalid tracefile (%s)\n",e.what());
+//            return -1;
+//        }
+//    }
 
     // Print some logging
     cerr << "Simulating a cluster with " << num_cluster_nodes << " " << core_count << "-core nodes.";
