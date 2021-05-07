@@ -857,7 +857,7 @@ function printHelp(topic) {
         helpMessage += "across multiple compute nodes.\n\n ";
         helpMessage += "Your goal is to execute this program as part of a batch job you will submit to Slurm.  ";
         helpMessage += "Refer to the pedagogic module guidelines and questions for more information about what to do.\n\n ";
-        helpMessage += "Finally, remember that this is all in simulated time, which allows you to fast forward in time at all ";
+        helpMessage += "Finally, remember that this is all in simulated time, which allows you to fast forward in time at will ";
         helpMessage += "(using the 'sleep' shell command, which returns instantly but advances the simulated time!)\n";
     } else if (topic === "shell") {
         helpMessage += "This terminal supports simple versions of the following Shell commands:\n\n";
