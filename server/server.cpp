@@ -167,12 +167,47 @@ void stop(const Request& req, Response& res)
 
 /**
  * @brief Path handling adding of 1 minute to current server simulated time.
+ *
+ * @param req HTTP request object
+ * @param res HTTP response object
+ */
+void addTime(const Request& req, Response& res)
+{
+    cerr << "IN ADDTIME\n";
+    std::printf("Path: %s\nBody: %s\n\n", req.path.c_str(), req.body.c_str());
+    std::queue<std::string> status;
+    std::vector<std::string> events;
+
+    json req_body = json::parse(req.body);
+
+    time_start -= req_body["increment"].get<int>() * 1000;
+
+    // Retrieve the event statuses during the 1 minute skip period.
+    wms->getEventStatuses(status, (get_time() - time_start) / 1000);
+
+    while(!status.empty())
+    {
+        events.push_back(status.front());
+        status.pop();
+    }
+
+    json body;
+    auto event_list = events;
+    body["time"] = get_time() - time_start;
+    body["events"] = event_list;
+    res.set_header("access-control-allow-origin", "*");
+    res.set_content(body.dump(), "application/json");
+}
+
+/**
+ * @brief Path handling adding of 1 minute to current server simulated time.
  * 
  * @param req HTTP request object
  * @param res HTTP response object
  */
 void add1(const Request& req, Response& res)
 {
+    cerr << "IN ADD1\n";
     std::printf("Path: %s\nBody: %s\n\n", req.path.c_str(), req.body.c_str());
     std::queue<std::string> status;
     std::vector<std::string> events;
@@ -496,6 +531,7 @@ int main(int argc, char **argv)
     // Handle POST requests
     server.Post("/api/start", start);
     server.Post("/api/stop", stop);
+    server.Post("/api/addTime", addTime);
     server.Post("/api/add1", add1);
     server.Post("/api/add10", add10);
     server.Post("/api/add60", add60);

@@ -106,8 +106,12 @@ files.  Also, on the activity below your will submit multiple jobs to run
 ## Simulation activity
 
 The simulation app at the bottom of this page presents you with a
-very limited (fake) Linux terminal on the cluster's frontend node. 
- Only a few commands are supported: cat, rm, date, edit, XXX,  and **sbatch**. 
+very limited (fake) Linux terminal on the cluster's head node. 
+Do a `cat README_shell` and a `cat README_slurm` to see which
+Shell commands and which Slurm commands are supported.  Note that
+the buttons above the terminal allow you to advance in time (so that
+you don't have to wait
+
 *This
 app shows you the (simulated) time of the day, and makes it possible for you to advance
 in time at will.*

@@ -365,6 +365,21 @@ async function processCommand(commandLine) {
         return;
     }
 
+    // Fake sleep
+    if(command === "sleep") {
+        if (commandLineTokens.length !== 2) {
+            term.write("sleep: invalid number of arguments\r\n");
+            return;
+        }
+        const parsed = parseInt(commandLineTokens[1]);
+        if (isNaN(parsed)) {
+            term.write("sleep: invalid argument\r\n");
+            return;
+        }
+        await addTime(parsed);
+        return;
+    }
+
     // Print command-history
     if(command === "history") {
         for (let i = Math.max(0, history.length - historyDepth); i < history.length; i++) {
@@ -818,7 +833,7 @@ function initializeTerminal() {
 
     // Finalize setup
     fitAddon.fit();
-    term.write("Terminal initialized...\r\n\r\n/$ ")
+    term.write("Terminal initialized. Type 'help' for instructions...\r\n\r\n/$ ")
     term.onData(processInput);
     term.focus();
 }
@@ -907,6 +922,20 @@ function waitNext() {
 }
 
 /**
+ * Adds x minute to clock and updates server.
+ */
+async function addTime(numSeconds) {
+    simTime.setTime(simTime.getTime() + numSeconds * 1000);
+    let body = {
+        increment: numSeconds
+    };
+    let res = await fetch(`http://${serverAddress}/addTime`, { method: 'POST', body: JSON.stringify(body)});
+    res = await res.json();
+    handleEvents(res.events);
+    updateClock();
+}
+
+/**
  * Adds 1 minute to clock and updates server.
  */
 async function add1() {
@@ -964,9 +993,9 @@ function main() {
     clock = document.getElementById('clock');
     textArea = document.getElementById('textArea');
     batchEditor = document.getElementById('batchEditor');
-    add1Button = document.getElementById('add1');
-    add10Button = document.getElementById('add10');
-    add60Button = document.getElementById('add60');
+    // add1Button = document.getElementById('add1');
+    // add10Button = document.getElementById('add10');
+    // add60Button = document.getElementById('add60');
     saveAndExitButton = document.getElementById('exit');
     slurmNodesInput = document.getElementById('slurmNodes');
     slurmHoursInput = document.getElementById('slurmHours');
@@ -975,9 +1004,9 @@ function main() {
 
 
     // Setup event handlers
-    add1Button.addEventListener("click", add1, false);
-    add10Button.addEventListener("click", add10, false);
-    add60Button.addEventListener("click", add60, false);
+    // add1Button.addEventListener("click", add1, false);
+    // add10Button.addEventListener("click", add10, false);
+    // add60Button.addEventListener("click", add60, false);
     saveAndExitButton.addEventListener("click", exitFile, false);
     slurmNodesInput.addEventListener("change", changeBatch, false);
     slurmHoursInput.addEventListener("change", changeBatch, false);
