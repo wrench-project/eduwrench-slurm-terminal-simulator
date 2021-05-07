@@ -18,6 +18,11 @@ find_library(WRENCH_LIBRARY NAMES wrench)
 find_library(WRENCH_PEGASUS_WORKFLOW_PARSER_LIBRARY NAMES wrenchpegasusworkflowparser)
 find_library(PUGIXML_LIBRARY NAMES pugixml)
 
+if (ENABLE_BATSCHED)
+    find_library(ZMQ_LIBRARY NAMES zmq)
+endif()
+
+
 FIND_PACKAGE( Boost COMPONENTS program_options REQUIRED )
 INCLUDE_DIRECTORIES( ${Boost_INCLUDE_DIR} )
 
@@ -35,6 +40,17 @@ add_executable (TestServer
 set(THREADS_PREFER_PTHREAD_FLAG ON)
 find_package(Threads REQUIRED)
 
+if (ENABLE_BATSCHED)
+target_link_libraries(TestServer
+        PRIVATE Threads::Threads
+        ${WRENCH_LIBRARY}
+        ${WRENCH_PEGASUS_WORKFLOW_PARSER_LIBRARY}
+        ${SimGrid_LIBRARY}
+        ${PUGIXML_LIBRARY}
+        ${Boost_LIBRARIES}
+        ${ZMQ_LIBRARY}
+        )
+else()
 target_link_libraries(TestServer
         PRIVATE Threads::Threads
         ${WRENCH_LIBRARY}
@@ -43,4 +59,6 @@ target_link_libraries(TestServer
         ${PUGIXML_LIBRARY}
         ${Boost_LIBRARIES}
         )
+endif()
+
 
