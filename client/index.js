@@ -432,23 +432,12 @@ async function processCommand(commandLine) {
             term.write(ls[0]+"\r\n");
             return;
         }
-        // If no error, print file names to console.
+        // If no error, print file names to console (not nicely aligned, leading spaces, whatever)
         const maxColumn = 80;
         if (ls[0] === "") {
-            let columnsUsed = 0;
-            for (const name of ls[1]) {
-                if (name.length < maxColumn && columnsUsed + name.length > maxColumn) {
-                    term.write("\r\n");
-                    term.write(name + "    ");
-                    columnsUsed = 0;
-                } else {
-                    term.write(name + "    ");
-                }
-                columnsUsed += name.length + 4;
-            }
-            if (columnsUsed > 0) {
-                term.write("\r\n");
-            }
+            let to_print = ls[1].join("   ");
+            to_print = justifyText(to_print, maxColumn);
+            term.write(to_print);
         }
         return;
     }
@@ -853,25 +842,25 @@ function printHelp(topic) {
     let helpMessage = "";
 
     if (topic === "") {
-        helpMessage += "Invoke the help command as follows to see help on these topics:\n";
-        helpMessage += "  - help about: information about this is all about\n";
-        helpMessage += "  - help shell: information on supported Shell commands\n";
-        helpMessage += "  - help slurm: information on supported Slurm commands\n";
+        helpMessage += "Invoke the help command as follows for help on these topics:\n";
+        helpMessage += "  - help about: what this is all about\n";
+        helpMessage += "  - help shell: supported Shell commands\n";
+        helpMessage += "  - help slurm: supported Slurm commands\n";
     } else if (topic === "about") {
         helpMessage += "This terminal provides a simulation of a batch-scheduled cluster's head node. ";
-        helpMessage += "This simulated cluster hosts \u001B[1m" + num_cluster_nodes + " compute nodes\u001B[0m, which can be ";
+        helpMessage += "The cluster hosts \u001B[1m" + num_cluster_nodes + " compute nodes\u001B[0m, which can be ";
         helpMessage += "used to execute parallel programs.\n\n "
         helpMessage += "A parallel program called \u001B[1m" + pp_name + "\u001B[0m is located in your home ";
         helpMessage += "directory  (at path '/'). Its \u001B[1msequential execution time\u001B[0m on one compute ";
         helpMessage += "node is \u001B[1m" + (pp_seqwork + pp_parwork) + "\u001B[0m seconds. ";
-        helpMessage += "But \u001B[1m" + pp_parwork + " seconds\u001B[0m of execution can be \u001B[1mperfectly parallelized\u001B[0m "
+        helpMessage += "But \u001B[1m" + pp_parwork + " seconds\u001B[0m of this execution can be \u001B[1mperfectly parallelized\u001B[0m "
         helpMessage += "across multiple compute nodes.\n\n ";
-        helpMessage += "Your goal is to execute this program as part of a batch job you will submit to Slurm.  ";
-        helpMessage += "Refer to the pedagogic module guidelines and questions for more information about what to do.\n\n ";
-        helpMessage += "Finally, remember that this is all in simulated time, which allows you to fast forward in time at will ";
+        helpMessage += "Your goal is to execute this program by submitting a batch job to Slurm.  ";
+        helpMessage += "Refer to the pedagogic module narrative for more information on what you should do.\n\n ";
+        helpMessage += "Important: this is all in simulated time, which allows you to fast forward at will ";
         helpMessage += "(using the 'sleep' shell command, which returns instantly but advances the simulated time!)\n";
     } else if (topic === "shell") {
-        helpMessage += "This terminal supports simple versions of the following Shell commands:\n\n";
+        helpMessage += "This terminal supports simple versions of the following commands:\n\n";
         helpMessage += "  - sleep <num seconds> (instantly advances the simulation time!)\r\n";
         helpMessage += "  - clear (clear the terminal)\n";
         helpMessage += "  - pwd (show working directory)\n";
@@ -886,9 +875,9 @@ function printHelp(topic) {
     } else if (topic === "slurm") {
         helpMessage += "This terminal supports simple versions of the following Slurm commands:\n\n";
         helpMessage += "  - sbatch <path to .slurm file> (submit a batch job)\r\n";
-        helpMessage += "  - squeue (show batch queue)\n";
+        helpMessage += "  - squeue (show batch queue state)\n";
         helpMessage += "  - scancel <job name> (cancel batch job)\n\n ";
-        helpMessage += "Your home directory (at path '/') contains a file batch.slurm, which contains a Slurm batch script. ";
+        helpMessage += "Your home directory (at path '/') contains a file called 'batch.slurm', which contains a Slurm batch script. ";
         helpMessage += "You can edit this file with the 'edit' shell command.\n";
     } else {
         helpMessage = "help: unknown help topic";

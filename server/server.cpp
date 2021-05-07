@@ -443,50 +443,30 @@ void appendRightNowWorkloadJob(FILE *f, int num_nodes, int submit_time) {
     fprintf(f, "%s\n", line.c_str());
 }
 
-void createRightNowWorkload(FILE *f) {
-    int sizes[3];
 
-    // Find appropriate job sizes
-    for (int j1 = 2 ; j1 < num_cluster_nodes-1; j1++) {
-        for (int j2 = j1+1 ; j2 < num_cluster_nodes-1; j2++) {
-            if (j2 == j1) continue;
-            for (int j3 = j2+1; j3 < num_cluster_nodes-1; j3++) {
-                if (j3 == j1) continue;
-                if (j3 == j2) continue;
-                if ((j1 + j2 > num_cluster_nodes) and
-                    (j1 + j3 > num_cluster_nodes) and
-                    (j2 + j3 > num_cluster_nodes)) continue;
-                bool all_good = true;
-                for (int n1 = 0; n1 < num_cluster_nodes / j1 +1 ; n1++) {
-                    for (int n2 = 0; n2 < num_cluster_nodes / j2 + 1; n2++) {
-                        for (int n3 = 0; n3 < num_cluster_nodes / j3 + 1; n3++) {
-                            if (n1 * j1 + n2 * j2 + n3 * j3  > num_cluster_nodes) continue;
-                            if (n1 * j1 + n2 * j2 + n3 * j3 == num_cluster_nodes) {
-                                all_good = false;
-                                break;
-                            }
-                            if (n1 * j1 + n2 * j2 + n3 * j3 == num_cluster_nodes-1) {
-                                all_good = false;
-                                break;
-                            }
-                        }
-                    }
-                }
-                if (all_good) {
-//                    cerr << "SIZES = " << j1 << "," << j2 << "," << j3 << "\n";
-                    sizes[0] = j1; sizes[1] = j2; sizes[2] = j3;
-                    j1 = num_cluster_nodes; j2 = num_cluster_nodes; j3 = num_cluster_nodes;
-                }
-            }
-        }
+void createRightNowWorkload(FILE *f) {
+
+    std::vector<int> job_sizes;
+
+    if (num_cluster_nodes == 32) {
+        // Space to leave: 4
+        job_sizes = {7, 13, 21, 28};
+    } else if (num_cluster_nodes == 20) {
+
+    } else {
+        std::cerr << "No rightnow workload scheme available for " << num_cluster_nodes << " nodes\n";
+        std::cerr << "You could run the ./computeRightnowJobSizes script...\n";
+        exit(1);
     }
+
 
     // Generate 20 jobs that arrive at time zero
     for (int i=0; i < 20; i++) {
-        appendRightNowWorkloadJob(f, sizes[rand() % 3], 0);
+        appendRightNowWorkloadJob(f, job_sizes[rand() % job_sizes.size()], 0);
     }
+    // Generate 1000 hours that arrive later one after the other
     for (int i=0; i < 1000; i++) {
-        appendRightNowWorkloadJob(f, sizes[rand() % 3], 600 * (i+1));
+        appendRightNowWorkloadJob(f, job_sizes[rand() % job_sizes.size()], 600 * (i+1));
     }
 
 }
@@ -592,14 +572,15 @@ int main(int argc, char **argv)
     if (tracefile_scheme == "none") {
         batch_service = simulation.add(
                 new wrench::BatchComputeService("ComputeNode_0", nodes, "",
-                                                {},
+                                                {{wrench::BatchComputeServiceProperty::BATCH_SCHEDULING_ALGORITHM, "conservative_bf"}},
                                                 {}));
     } else {
         std::string path_to_tracefile = "/tmp/tracefile.swf";
         createTraceFile(path_to_tracefile, tracefile_scheme);
         batch_service = simulation.add(
                 new wrench::BatchComputeService("ComputeNode_0", nodes, "",
-                                                {{wrench::BatchComputeServiceProperty::SIMULATED_WORKLOAD_TRACE_FILE, path_to_tracefile}},
+                                                {{wrench::BatchComputeServiceProperty::BATCH_SCHEDULING_ALGORITHM, "conservative_bf"},
+                                                 {wrench::BatchComputeServiceProperty::SIMULATED_WORKLOAD_TRACE_FILE, path_to_tracefile}},
                                                 {}));
     }
 

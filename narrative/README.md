@@ -12,10 +12,27 @@ Content below is text that will eventually find its way into EduWRENCH.
 
 ### Batch schedulers
 
-Large parallel platforms are expensive, not only for initial hardware purchases and ongoing maintenance, but also in terms of electrical power consumption.  This is why in most organizations these platforms are *shared* among users. This sharing can be done in different ways depending on the context. For instance, cloud providers allow transparent sharing by giving user virtual machine instances that transparently run on the physical machines.  In the field of High Performance Computing, a typical way to allow this sharing is with a **batch scheduler**.
+Large parallel platforms are expensive, not only for initial hardware
+purchases and ongoing maintenance, but also in terms of electrical power
+consumption.  This is why in most organizations these platforms are
+*shared* among users. This sharing can be done in different ways depending
+on the context. For instance, cloud providers allow transparent sharing by
+giving user virtual machine instances that transparently run on the
+physical machines.  In the field of High Performance Computing, a typical
+way to allow this sharing is with a **batch scheduler**.
 
-Consider a cluster of homogeneous compute nodes (or just "nodes").  A batch scheduler is a software service that allows users to submit **jobs** to the cluster. Submitting jobs is typically the only way for users to access the cluster's nodes.  Each job specifies a desired *number of nodes*, a desired *duration*, and a program to run on these nodes. For instance, a job can say: "I need 4 nodes for 2 hours".  These job requests are placed in a **queue**, where they wait until the nodes they need are available. A decent real-world analogy is parties of diners waiting for tables at a busy restaurant, where the host person is the batch scheduler.  The difference is that in addition to saying "we need a table with 4 seats" (in our case seats are nodes) parties would also need to give a time limit
-("we need 2 hours to eat").
+Consider a cluster of homogeneous compute nodes (or just "nodes").  A batch
+scheduler is a software service that allows users to submit **jobs** to the
+cluster. Submitting jobs is typically the only way for users to access the
+cluster's nodes.  Each job specifies a desired *number of nodes*, a desired
+*duration*, and a program to run on these nodes. For instance, a job can
+say: "I need 4 nodes for 2 hours".  These job requests are placed in a
+**queue**, where they wait until the nodes they need are available. A
+decent real-world analogy is parties of diners waiting for tables at a busy
+restaurant, where the host person is the batch scheduler.  The difference
+is that in addition to saying "we need a table with 4 seats" (in our case
+seats are nodes) parties would also need to give a time limit ("we need 2
+hours to eat").
 
 After waiting in the queue, a job is allocated to and started on available
 nodes.  Importantly, *jobs are forcefully terminated if they go over their
@@ -50,13 +67,13 @@ command-line.  To get started, just go to the next tab on this page!
 
 ## The sbatch command
 
-You were given an account on a batch-scheduled cluster with 10 
-nodes. You have logged in to cluster's *head node*, on which you can
-run Slurm commands to use the cluster's nodes. The **sbatch** command is
-used to submit jobs. It takes a single command-line argument, which is the
-name of a "batch script". The batch script specifies the job request, and
-in particular the desired number of nodes and duration. 
-The first thing for you to learn is how to submit a job. 
+You were given an account on a **batch-scheduled cluster with 64 nodes**. You
+have logged in to cluster's *head node*, on which you can run Slurm
+commands to use the cluster's nodes. The `sbatch` command is used to
+submit jobs. It takes a single command-line argument, which is the name of
+a "batch script". The batch script specifies the job request, and in
+particular the desired number of nodes and duration.  The first thing for
+you to learn is how to submit a job.
 
 ## Simulated scenario
 
@@ -71,7 +88,7 @@ In your working directory on the cluster's front-end node there is:
     passed to the Slurm **sbatch**.  This batch script specifies the desired
     number nodes and duration for running *myprogram* as a job on the cluster.
 
-The **sbatch** command is used to submit jobs. It takes a batch script as a
+The `sbatch` command is used to submit jobs. It takes a batch script as a
 single command-line argument. When invoked, it submits the 
 corresponding job to the batch scheduler and prints a job ID after
 being invoked, say `job_12`.  
@@ -125,7 +142,7 @@ do (at least) the following:
     - Verify your answers to the above questions by advancing the clock!
 
 
-SIMULATOR GOES HERE: ./TestServer --node 10 --pp_name myprogram --pp_seqwork 7200 --pp_parwork 72000 
+SIMULATOR GOES HERE: ./TestServer --node 65 --pp_name myprogram --pp_seqwork 7200 --pp_parwork 72000 
 
 ---
 
@@ -133,9 +150,9 @@ SIMULATOR GOES HERE: ./TestServer --node 10 --pp_name myprogram --pp_seqwork 720
 
 ### The scancel and squeue commands
 
-In addition to **sbatch** for submitting jobs, let's now use two other Slurm commands:
+In addition to `sbatch` for submitting jobs, let's now use two other Slurm commands:
 
-  - *scancel* is used to cancel jobs. It takes a job ID as its single 
+  - `scancel` is used to cancel jobs. It takes a job ID as its single 
     command-line argument.
 
   - *squeue* is used to list all jobs currently in the systems, which are either pending (i.e., submitted but not running yet) or running.

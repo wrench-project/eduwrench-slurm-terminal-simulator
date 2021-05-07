@@ -3,11 +3,15 @@
 #
 cmake_minimum_required (VERSION 3.8)
 
+project(eduwrench_slurm_simulator CXX)
+
+
 set(CMAKE_CXX_STANDARD 14)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
+set(CMAKE_BUILD_TYPE release)
+
 
 set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${CMAKE_SOURCE_DIR}/CmakeModules/")
-
 
 
 # Add needed packages
@@ -35,7 +39,11 @@ add_executable (TestServer
     "httplib.h"
     "workflow_manager.h"
     "workflow_manager.cpp")
-    
+
+# Add source to this project's executable.
+add_executable (computeRightnowJobSizes
+        "compute_rightnow_job_sizes.cpp")
+
 # Add pthreads
 set(THREADS_PREFER_PTHREAD_FLAG ON)
 find_package(Threads REQUIRED)
@@ -61,4 +69,7 @@ target_link_libraries(TestServer
         )
 endif()
 
+target_link_libraries(computeRightnowJobSizes
+        ${Boost_LIBRARIES}
+        )
 
