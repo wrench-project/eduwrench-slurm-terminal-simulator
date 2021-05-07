@@ -844,8 +844,8 @@ function printHelp(topic) {
     if (topic === "") {
         helpMessage += "Invoke the help command as follows to see help on these topics:\n";
         helpMessage += "  - help about: information about this is all about\n";
-        helpMessage += "  - help shell: information regarding which Shell commands are supported\n";
-        helpMessage += "  - help slurm: information regarding which Slurm commands are supported\n";
+        helpMessage += "  - help shell: information on supported Shell commands\n";
+        helpMessage += "  - help slurm: information on supported Slurm commands\n";
     } else if (topic === "about") {
         helpMessage += "This terminal provides a simulation of a batch-scheduled cluster's head node. ";
         helpMessage += "This simulated cluster hosts \u001B[1m" + num_cluster_nodes + " compute nodes\u001B[0m, which can be ";
