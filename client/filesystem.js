@@ -103,10 +103,12 @@ function listFiles(loc = null) {
     let toReturn = ["", []];
     for(const key in this.contents) {
         if (this.isInDirectory(key, loc) && !this.isSameDirectory(key, loc)) {
-            if (this.contents[key].type !== "dir") {
-                toReturn[1].push(this.getFileName(key));
-            } else {
+            if (this.contents[key].type === "dir") {
                 toReturn[1].push(this.getFileName(key) + "/");
+            } else if (this.contents[key].type === "bin") {
+                toReturn[1].push("\u001B[1;31m" + this.getFileName(key) + " \u001B[0m");
+            } else {
+                toReturn[1].push(this.getFileName(key));
             }
         }
     }

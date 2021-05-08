@@ -37,11 +37,14 @@
         <div id="textArea" class="container">
             <div class="row">
                 <div class="col-1"></div>
-                <div class="col-8">
+                <div class="col-6">
                     <h2>Text Editor</h2>
                 </div>
-                <div class="col-3">
+                <div class="col-4">
                     <div class="row">
+                        <div class="col">
+                            <button id="cancel" class="btn btn-secondary" type="button">Cancel</button>
+                        </div>
                         <div class="col">
                             <button id="exit" class="btn btn-secondary" type="button">Save and Exit</button>
                         </div>
@@ -52,8 +55,8 @@
                 <div id="textEditor" contenteditable="true" spellcheck="false"></div>
                 <div id="batchEditor" class="container">
                     <div style="text-align: center;" class="row justify-content-center">
-                        <div class="col-3">
-                            <h3>Number of Nodes</h3>
+                        <div class="col-2">
+                            <h3>#Nodes</h3>
                             <input id="slurmNodes" type="text" minlength="1" maxlength="4" size="4">
                         </div>
                         <div class="col-2">

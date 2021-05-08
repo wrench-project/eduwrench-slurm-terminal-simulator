@@ -454,7 +454,7 @@ void appendRightNowWorkloadJob(FILE *f, int num_nodes, int min_time, int max_tim
     line += std::to_string(run_time + 120) + " ";
     line += "0 "; // requested memory
     line += "0 "; // status
-    line += std::to_string(rand() % 20) + " "; // user_id
+    line += std::to_string(1 + rand() % 20) + " "; // user_id
     fprintf(f, "%s\n", line.c_str());
 }
 

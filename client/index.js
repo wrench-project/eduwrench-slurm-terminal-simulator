@@ -33,6 +33,7 @@ let add10Button;
 let add60Button;
 let textArea;
 let batchEditor;
+let cancelButton;
 let saveAndExitButton;
 let slurmNodesInput;
 let slurmHoursInput;
@@ -72,7 +73,7 @@ unsupportedCommands["emacs"] = "(use the 'edit' command)";
 /**********************************************************************/
 
 function prompt() {
-    return `${filesystem.getWorkingDir()}$ `;
+    return `\u001B[1;34m${filesystem.getWorkingDir()}$\u001B[0m `;
 }
 
 // Function used to pad zeroes to the left of the value.
@@ -120,6 +121,26 @@ function eraseCurrentCommandLine() {
     }
 }
 
+/**
+ * Saves the file to fake filesystem and returns control to terminal
+ * while hiding text editor
+ */
+function cancelFile() {
+
+    // Adjust the editing area and environmental values
+    textArea.contentEditable = false;
+    textArea.style.display = "none";
+    batchEditor.style.display = "none";
+    openedFile = "";
+    fileOpen = false;
+
+    // This particular line is needed if closing the editBatchFile. Doesn't
+    // affect regular file opening
+    textEditor.setAttribute("contentEditable", true);
+
+    // Restarts blinking on line.
+    term.setOption('cursorBlink', true);
+}
 
 /**
  * Saves the file to fake filesystem and returns control to terminal
@@ -137,11 +158,12 @@ function exitFile() {
     fileOpen = false;
 
     // This particular line is needed if closing the editBatchFile. Doesn't
-    // effect regular file opening
+    // affect regular file opening
     textEditor.setAttribute("contentEditable", true);
 
     // Restarts blinking on line.
     term.setOption('cursorBlink', true);
+
 }
 
 /**
@@ -278,10 +300,9 @@ function getQueue() {
         .then(res => res.json())
         .then(res => {
             // Writes the table headers
-            term.write('\rJOBNAME    USER       NODES  R-TIME     S-TIME        STATUS\r\n');
+            term.write('\rJOBNAME   USER       NODES  START TIME      REQ TIME   STATUS\r\n');
             // Writes to terminal each job within the queue
             for(const q of res.queue) {
-                console.log("JOB: " + q);
                 let q_parse = q.split(",");
                 // Sets job name which will display only 15 characters
                 let jobName = q_parse[1].split("_").slice(1).join("_").slice(0,10);
@@ -294,11 +315,12 @@ function getQueue() {
                 // Sets the startTime to closest whole millisecond value
                 let startTime = Math.round(parseFloat(q_parse[4]));
                 // Sets up variable if startTime is not available since job isn't running
-                let sTime = "n/a          "
+                let sTime = "n/a            "
                 // Sets up variable which could change if job is running or not.
-                let status = 'RUNNING';
+                // let status = '\u001B[1mRUNNING\u001B[0m';
+                let status = '\u001B[1;32mRUNNING\u001B[0m';
                 // Pads the string with spaces to make sure it fits into table formatting
-                while(jobName.length < 10) {
+                while(jobName.length < 9) {
                     jobName += ' ';
                 }
                 while(user.length < 10) {
@@ -309,13 +331,14 @@ function getQueue() {
                 }
                 // Sets up the startTime variable correctly where if negative means it's not running.
                 if(startTime < 0) {
-                    status = 'READY';
+                    status = 'PENDING';
                 } else {
                     // Finds out the time and correctly generates the UTC time
                     let t = new Date(0);
                     t.setSeconds(startTime);
-                    sTime = padZero(t.getUTCHours()) + ":" + padZero(t.getUTCMinutes()) +
-                        ":" + padZero(t.getUTCSeconds()) + " UTC ";
+                    let day = padZero(t.getUTCMonth() + 1) + "/" + padZero(t.getUTCDate())
+                    sTime = day + " " + padZero(t.getUTCHours()) + ":" + padZero(t.getUTCMinutes()) +
+                        ":" + padZero(t.getUTCSeconds()) + " " ;
                 }
                 // Format the requested time
                 {
@@ -326,7 +349,7 @@ function getQueue() {
                         ":" + padZero(t.getUTCSeconds()) + "  ";
                 }
                 // Write to terminal the job
-                term.write(`${jobName} ${user} ${nodes} ${rTime} ${sTime} ${status}` + "\r\n");
+                term.write(`${jobName} ${user} ${nodes} ${sTime} ${rTime} ${status}` + "\r\n");
             }
             term.write(prompt());
         });
@@ -703,6 +726,7 @@ async function processCommand(commandLine) {
  * Process TAB completion
  */
 function handleTab() {
+
     let currentLine = getCurrentCommandLine();
     let tokens = currentLine.trim().split(" ");
     let lastWord = tokens[tokens.length - 1];
@@ -875,29 +899,30 @@ function printHelp(topic) {
         helpMessage += "(using the 'sleep' shell command, which returns quicker than you think and advances the simulated time!)\n";
     } else if (topic === "shell") {
         helpMessage += "This terminal supports simple versions of the following commands:\n\n";
-        helpMessage += "  - sleep [[hours:]mins:]secs (advances the simulation time!)\r\n";
-        helpMessage += "     (could still take a while if you sleep a large number of seconds)\r\n";
-        helpMessage += "  - clear (clear the terminal)\n";
-        helpMessage += "  - pwd (show working directory)\n";
-        helpMessage += "  - cd <path> (change working directory)\r\n";
-        helpMessage += "  - ls [path] (list files)\n";
-        helpMessage += "  - cat <path to file> (show file content)\r\n";
-        helpMessage += "  - cp <path> <path> (copy files)\r\n";
-        helpMessage += "  - rm [-r] <path> (remove files)\r\n";
-        helpMessage += "  - date [-r <path>] (show current date or a file's last modification date)\r\n";
-        helpMessage += "  - history (show command history, support !! and !# to recall commands)\n";
-        helpMessage += "  - edit <path to file> (edit a file)\n";
+        helpMessage += "  - \u001B[1msleep [[h:]m:]s\u001B[0m      (block for pecified amount of time, \r\n";
+        helpMessage += "                          ~10000x faster than real time)\r\n";
+        helpMessage += "  - \u001B[1mclear\u001B[0m                (clear the terminal)\n";
+        helpMessage += "  - \u001B[1mpwd\u001B[0m                  (show working directory)\n";
+        helpMessage += "  - \u001B[1mcd <path>\u001B[0m            (change working directory)\r\n";
+        helpMessage += "  - \u001B[1mls [path]\u001B[0m            (list files)\n";
+        helpMessage += "  - \u001B[1mcat <path to file>\u001B[0m   (show file content)\r\n";
+        helpMessage += "  - \u001B[1mcp <path> <path>\u001B[0m     (copy files)\r\n";
+        helpMessage += "  - \u001B[1mrm [-r] <path>\u001B[0m       (remove files)\r\n";
+        helpMessage += "  - \u001B[1mdate [-r <path>]\u001B[0m     (show current date or a file's last modification date)\r\n";
+        helpMessage += "  - \u001B[1mhistory\u001B[0m              (show command history, \n";
+        helpMessage += "                          supports !! and !<num> to recall commands)\n";
+        helpMessage += "  - \u001B[1medit <path to file>\u001B[0m  (edit a file)\n";
     } else if (topic === "slurm") {
         helpMessage += "This terminal supports simple versions of the following Slurm commands:\n\n";
-        helpMessage += "  - sbatch <path to .slurm file> (submit a batch job)\r\n";
-        helpMessage += "  - squeue (show batch queue state)\n";
-        helpMessage += "  - scancel <job name> (cancel batch job)\n\n ";
-        helpMessage += "Your home directory (at path '/') contains a file called 'batch.slurm', which contains a Slurm batch script. ";
-        helpMessage += "You can edit this file with the 'edit' shell command.\n";
+        helpMessage += "  - \u001B[1msbatch <path to .slurm file>\u001B[0m   (submit a batch job)\r\n";
+        helpMessage += "  - \u001B[1msqueue\u001B[0m                         (show batch queue state)\n";
+        helpMessage += "  - \u001B[1mscancel <job name>\u001B[0m             (cancel batch job)\n\n ";
+        helpMessage += "Your home directory (at path '/') contains a file called 'batch.slurm', which is a Slurm batch script. ";
+        helpMessage += "You can edit this file with the 'edit' command.\n";
     } else {
         helpMessage = "help: unknown help topic";
     }
-    term.write(justifyText(helpMessage + "\r\n", 80));
+    term.write(justifyText(helpMessage + "\r\n", 90));
 }
 
 /**
@@ -946,7 +971,7 @@ function initializeTerminal() {
 
     // Finalize setup
     fitAddon.fit();
-    term.write("Terminal initialized. Type 'help' for instructions...\r\n\r\n/$ ")
+    term.write("Terminal initialized. Type 'help' for instructions...\r\n\r\n" + prompt())
     term.onData(processInput);
     term.focus();
 }
@@ -1038,6 +1063,7 @@ function waitNext() {
  * Adds x minute to clock and updates server.
  */
 async function addTime(numSeconds) {
+
     simTime.setTime(simTime.getTime() + numSeconds * 1000);
     let body = {
         increment: numSeconds
@@ -1113,6 +1139,7 @@ function main() {
     // add1Button = document.getElementById('add1');
     // add10Button = document.getElementById('add10');
     // add60Button = document.getElementById('add60');
+    cancelButton = document.getElementById('cancel');
     saveAndExitButton = document.getElementById('exit');
     slurmNodesInput = document.getElementById('slurmNodes');
     slurmHoursInput = document.getElementById('slurmHours');
@@ -1124,6 +1151,7 @@ function main() {
     // add1Button.addEventListener("click", add1, false);
     // add10Button.addEventListener("click", add10, false);
     // add60Button.addEventListener("click", add60, false);
+    cancelButton.addEventListener("click", cancelFile, false);
     saveAndExitButton.addEventListener("click", exitFile, false);
     slurmNodesInput.addEventListener("change", changeBatch, false);
     slurmHoursInput.addEventListener("change", changeBatch, false);
