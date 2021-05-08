@@ -459,7 +459,7 @@ async function processCommand(commandLine) {
             return;
         }
         if (ls[0] !== "") {
-            term.write(ls[0]+"\r\n");
+            term.write("ls: " + ls[0] + "\r\n");
             return;
         }
         // If no error, print file names to console (not nicely aligned, leading spaces, whatever)
@@ -496,7 +496,7 @@ async function processCommand(commandLine) {
                 let f = filesystem.mkdir(commandLineTokens[i], simTime.getTime());
                 // If filesystem returns an error, print out error.
                 if(f !== "") {
-                    term.write(f + "\r\n");
+                    term.write("mkdir: " + f + "\r\n");
                 }
             }
         } else {
@@ -514,7 +514,7 @@ async function processCommand(commandLine) {
                 let f = filesystem.createFile(commandLineTokens[i], simTime.getTime());
                 // If filesystem returns an error, print out error.
                 if(f !== "") {
-                    term.write(f + "\r\n");
+                    term.write("touch: " + f + "\r\n");
                 }
             }
         } else {
@@ -534,7 +534,7 @@ async function processCommand(commandLine) {
         }
         let f = filesystem.copyFile(commandLineTokens[1], commandLineTokens[2], simTime.getTime());
         if (f !== "") {
-            term.write(f + "\r\n");
+            term.write("cp: " + f + "\r\n");
         }
         return;
     }
@@ -556,7 +556,7 @@ async function processCommand(commandLine) {
             // Removes file if error occurs like removing directory then writes error.
             let f = filesystem.removeFile(commandLineTokens[1]);
             if(f !== "") {
-                term.write(f + "\r\n");
+                term.write("rm: " + f + "\r\n");
             }
             return;
         }
@@ -566,7 +566,7 @@ async function processCommand(commandLine) {
             for(let i = 2; i < commandLineTokens.length; i++) {
                 let f = filesystem.removeFile(commandLineTokens[i], true);
                 if(f !== "") {
-                    term.write(f + "\r\n");
+                    term.write("rm: " + f + "\r\n");
                 }
             }
             return;
@@ -575,7 +575,7 @@ async function processCommand(commandLine) {
         for(let i = 1; i < commandLineTokens.length; i++) {
             let f = filesystem.removeFile(commandLineTokens[i]);
             if(f !== "") {
-                term.write(f + "\r\n");
+                term.write("rm: " + f + "\r\n");
             }
         }
         return;

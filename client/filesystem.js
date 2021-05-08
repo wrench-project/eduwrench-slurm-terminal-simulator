@@ -90,7 +90,7 @@ function listFiles(loc = null) {
     loc = this.getAbsolutePath(loc);
 
     if(!(loc in this.contents)) {
-        return ["No such file or directory", []];
+        return ["no such file or directory", []];
     }
 
     // It's a file: just print the filename
@@ -196,7 +196,7 @@ function removeFile(name, recursive = false) {
 
     // Checks if exists.
     if(!(name in this.contents)) {
-        return "No such file or directory";
+        return "no such file or directory";
     }
 
     // Deletable?
@@ -217,7 +217,7 @@ function removeFile(name, recursive = false) {
 
     // Delete of a directory in which we are right now is not allowed
     if (this.isInDirectory(this.currentDir, name) || this.isSameDirectory(this.currentDir, name)) {
-        return `Cannot rm current working directory`;
+        return `cannot rm current working directory`;
     }
 
     // Recursive file delete
@@ -247,16 +247,16 @@ function copyFile(srcpath, dstpath, time) {
 
     // Checks that the src exists.
     if(!(srcpath in this.contents)) {
-        return "No such file or directory";
+        return "no such file or directory";
     }
 
     // Check that the dst is different
     if (srcpath === dstpath) {
-        return "cp: source and destination are identical (not copied)";
+        return "source and destination are identical (not copied)";
     }
 
     if (this.contents[srcpath].type === "dir") {
-        return "cp: copying directories not supported yet";
+        return "copying directories not supported yet";
     }
 
     if (this.contents[dstpath] != null) {
@@ -274,7 +274,7 @@ function copyFile(srcpath, dstpath, time) {
                 };
                 return "";
             } else {
-                return "cp: operation not permitted";
+                return "operation not permitted";
             }
         }
 
@@ -349,7 +349,7 @@ function createFile(name, time, binary, deletable) {
         };
         return "";
     }
-    return `Cannot create file '${name}': File exists`;
+    return `cannot create file '${name}': File exists`;
 }
 
 /**
