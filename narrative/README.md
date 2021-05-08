@@ -67,7 +67,7 @@ command-line.  To get started, just go to the next tab on this page!
 
 ## The sbatch command
 
-You were given an account on a **batch-scheduled cluster with 64 nodes**. You
+You were given an account on a **batch-scheduled cluster with 32 nodes**. You
 have logged in to cluster's *head node*, on which you can run Slurm
 commands to use the cluster's nodes. The `sbatch` command is used to
 submit jobs. It takes a single command-line argument, which is the name of
@@ -187,7 +187,7 @@ Use the app to do (at least) the following:
     - Submit a job to run *myprogram* successfully, asking for as many nodes as possible so that your job can run right now (unless another competing job shows up in the nick of time!)
     - Inspect the state of the queue. Is your job running?
 
-SIMULATOR GOES HERE: ./TestServer --node 10 --pp_name myprogram --pp_seqwork 7200 --pp_parwork 72000 --tracefile rightnow
+SIMULATOR GOES HERE: ./TestServer --node 32 --pp_name myprogram --pp_seqwork 7200 --pp_parwork 72000 --tracefile rightnow
 
 
 ### Take-away 

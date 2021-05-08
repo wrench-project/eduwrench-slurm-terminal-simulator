@@ -12,6 +12,9 @@ namespace wrench {
     class WorkflowManager : public WMS {
 
     public:
+
+        double simulationTime = 0.0;
+
         // Constructor
         WorkflowManager(
             const std::set<std::shared_ptr<ComputeService>> &compute_services,

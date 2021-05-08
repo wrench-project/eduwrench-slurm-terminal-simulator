@@ -1,6 +1,8 @@
 #include "httplib.h"
 #include "workflow_manager.h"
 
+#include <unistd.h>
+
 #include <chrono>
 #include <cstdio>
 #include <string>
@@ -185,14 +187,25 @@ void addTime(const Request& req, Response& res)
 
     time_start -= req_body["increment"].get<int>() * 1000;
 
-    // Retrieve the event statuses during the 1 minute skip period.
+    // Retrieve the event statuses during the  skip period.
     wms->getEventStatuses(status, (get_time() - time_start) / 1000);
+    cerr << "status.size() = " << status.size()  << "\n";
 
     while(!status.empty())
     {
         events.push_back(status.front());
         status.pop();
     }
+
+    // Let the simulation catch up
+    while ((get_time() - time_start) / 1000 > wms->simulationTime) {
+        usleep(1000);
+    }
+//    // Wait for the simulation to catch up!
+//    cerr << "WMS->GETSIMULATIONTIME: " << wms->simulationTime << "\n";
+//    cerr << "sleeping 1 secon of real time\n";
+//    sleep(1);
+//    cerr << "WMS->GETSIMULATIONTIME: " << wms->simulationTime << "\n";
 
     json body;
     auto event_list = events;
@@ -343,8 +356,10 @@ void cancelJob(const Request& req, Response& res)
     body["time"] = get_time() - time_start;
     body["success"] = false;
     // Send cancel job to wms and set success in job cancelation if can be done.
+    cerr << "CALLING CANCEL JOB\n";
     if(wms->cancelJob(req_body["jobName"].get<std::string>()))
         body["success"] = true;
+    cerr << "CALLED CANCEL JOB\n";
 
     res.set_header("access-control-allow-origin", "*");
     res.set_content(body.dump(), "application/json");
@@ -424,13 +439,13 @@ int randInt(int min, int max) {
     return rand() % (max - min + 1) + min;
 }
 
-void appendRightNowWorkloadJob(FILE *f, int num_nodes, int submit_time) {
+void appendRightNowWorkloadJob(FILE *f, int num_nodes, int min_time, int max_time, int submit_time) {
     static int id = 0;
+    int run_time = randInt(min_time, max_time);
     std::string line = "";
     line += std::to_string(id++) + " "; // job id
     line += std::to_string(submit_time) + " "; // submit time
     line += "0 "; // wait time
-    int run_time = 30*60 + (rand() % 500) * 60;
     line += std::to_string(run_time) + " "; // run time
     line += std::to_string(num_nodes) + " "; // allocated num nodes
     line += "0 "; // cpu time used
@@ -450,7 +465,7 @@ void createRightNowWorkload(FILE *f) {
 
     if (num_cluster_nodes == 32) {
         // Space to leave: 4
-        job_sizes = {7, 13, 21, 28};
+        job_sizes = {7, 13, 14, 21, 26};
     } else if (num_cluster_nodes == 20) {
 
     } else {
@@ -459,14 +474,25 @@ void createRightNowWorkload(FILE *f) {
         exit(1);
     }
 
-
     // Generate 20 jobs that arrive at time zero
-    for (int i=0; i < 20; i++) {
-        appendRightNowWorkloadJob(f, job_sizes[rand() % job_sizes.size()], 0);
+    for (int i=0; i < job_sizes.size(); i++) {
+        appendRightNowWorkloadJob(f, job_sizes[i],
+                                  5000,
+                                  36000,
+                                  0);
     }
-    // Generate 1000 hours that arrive later one after the other
-    for (int i=0; i < 1000; i++) {
-        appendRightNowWorkloadJob(f, job_sizes[rand() % job_sizes.size()], 600 * (i+1));
+    for (int i=job_sizes.size(); i < 15; i++) {
+        appendRightNowWorkloadJob(f, job_sizes[rand() % job_sizes.size()],
+                                  5000,
+                                  36000,
+                                  0);
+    }
+    // Generate 100 jobs that arrive later one after the other
+    for (int i=0; i < 100; i++) {
+        appendRightNowWorkloadJob(f, job_sizes[rand() % job_sizes.size()],
+                                  5000,
+                                  36000,
+                                  7200 * (i+1));
     }
 
 }

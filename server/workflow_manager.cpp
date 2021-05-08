@@ -79,10 +79,15 @@ namespace wrench {
             // Cancel jobs
             while(not cancelJobs.empty())
             {
+//                cerr << "IN CANCELJOBS TEST\n";
                 // Retrieve compute service and job to execute job termination.
                 auto batch_service = *(this->getAvailableComputeServices<BatchComputeService>().begin());
                 auto job_name = cancelJobs.front();
-                batch_service->terminateJob(job_list[job_name]);
+                try {
+                    batch_service->terminateJob(job_list[job_name]);
+                } catch (std::exception &e) {
+                    cerr << "EXCEPTION: " << e.what() << "\n";
+                }
 
                 // Remove from the map list of jobs
                 job_list.erase(job_name);
@@ -95,10 +100,11 @@ namespace wrench {
 
             // Moves time forward for requested time while adding any completed events to a queue.
             // Needs to be done this way because waiting for next event cannot be done on another thread.
-            while(this->simulation->getCurrentSimulatedDate() < server_time)
+            while(this->simulationTime < server_time)
             {
-                // Retrieve event by going through very tiny time increments.
-                auto event = this->waitForNextEvent(0.01);
+                // Retrieve event by going through 0.5 sec increments.
+                auto event = this->waitForNextEvent(0.5);
+                this->simulationTime = wrench::Simulation::getCurrentSimulatedDate();
 
                 // Checks if there was a job event during the time period
                 if(event != nullptr)
@@ -196,6 +202,7 @@ namespace wrench {
             queue_mutex.unlock();
             return true;
         }
+        cerr << "RETURNING FROM cancelJob\n";
         return false;
     }
 

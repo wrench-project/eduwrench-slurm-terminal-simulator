@@ -40,9 +40,9 @@ let slurmMinutesInput;
 let slurmSecondsInput;
 
 // batch.slurm variables
-let slurmNodes = 2;
-let slurmHour = 0;
-let slurmMinute = 1;
+let slurmNodes = 32;
+let slurmHour = 10;
+let slurmMinute = 0;
 let slurmSeconds = 0;
 
 // parallel program and clustercharacteristics
@@ -438,6 +438,7 @@ async function processCommand(commandLine) {
             let to_print = ls[1].join("   ");
             to_print = justifyText(to_print, maxColumn);
             term.write(to_print);
+            term.write("\r\n");
         }
         return;
     }
@@ -629,16 +630,22 @@ async function processCommand(commandLine) {
     }
     // Command to retrieve and print the queue
     if(command === "squeue") {
-        getQueue();
+        if (commandLineTokens.length !== 1) {
+            term.write("squeue: too many arguments\r\n");
+        } else {
+            getQueue();
+        }
         return;
     }
     // Command to cancel a job.
     if(command === "scancel") {
         // Since the command requires an argument checks for that otherwise prints error.
-        if(commandLineTokens.length > 1) {
+        if(commandLineTokens.length === 2) {
             cancelJob(commandLineTokens[1]);
+        } else if (commandLineTokens.length > 2) {
+            term.write("scancel: too many arguments\r\n");
         } else {
-            term.write("squeue: missing argument\r\n");
+            term.write("scancel: missing argument\r\n");
         }
         return;
     }
@@ -768,9 +775,9 @@ async function processInput(seq) {
     // Switch statement to handle special characters
     switch(seq) {
         // Case to handle Ctrl-C to cancel input
-        case '\x03':
-            term.write(`^C\r\n` + prompt());
-            break;
+        // case '\x03':
+        //     term.write(`^C\r\n` + prompt());
+        //     break;
         // Case to handle backspace
         case '\x7f':
             if(termBuffer.cursorX > filesystem.getWorkingDir().length + 2) {
@@ -858,10 +865,11 @@ function printHelp(topic) {
         helpMessage += "Your goal is to execute this program by submitting a batch job to Slurm.  ";
         helpMessage += "Refer to the pedagogic module narrative for more information on what you should do.\n\n ";
         helpMessage += "Important: this is all in simulated time, which allows you to fast forward at will ";
-        helpMessage += "(using the 'sleep' shell command, which returns instantly but advances the simulated time!)\n";
+        helpMessage += "(using the 'sleep' shell command, which returns quicker than you think and advances the simulated time!)\n";
     } else if (topic === "shell") {
         helpMessage += "This terminal supports simple versions of the following commands:\n\n";
-        helpMessage += "  - sleep <num seconds> (instantly advances the simulation time!)\r\n";
+        helpMessage += "  - sleep <num seconds> (advances the simulation time!)\r\n";
+        helpMessage += "     (could still take a while if you sleep a large number of seconds)\r\n";
         helpMessage += "  - clear (clear the terminal)\n";
         helpMessage += "  - pwd (show working directory)\n";
         helpMessage += "  - cd <path> (change working directory)\r\n";
@@ -901,9 +909,9 @@ function initializeTerminal() {
     // filesystem.createFile("README_slurm", 0, false, false);
 
     // Add text to files
-    let batchSlurm = "#!/bin/bash\n#SBATCH --nodes=" + slurmNodes;
+    let batchSlurm = "#!/bin/bash\n#SBATCH --nodes=" + num_cluster_nodes;
     batchSlurm += "\n#SBATCH --tasks-per-node=1\n#SBATCH --cpus-per-task=10\n#SBATCH --time ";
-    batchSlurm += "00:01:00";
+    batchSlurm += "10:00:00";
     batchSlurm += "\n#SBATCH --output=job-%A.err\n#SBATCH --output=job-%A.out\nsrun ./" + pp_name;
     filesystem.saveFile("batch.slurm", batchSlurm);
     filesystem.saveFile(pp_name, "This is binary.");
@@ -1014,7 +1022,7 @@ async function updateClockAndQueryServer() {
 
 // TODO: Implement waitForNextEvent functionality. Will require server changes
 // where the event will be returned as part of the json object where the handleEvent
-// functio here will be called. Time will be updated accordingly
+// function here will be called. Time will be updated accordingly
 function waitNext() {
 
 }
@@ -1086,6 +1094,7 @@ function main() {
             pp_seqwork = res["pp_seqwork"];
             pp_parwork = res["pp_parwork"];
             num_cluster_nodes = res["num_cluster_nodes"];
+            slurmNodes = num_cluster_nodes
             initializeTerminal();
         });
 
