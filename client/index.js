@@ -604,6 +604,14 @@ async function processCommand(commandLine) {
         }
         return;
     }
+    if (command === "whoami") {
+        if(commandLineTokens.length > 1) {
+            term.write("whoami: too many arguments\r\n");
+        } else {
+            term.write("slurm_user\r\n");
+        }
+        return;
+    }
     // Calls directory change
     if(command === "cd") {
         // Since the command requires an argument checks for that otherwise prints error.
