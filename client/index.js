@@ -397,12 +397,19 @@ async function processCommand(commandLine) {
             term.write("sleep: invalid number of arguments\r\n");
             return;
         }
-        const parsed = parseInt(commandLineTokens[1]);
-        if (isNaN(parsed)) {
-            term.write("sleep: invalid argument\r\n");
-            return;
+        let tokens = commandLineTokens[1].split(":");
+        let timeToSleep = 0;
+        let unit = 1;
+        for (let i=tokens.length-1; i >= 0; i--) {
+            const parsed = parseInt(tokens[i]);
+            if (isNaN(parsed)) {
+                term.write("sleep: invalid argument\r\n");
+                return;
+            }
+            timeToSleep += unit*parsed;
+            unit *= 60;
         }
-        await addTime(parsed);
+        await addTime(timeToSleep);
         return;
     }
 
@@ -868,7 +875,7 @@ function printHelp(topic) {
         helpMessage += "(using the 'sleep' shell command, which returns quicker than you think and advances the simulated time!)\n";
     } else if (topic === "shell") {
         helpMessage += "This terminal supports simple versions of the following commands:\n\n";
-        helpMessage += "  - sleep <num seconds> (advances the simulation time!)\r\n";
+        helpMessage += "  - sleep [[hours:]mins:]secs (advances the simulation time!)\r\n";
         helpMessage += "     (could still take a while if you sleep a large number of seconds)\r\n";
         helpMessage += "  - clear (clear the terminal)\n";
         helpMessage += "  - pwd (show working directory)\n";
