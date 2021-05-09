@@ -14,6 +14,7 @@ export class Filesystem {
         this.currentDir = "/";
 
         this.contents["/"] = {
+            name: "/",
             type: "dir",
             created: 0,
             deletable: false,
@@ -33,6 +34,7 @@ export class Filesystem {
         this.normalizePath = normalizePath;
         this.getAbsolutePath = getAbsolutePath;
         this.isInDirectory = isInDirectory;
+        this.isDirectory = isDirectory;
         this.isSameDirectory = isSameDirectory;
         this.getFileName = getFileName;
         this.getDirPath = getDirPath;
@@ -48,17 +50,34 @@ export class Filesystem {
  * @returns true or false
  */
 function isInDirectory(name, dir) {
-    let namepath = this.getAbsolutePath(name);
-    let dirpath = this.getAbsolutePath(dir);
+    let namePath = this.getAbsolutePath(name);
+    let dirPath = this.getAbsolutePath(dir);
 
-    if (!namepath.startsWith(dirpath)) {
+    if (!namePath.startsWith(dirPath)) {
         return false;
     }
-    if (!dirpath.endsWith("/")) {
-        dirpath = dirpath + "/";
+    if (!dirPath.endsWith("/")) {
+        dirPath = dirPath + "/";
     }
-    namepath = namepath.replace(dirpath, "");
-    if ((namepath === "/") || (namepath.indexOf("/") > -1)) {
+    namePath = namePath.replace(dirPath, "");
+    if ((namePath === "/") || (namePath.indexOf("/") > -1)) {
+        return false;
+    }
+    return true;
+}
+
+
+/**
+ * check whether a path is a directory
+ * @param path: path
+ * @returns true or false
+ */
+function isDirectory(path) {
+    path = this.getAbsolutePath(path);
+    if (!(path in this.contents)) {
+        return false;
+    }
+    if (this.contents[path].type !== "dir") {
         return false;
     }
     return true;
@@ -78,41 +97,32 @@ function isSameDirectory(dir1, dir2) {
 
 /**
  * Lists items in the working directory like ls.
- * @param loc: Directory or file name
+ * @param path: a path
  * @returns a list of two items, the first one is an error message ("" if all ok), and the second one
- * is a list of file names.
+ * is a list of file objects.
  */
-function listFiles(loc = null) {
+function listFiles(path) {
 
-    if (loc == null) {
-        loc = this.currentDir
-    }
-    loc = this.getAbsolutePath(loc);
+    path = this.getAbsolutePath(path);
 
-    if(!(loc in this.contents)) {
+    if(!(path in this.contents)) {
         return ["no such file or directory", []];
     }
 
-    // It's a file: just print the filename
-    if(this.contents[loc].type !== "dir") {
-        return ["", [loc]];
-    }
+    let toReturn;
 
-    // It's a directory: loops through all items in the file system
-    // (whatever, it's not like we'll have thousands of items)
-    let toReturn = ["", []];
-    for(const key in this.contents) {
-        if (this.isInDirectory(key, loc) && !this.isSameDirectory(key, loc)) {
-            if (this.contents[key].type === "dir") {
-                toReturn[1].push(this.getFileName(key) + "/");
-            } else if (this.contents[key].type === "bin") {
-                toReturn[1].push("\u001B[1;31m" + this.getFileName(key) + " \u001B[0m");
-            } else {
-                toReturn[1].push(this.getFileName(key));
+    // It's a file: just return the file
+    if(this.contents[path].type !== "dir") {
+        toReturn = ["", [this.contents[path]]];
+    } else {
+        // It's a directory: return its content
+        toReturn = ["", []]
+        for(const key in this.contents) {
+            if (this.isInDirectory(key, path) && !this.isSameDirectory(key, path)) {
+                toReturn[1].push(this.contents[key]);
             }
         }
     }
-    // console.log(toReturn);
     return toReturn;
 }
 
@@ -148,34 +158,37 @@ function changeWorkingDir(loc) {
         return false;
     }
 
-    if (this.contents[loc].type !== "")
-        this.currentDir = loc;
+    if (this.contents[loc].type !== "dir") {
+        return false;
+    }
 
+    this.currentDir = loc;
     return true;
 }
 
 /**
  * Creates a directory like mkdir
- * @param name: Name of directory
+ * @param path: path
  * @param time: Current time to hold creation time
  * @returns
  */
-function mkdir(name, time) {
+function mkdir(path, time) {
 
-    name = this.getAbsolutePath(name);
+    path = this.getAbsolutePath(path);
 
-    if (name in this.contents) {
+    if (path in this.contents) {
         return "cp: directory already exists";
     }
 
     // Check that all parent directories exist
-    let parentPath = this.getDirPath(name);
+    let parentPath = this.getDirPath(path);
     if (!(parentPath in this.contents)) {
         return "cp: operation not permitted";
     }
 
     // Create the directory
-    this.contents[name] = {
+    this.contents[path] = {
+        name: this.getFileName(path),
         type: "dir",
         created: time,
         deletable: true,
@@ -267,6 +280,7 @@ function copyFile(srcpath, dstpath, time) {
             if (this.contents[dstpath].deletable) {
                 delete this.contents[dstpath];
                 this.contents[dstpath] = {
+                    name: this.getFileName(dstpath),
                     type: this.contents[srcpath].type,
                     created: time,
                     deletable: true,
@@ -285,6 +299,7 @@ function copyFile(srcpath, dstpath, time) {
                 return "cp: operation not permitted";
             }
             this.contents[newPath] = {
+                name: this.getFileName(dstpath),
                 type: this.contents[srcpath].type,
                 created: time,
                 deletable: true,
@@ -301,6 +316,7 @@ function copyFile(srcpath, dstpath, time) {
         }
         // create the file
         this.contents[dstpath] = {
+            name: this.getFileName(dstpath),
             type: this.contents[srcpath].type,
             created: time,
             deletable: true,
@@ -331,17 +347,18 @@ function openFile(name) {
 
 /**
  * Creates an editable file.
- * @param name: File name
+ * @param path: File path
  * @param time:Creation time in milliseconds
  * @param binary: true or false
  * @param deletable: true or false
  * @returns Error string. Empty string if successful.
  */
-function createFile(name, time, binary, deletable) {
-    name = this.getAbsolutePath(name);
+function createFile(path, time, binary, deletable) {
+    path = this.getAbsolutePath(path);
 
-    if(!(name in this.contents)) {
-        this.contents[name] = {
+    if(!(path in this.contents)) {
+        this.contents[path] = {
+            name: this.getFileName(path),
             type: (binary ? "bin" : "text"),
             created: time,
             deletable: deletable,
@@ -349,7 +366,7 @@ function createFile(name, time, binary, deletable) {
         };
         return "";
     }
-    return `cannot create file '${name}': File exists`;
+    return `cannot create file '${path}': File exists`;
 }
 
 /**
@@ -402,7 +419,7 @@ function normalizePath(uncleanPath) {
     }
     for (let i = 1; i < parts.length; i++) {
         if (parts[i] !== '..') continue;
-        if (i > 0 && parts[i - 1] !== '..' && parts[i - 1] !== '.') {
+        if (i > 1 && parts[i - 1] !== '..' && parts[i - 1] !== '.') {
             parts.splice(--i, 2);
             i--;
         }

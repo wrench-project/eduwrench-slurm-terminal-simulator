@@ -100,17 +100,21 @@ function padIntegerWithSpace(val, maxVal) {
 }
 
 // Function to get the current terminal command line
-function getCurrentCommandLine() {
+function getCurrentCommandLine(trimRight) {
     // Retrieves the current line number of the terminal. Currently might have a bug in the library since it is
     // experimental for the version being used.
     let lineNum = termBuffer.cursorY + termBuffer.viewportY;
     // Return the trimmed line
-    return termBuffer.getLine(lineNum).translateToString(true).split(/^.*?\$ /)[1];
+    let to_return = termBuffer.getLine(lineNum).translateToString(true).split(/^.*?\$ /)[1];
+    if (trimRight) {
+        to_return = to_return.trimRight();
+    }
+    return to_return;
 }
 
 // Function to erase the current command line
 function eraseCurrentCommandLine() {
-    let totalNumCharacters = getCurrentCommandLine().length;
+    let totalNumCharacters = getCurrentCommandLine(false).length;
     let toMoveToTheRight = totalNumCharacters - termBuffer.cursorX + 3;
     let toErase = totalNumCharacters;
     for (let i=0; i < toMoveToTheRight; i++) {
@@ -355,11 +359,20 @@ function getQueue() {
         });
 }
 
+function getDate(t) {
+    let d = new Date(t);
+    let time = padZero(d.getUTCHours()) + ":" + padZero(d.getUTCMinutes()) + ":" + padZero(d.getUTCSeconds()) + " UTC";
+    return padZero(d.getUTCMonth() + 1) + "/" + padZero(d.getUTCDate()) + " " + time;
+}
+
 /**
  * Runs specified commands and faked programs.
  */
 async function processCommand(commandLine) {
 
+    // Remove doublespaces and extra space and stuff
+    commandLine = commandLine.replace(/ +/g, ' ');
+    commandLine = commandLine.trim();
     // Command recall from history
     if(commandLine.startsWith("!")) {
         let number;
@@ -447,31 +460,78 @@ async function processCommand(commandLine) {
 
     // List files in the filesystem in specified directory.
     if(command === "ls") {
-        let ls;
-        // If multiple command line arguments, request the faked filesystem to retrieve those filenames,
-        // otherwise if only ls, then the current directory.
-        if(commandLineTokens.length === 2) {
-            ls = filesystem.listFiles(commandLineTokens[1]);
-        } else if (commandLineTokens.length === 1) {
-            ls = filesystem.listFiles();
-        } else {
-            term.write("ls: too many arguments\r\n");
-            return;
+        let fileArguments = [];
+        let flagArguments = [];
+        for (let i=1; i < commandLineTokens.length; i++) {
+            let arg = commandLineTokens[i];
+            if (arg.startsWith("-")) {
+                if (arg !== "-l") {
+                    term.write("ls: unknown option '" + arg + "'\r\n");
+                    return;
+                }
+                flagArguments.push(arg);
+            } else {
+                fileArguments.push(arg);
+            }
         }
-        if (ls[0] !== "") {
-            term.write("ls: " + ls[0] + "\r\n");
-            return;
+        if (fileArguments.length === 0) {
+            fileArguments.push(".");
         }
-        // If no error, print file names to console (not nicely aligned, leading spaces, whatever)
-        const maxColumn = 80;
-        if (ls[0] === "") {
-            let to_print = ls[1].join("   ");
-            to_print = justifyText(to_print, maxColumn);
-            term.write(to_print);
-            term.write("\r\n");
+
+        // console.log("fileArguments = " + fileArguments);
+
+        let isDashL = flagArguments.includes("-l");
+
+        let stringToPrint = "";
+        let firstLine = true;
+        for (let path of fileArguments) {
+            let results = filesystem.listFiles(path);
+            if (results[0] !== "") {
+                term.write("ls: " + results[0] + "\r\n");
+                return;
+            } else {
+                if (fileArguments.length > 1 && filesystem.isDirectory(path)) {
+                    stringToPrint += (!firstLine ? "\n" : "") +  path + ": \n";
+                    firstLine = false;
+                }
+                for (let t of results[1]) {
+                    if (isDashL) {
+                        console.log(t);
+                        let permissions = "";
+                        if (t.type === "dir") {
+                            permissions += "d";
+                        } else {
+                            permissions += "-";
+                        }
+                        permissions += "r";
+                        if (t.deletable) {
+                            permissions += "w";
+                        } else {
+                            permissions += "-";
+                        }
+                        if (t.type === "bin" || t.type === "dir") {
+                            permissions += "w";
+                        } else {
+                            permissions += "-";
+                        }
+                        stringToPrint += permissions + "  " + "slurm_user   " + getDate(t.created) + "   " + (t.type === "dir" ? "\u001B[1;32m" : "") + (t.type === "bin" ? "\u001B[1;31m" : "") + t.name + (t.type === "bin" ? "\u001B[0m" : "") + (t.type === "dir" ? "/\u001B[0m" : "")  + "\n";
+                    } else {
+                        stringToPrint += (t.type === "dir" ? "\u001B[1;32m" : "") + (t.type === "bin" ? "\u001B[1;31m" : "") + t.name + (t.type === "bin" ? "\u001B[0m" : "") + (t.type === "dir" ? "/\u001B[0m" : "") + "   ";
+                    }
+                }
+                if (!isDashL) {
+                    stringToPrint += "\n";
+                }
+            }
+        }
+
+        if (stringToPrint !== "") {
+            stringToPrint = justifyText(stringToPrint, 100, true);
+            term.write(stringToPrint);
         }
         return;
     }
+
     // Print the current working directory
     if(command === "pwd") {
         let pwd;
@@ -690,14 +750,15 @@ async function processCommand(commandLine) {
 
     // Implements equivalent of date -r in linux systems to print date of creation
     if(command === "date") {
-        const printDate = function(t) {
-            let d = new Date(t);
-            let time = padZero(d.getUTCHours()) + ":" + padZero(d.getUTCMinutes()) + ":" + padZero(d.getUTCSeconds()) + " UTC";
-            term.write(padZero(d.getUTCMonth() + 1) + "/" + padZero(d.getUTCDate()) + " " + time + "\r\n");
-        };
+        // const printDate = function(t) {
+        //     let d = new Date(t);
+        //     let time = padZero(d.getUTCHours()) + ":" + padZero(d.getUTCMinutes()) + ":" + padZero(d.getUTCSeconds()) + " UTC";
+        //     term.write(padZero(d.getUTCMonth() + 1) + "/" + padZero(d.getUTCDate()) + " " + time + "\r\n");
+        // };
 
         if (commandLineTokens.length === 1) {
-            printDate(simTime.getTime());
+            term.write(getDate(simTime.getTime()) + "\r\n");
+            // printDate(simTime.getTime());
         } else if (commandLineTokens.length === 3) {
             // Since the command requires an argument checks for that otherwise prints error.
             if (commandLineTokens[1] !== "-r") {
@@ -708,7 +769,7 @@ async function processCommand(commandLine) {
                     term.write("date: file does not exist\r\n");
                 } else {
                     // Prints date without printing the year
-                    printDate(f);
+                    term.write(getDate(f) + "\r\n");
                 }
             }
         } else {
@@ -719,7 +780,7 @@ async function processCommand(commandLine) {
 
     // The user must have typed a path?
     let f = filesystem.fileExists(command);
-    if (f[0] == true) {
+    if (f[0] === true) {
         if (f[1] === "bin") {
             term.write(`cannot execute programs on the cluster's head node\r\n`);
         } else {
@@ -735,9 +796,16 @@ async function processCommand(commandLine) {
  */
 function handleTab() {
 
-    let currentLine = getCurrentCommandLine();
-    let tokens = currentLine.trim().split(" ");
-    let lastWord = tokens[tokens.length - 1];
+    let currentLine = getCurrentCommandLine(false);
+    let lastWord;
+    if (currentLine.endsWith(" ")) {
+        lastWord = "";
+    } else {
+        let tokens = currentLine.trim().split(" ");
+        lastWord = tokens[tokens.length - 1];
+    }
+    console.log("lastWord = '" + lastWord + "'");
+    console.log("currentLine = '" + currentLine + "'");
     let completion = filesystem.tabCompletion(lastWord);
     if (completion.length === 1) {
         term.write("\b \b".repeat(lastWord.length));
@@ -756,7 +824,7 @@ function handleTab() {
  * Process what happens when arrow key commands are executed.
  */
 function handleArrowKeys(seq) {
-    let currentLine = getCurrentCommandLine();
+    let currentLine = getCurrentCommandLine(true);
 
     // UP ARROW
     if (seq === '\u001B\u005B\u0041') {
@@ -828,7 +896,7 @@ async function processInput(seq) {
             handleTab();
             break;
         case '\r':
-            let commandLine = getCurrentCommandLine().trim();
+            let commandLine = getCurrentCommandLine(true).trimLeft();
             term.write('\r\n')
             let executedCommandLine;
             let p = processCommand(commandLine);
@@ -849,33 +917,53 @@ async function processInput(seq) {
 }
 
 /**
- * Justify text by arring required "\r\n" characters.
+ * Justify text by adding required "\r\n" characters.
  * @param text: the text to justify
  * @param numColumns: the number of columns
  * @return the justified text.
  */
-function justifyText(text, numColumns) {
-    let words = text.split(" ");
-    let justified = "";
-    let col = 0;
-    for (let w of words) {
-        if (col + w.length + 1 < numColumns) {
-            justified += w + " ";
-            col += w.length + 1;
-        } else if (w.length > numColumns) {
-            justified += w + "\r\n";
-            col = 0;
-        } else {
-            justified += "\r\n" + w + " ";
-            col = w.length;
+function justifyText(text, numColumns, leftTrim) {
+    let lines = text.split("\n");
+    let new_lines = [];
+    for (let l of lines) {
+        let col = 0;
+        let words = l .split(" ");
+        let new_line = "";
+        for (let i=0; i < words.length; i++)  {
+            let w = words[i];
+            if (col + w.length + 1 < numColumns) {
+                new_line += w + " ";
+                col += w.length + 1;
+            } else if (w.length > numColumns) {
+                new_line += w;
+                new_lines.push(new_line);
+                new_line = "";
+                col = 0;
+            } else {
+                new_lines.push(new_line)
+                new_line = w + " ";
+                col = w.length + 1;
+            }
         }
-        if (w.indexOf("\n") !== -1) {
-            justified += "\r";
-            col = 0;
+        new_lines.push(new_line);
+    }
+    let valid_lines = [];
+    for (let l of new_lines) {
+        if (l !== undefined && l.trim() !== "") {
+            valid_lines.push(l);
         }
     }
-    return justified;
 
+    let justified = "";
+    for (let i=0; i < valid_lines.length; i++) {
+        valid_lines[i] = valid_lines[i].trimRight()
+        if (leftTrim) {
+            valid_lines[i] = valid_lines[i].trimLeft();
+        }
+        justified += valid_lines[i] + "\r\n";
+    }
+
+    return justified;
 }
 
 
@@ -912,7 +1000,7 @@ function printHelp(topic) {
         helpMessage += "  - \u001B[1mclear\u001B[0m                (clear the terminal)\n";
         helpMessage += "  - \u001B[1mpwd\u001B[0m                  (show working directory)\n";
         helpMessage += "  - \u001B[1mcd <path>\u001B[0m            (change working directory)\r\n";
-        helpMessage += "  - \u001B[1mls [path]\u001B[0m            (list files)\n";
+        helpMessage += "  - \u001B[1mls [-l] [path]\u001B[0m       (list files)\n";
         helpMessage += "  - \u001B[1mcat <path to file>\u001B[0m   (show file content)\r\n";
         helpMessage += "  - \u001B[1mcp <path> <path>\u001B[0m     (copy files)\r\n";
         helpMessage += "  - \u001B[1mrm [-r] <path>\u001B[0m       (remove files)\r\n";
@@ -930,7 +1018,7 @@ function printHelp(topic) {
     } else {
         helpMessage = "help: unknown help topic";
     }
-    term.write(justifyText(helpMessage + "\r\n", 90));
+    term.write(justifyText(helpMessage + "\n", 100, false));
 }
 
 /**
