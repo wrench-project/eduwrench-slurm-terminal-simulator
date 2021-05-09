@@ -276,11 +276,11 @@ function copyFile(srcpath, dstpath, time) {
         // The destination already exist
 
         // src: file, dst: file
-        if (this.contents[srcpath].type === "file" && this.contents[dstpath].type === "file") {
+        if (this.contents[srcpath].type !== "dir" && this.contents[dstpath].type !== "dir") {
             if (this.contents[dstpath].deletable) {
                 delete this.contents[dstpath];
                 this.contents[dstpath] = {
-                    name: this.getFileName(dstpath),
+                    name: this.getFileName(srcpath),
                     type: this.contents[srcpath].type,
                     created: time,
                     deletable: true,
@@ -293,13 +293,14 @@ function copyFile(srcpath, dstpath, time) {
         }
 
         // src: file, dst: dir
-        if (this.contents[srcpath].type === "file" && this.contents[dstpath].type === "dir") {
-            let newPath = this.getAbsolutePath(dstpath + this.getFileName(this.contents[srcpath]))
+        if (this.contents[srcpath].type !== "dir" && this.contents[dstpath].type === "dir") {
+
+            let newPath = this.getAbsolutePath(dstpath + "/" + this.getFileName(this.contents[srcpath].name))
             if (this.contents[newPath] != null && !this.contents[newPath].deletable) {
                 return "cp: operation not permitted";
             }
             this.contents[newPath] = {
-                name: this.getFileName(dstpath),
+                name: this.getFileName(srcpath),
                 type: this.contents[srcpath].type,
                 created: time,
                 deletable: true,
@@ -442,6 +443,7 @@ function getWorkingDir() {
  * @returns Absolute (and cleaned up) Path
  */
 function getAbsolutePath(name) {
+    // console.log("NAME = " + name);
     if (name.indexOf("/") !== 0) {
         name = this.currentDir + "/" + name;
     }
@@ -591,11 +593,11 @@ function computeLongestCommonPrefix(str1, str2) {
  * @returns a list of filenames
  */
 function getFileNamesInDir(dirpath) {
-    let absolutePath = this.getAbsolutePath(dirpath) + "/";
+    let absolutePath = normalizePath(this.getAbsolutePath(dirpath) + "/");
     let toReturn = [];
     for (const key in this.contents) {
         if (!key.startsWith(absolutePath)) continue;
-        let rest = key.replace(absolutePath,"");
+        let rest = key.replace(absolutePath+"/","");
         if (rest.indexOf("/") === -1) {
             toReturn.push(rest);
         }

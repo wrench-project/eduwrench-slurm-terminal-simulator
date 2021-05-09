@@ -20,6 +20,8 @@ let history = []
 let historyCursor = -1;
 const historyDepth = 16;
 
+let trailingWhiteSpaces = 0;
+
 // Holds current simulation time
 let simTime = new Date(0);
 
@@ -74,6 +76,12 @@ unsupportedCommands["emacs"] = "(use the 'edit' command)";
 
 function prompt() {
     return `\u001B[1;34m${filesystem.getWorkingDir()}$\u001B[0m `;
+    // return `${filesystem.getWorkingDir()}$ `;
+}
+
+function promptLength() {
+    // return `\u001B[1;34m${filesystem.getWorkingDir()}$\u001B[0m `.length;
+    return `${filesystem.getWorkingDir()}$ `.length;
 }
 
 // Function used to pad zeroes to the left of the value.
@@ -105,7 +113,9 @@ function getCurrentCommandLine(trimRight) {
     // experimental for the version being used.
     let lineNum = termBuffer.cursorY + termBuffer.viewportY;
     // Return the trimmed line
-    let to_return = termBuffer.getLine(lineNum).translateToString(true).split(/^.*?\$ /)[1];
+    let to_return = termBuffer.getLine(lineNum).translateToString(true);
+    // to_return = to_return.replace(prompt(), "");
+    to_return = to_return.substr(promptLength(), to_return.length - promptLength());
     if (trimRight) {
         to_return = to_return.trimRight();
     }
@@ -496,7 +506,7 @@ async function processCommand(commandLine) {
                 }
                 for (let t of results[1]) {
                     if (isDashL) {
-                        console.log(t);
+                        // console.log(t);
                         let permissions = "";
                         if (t.type === "dir") {
                             permissions += "d";
@@ -510,7 +520,7 @@ async function processCommand(commandLine) {
                             permissions += "-";
                         }
                         if (t.type === "bin" || t.type === "dir") {
-                            permissions += "w";
+                            permissions += "x";
                         } else {
                             permissions += "-";
                         }
@@ -526,7 +536,7 @@ async function processCommand(commandLine) {
         }
 
         if (stringToPrint !== "") {
-            stringToPrint = justifyText(stringToPrint, 100, true);
+            stringToPrint = justifyText(stringToPrint, 100, true, false);
             term.write(stringToPrint);
         }
         return;
@@ -759,19 +769,6 @@ async function processCommand(commandLine) {
         if (commandLineTokens.length === 1) {
             term.write(getDate(simTime.getTime()) + "\r\n");
             // printDate(simTime.getTime());
-        } else if (commandLineTokens.length === 3) {
-            // Since the command requires an argument checks for that otherwise prints error.
-            if (commandLineTokens[1] !== "-r") {
-                term.write("Usage: date [-r <path>]\r\n");
-            } else {
-                let f = filesystem.getDate(commandLineTokens[2]);
-                if (f === "") {
-                    term.write("date: file does not exist\r\n");
-                } else {
-                    // Prints date without printing the year
-                    term.write(getDate(f) + "\r\n");
-                }
-            }
         } else {
             term.write("Usage: date [-r <path>]\r\n");
         }
@@ -797,19 +794,42 @@ async function processCommand(commandLine) {
 function handleTab() {
 
     let currentLine = getCurrentCommandLine(false);
+    // console.log("currentLine = '" + currentLine + "'");
+    // console.log("trailing white spaces = " + trailingWhiteSpaces);
+    currentLine = currentLine.substr(0, currentLine.length - trailingWhiteSpaces);
+    // trailingWhiteSpaces = 0;
+
+    // if (currentLine.endsWith(" ")) {
+    //     return;
+    // }
+    // currentLine = currentLine.trimRight();
+
+    // console.log("cleaned up currentLine = '" + currentLine + "'");
+
+    // currentLine = currentLine.trimRight();
     let lastWord;
+    if (currentLine.endsWith(".")) {
+        term.write("/");
+        trailingWhiteSpaces--;
+        return;
+    }
     if (currentLine.endsWith(" ")) {
         lastWord = "";
     } else {
         let tokens = currentLine.trim().split(" ");
         lastWord = tokens[tokens.length - 1];
     }
-    console.log("lastWord = '" + lastWord + "'");
-    console.log("currentLine = '" + currentLine + "'");
+
+    // console.log("currentLine = '" + currentLine + "'");
+
+    // console.log("lastWord = '" + lastWord + "'");
     let completion = filesystem.tabCompletion(lastWord);
+    // console.log("COMPLETION= " + completion);
     if (completion.length === 1) {
         term.write("\b \b".repeat(lastWord.length));
         term.write(completion[0]);
+        trailingWhiteSpaces -= (completion[0].length - lastWord.length);
+        if (trailingWhiteSpaces < 0) trailingWhiteSpaces = 0;
     } else {
         term.write("\r\n");
         for (const c of completion) {
@@ -852,13 +872,13 @@ function handleArrowKeys(seq) {
 
     // RIGHT ARROW
     if (seq === '\u001B\u005B\u0043') {
-        if(termBuffer.cursorX < prompt().length + currentLine.length) {
+        if(termBuffer.cursorX < promptLength() + currentLine.length) {
             term.write(seq);
         }
     }
     // LEFT ARROW
     if (seq === '\u001B\u005B\u0044') {
-        if(termBuffer.cursorX > 3) {
+        if(termBuffer.cursorX > promptLength()) {
             term.write(seq);
         }
     }
@@ -879,17 +899,22 @@ async function processInput(seq) {
     if(fileOpen) {
         return;
     }
+
+    let wasBackSpace = false;
     // Switch statement to handle special characters
     switch(seq) {
         // Case to handle Ctrl-C to cancel input
-        // case '\x03':
-        //     term.write(`^C\r\n` + prompt());
-        //     break;
+        case '\x03':
+            term.write(`^C\r\n` + prompt());
+            break;
         // Case to handle backspace
         case '\x7f':
             if(termBuffer.cursorX > filesystem.getWorkingDir().length + 2) {
-                term.write('\b \b');
+                term.write("\u001B\u005B\u0044");
+                term.write(' ');
+                term.write("\u001B\u005B\u0044");
             }
+            trailingWhiteSpaces++;
             break;
         // Case to trigger command processing
         case '\t':
@@ -904,25 +929,32 @@ async function processInput(seq) {
 
             historyCursor = -1;
             term.write(prompt());
+            trailingWhiteSpaces = 0;
             break;
         // Otherwise write to console.
         default:
             // Since arrow keys are handled differently and there are other control characters not implemented
             if(notControl.test(seq)) {
                 term.write(seq);
+                trailingWhiteSpaces--;
+                if (trailingWhiteSpaces < 0) trailingWhiteSpaces = 0;
             } else if(seq.length === 3 && seq.charAt(0) === '\x1b') {
                 handleArrowKeys(seq);
+                trailingWhiteSpaces = 0;
             }
     }
+    // console.log("trailing: "  + trailingWhiteSpaces);
 }
 
 /**
  * Justify text by adding required "\r\n" characters.
  * @param text: the text to justify
  * @param numColumns: the number of columns
+ * @param leftTrim: true/false
+ * @param leaveBlankLines: true/false
  * @return the justified text.
  */
-function justifyText(text, numColumns, leftTrim) {
+function justifyText(text, numColumns, leftTrim, leaveBlankLines) {
     let lines = text.split("\n");
     let new_lines = [];
     for (let l of lines) {
@@ -949,9 +981,9 @@ function justifyText(text, numColumns, leftTrim) {
     }
     let valid_lines = [];
     for (let l of new_lines) {
-        if (l !== undefined && l.trim() !== "") {
-            valid_lines.push(l);
-        }
+        if (l === undefined) continue;
+        if (l.trim() === "" && !leaveBlankLines) continue
+        valid_lines.push(l);
     }
 
     let justified = "";
@@ -979,46 +1011,46 @@ function printHelp(topic) {
         helpMessage += "Invoke the help command as follows for help on these topics:\n";
         helpMessage += "  - help about: what this is all about\n";
         helpMessage += "  - help shell: supported Shell commands\n";
-        helpMessage += "  - help slurm: supported Slurm commands\n";
+        helpMessage += "  - help slurm: supported Slurm commands";
     } else if (topic === "about") {
         helpMessage += "This terminal provides a simulation of a batch-scheduled cluster's head node. ";
         helpMessage += "The cluster hosts \u001B[1m" + num_cluster_nodes + " compute nodes\u001B[0m, which can be ";
-        helpMessage += "used to execute parallel programs.\n\n "
+        helpMessage += "used to execute parallel programs.\n\n"
         helpMessage += "A parallel program called \u001B[1m" + pp_name + "\u001B[0m is located in your home ";
         helpMessage += "directory  (at path '/'). Its \u001B[1msequential execution time\u001B[0m on one compute ";
         helpMessage += "node is \u001B[1m" + (pp_seqwork + pp_parwork) + "\u001B[0m seconds. ";
         helpMessage += "But \u001B[1m" + pp_parwork + " seconds\u001B[0m of this execution can be \u001B[1mperfectly parallelized\u001B[0m "
-        helpMessage += "across multiple compute nodes.\n\n ";
+        helpMessage += "across multiple compute nodes.\n\n";
         helpMessage += "Your goal is to execute this program by submitting a batch job to Slurm.  ";
-        helpMessage += "Refer to the pedagogic module narrative for more information on what you should do.\n\n ";
+        helpMessage += "Refer to the pedagogic module narrative for more information on what you should do.\n\n";
         helpMessage += "Important: this is all in simulated time, which allows you to fast forward at will ";
-        helpMessage += "(using the 'sleep' shell command, which returns quicker than you think and advances the simulated time!)\n";
+        helpMessage += "(using the 'sleep' shell command, which returns quicker than you think and advances the simulated time!)";
     } else if (topic === "shell") {
         helpMessage += "This terminal supports simple versions of the following commands:\n\n";
-        helpMessage += "  - \u001B[1msleep [[h:]m:]s\u001B[0m      (block for pecified amount of time, \r\n";
-        helpMessage += "                          ~10000x faster than real time)\r\n";
+        helpMessage += "  - \u001B[1msleep [[h:]m:]s\u001B[0m      (block for pecified amount of time,\n";
+        helpMessage += "                          ~10000x faster than real time)\n";
         helpMessage += "  - \u001B[1mclear\u001B[0m                (clear the terminal)\n";
         helpMessage += "  - \u001B[1mpwd\u001B[0m                  (show working directory)\n";
-        helpMessage += "  - \u001B[1mcd <path>\u001B[0m            (change working directory)\r\n";
+        helpMessage += "  - \u001B[1mcd <path>\u001B[0m            (change working directory)\n";
         helpMessage += "  - \u001B[1mls [-l] [path]\u001B[0m       (list files)\n";
-        helpMessage += "  - \u001B[1mcat <path to file>\u001B[0m   (show file content)\r\n";
-        helpMessage += "  - \u001B[1mcp <path> <path>\u001B[0m     (copy files)\r\n";
-        helpMessage += "  - \u001B[1mrm [-r] <path>\u001B[0m       (remove files)\r\n";
-        helpMessage += "  - \u001B[1mdate [-r <path>]\u001B[0m     (show current date or a file's last modification date)\r\n";
+        helpMessage += "  - \u001B[1mcat <path to file>\u001B[0m   (show file content)\n";
+        helpMessage += "  - \u001B[1mcp <path> <path>\u001B[0m     (copy files)\n";
+        helpMessage += "  - \u001B[1mrm [-r] <path>\u001B[0m       (remove files)\n";
+        helpMessage += "  - \u001B[1mdate\u001B[0m                 (show current date UTC)\n";
         helpMessage += "  - \u001B[1mhistory\u001B[0m              (show command history, \n";
         helpMessage += "                          supports !! and !<num> to recall commands)\n";
-        helpMessage += "  - \u001B[1medit <path to file>\u001B[0m  (edit a file)\n";
+        helpMessage += "  - \u001B[1medit <path to file>\u001B[0m  (edit a file)";
     } else if (topic === "slurm") {
         helpMessage += "This terminal supports simple versions of the following Slurm commands:\n\n";
         helpMessage += "  - \u001B[1msbatch <path to .slurm file>\u001B[0m   (submit a batch job)\r\n";
         helpMessage += "  - \u001B[1msqueue\u001B[0m                         (show batch queue state)\n";
-        helpMessage += "  - \u001B[1mscancel <job name>\u001B[0m             (cancel batch job)\n\n ";
+        helpMessage += "  - \u001B[1mscancel <job name>\u001B[0m             (cancel batch job)\n\n";
         helpMessage += "Your home directory (at path '/') contains a file called 'batch.slurm', which is a Slurm batch script. ";
-        helpMessage += "You can edit this file with the 'edit' command.\n";
+        helpMessage += "You can edit this file with the 'edit' command.";
     } else {
         helpMessage = "help: unknown help topic";
     }
-    term.write(justifyText(helpMessage + "\n", 100, false));
+    term.write(justifyText(helpMessage + "\n", 70, false, true));
 }
 
 /**
