@@ -10,11 +10,9 @@
 #include <thread>
 
 #include <boost/program_options.hpp>
-#include <boost/bind/bind.hpp>
 
 #include <nlohmann/json.hpp>
 #include <wrench.h>
-//#include <wrench/util/TraceFileLoader.h>
 
 
 // Define a long function which is used multiple times to retrieve the time
@@ -25,7 +23,6 @@ using httplib::Response;
 using json = nlohmann::json;
 
 namespace po = boost::program_options;
-
 
 httplib::Server server;
 
@@ -289,6 +286,7 @@ void error_handling(const Request& req, Response& res)
     std::printf("%d\n", res.status);
 }
 
+
 /**
  * @brief Initializes the server.
  * 
@@ -422,6 +420,81 @@ void createTraceFile(std::string path, std::string scheme) {
 }
 
 
+//class Bogus {
+//public:
+//    static void bogus(int main_argc, char **main_argv, int num_nodes, int num_cores, std::string tracefile_scheme) {
+//        int argc = main_argc;
+//        char **argv = (char **)calloc(main_argc, sizeof(char*));
+//        for (int i=0; i < main_argc; i++) {
+//        argv[i] = strcpy(argv[i], main_argv[i]);
+//        }
+//    }
+//
+//};
+
+class SimulationLauncher {
+public:
+    static void createAndLaunchSimulation(int main_argc, char **main_argv, int num_nodes, int num_cores,
+                                          std::string tracefile_scheme) {
+        // Make a copy of argc and argv
+        int argc = main_argc;
+        char **argv = (char **) calloc(main_argc, sizeof(char *));
+        for (int i = 0; i < main_argc; i++) {
+            argv[i] = strcpy(argv[i], main_argv[i]);
+        }
+
+#if 1
+        wrench::Simulation simulation;
+
+        // Let WRENCH grab its own command-line arguments, if any
+        simulation.init(&argc, argv);
+
+        // XML generated then read
+        write_xml(num_cluster_nodes, num_cluster_nodes);
+        std::string simgrid_config = "config.xml";
+
+        // Instantiate Simulated Platform
+        simulation.instantiatePlatform(simgrid_config);
+
+        // Generate vector containing variable number of compute nodes
+        std::vector<std::string> nodes = {"ComputeNode_0"};
+        for (int i = 1; i < num_cluster_nodes; ++i)
+            nodes.push_back("ComputeNode_" + std::to_string(i));
+
+        // Construct all services
+        auto storage_service = simulation.add(new wrench::SimpleStorageService(
+                "WMSHost", {"/"}, {{wrench::SimpleStorageServiceProperty::BUFFER_SIZE, "10000000"}}, {}));
+
+        std::shared_ptr<wrench::BatchComputeService> batch_service;
+        if (tracefile_scheme == "none") {
+            batch_service = simulation.add(
+                    new wrench::BatchComputeService("ComputeNode_0", nodes, "",
+                                                    {{wrench::BatchComputeServiceProperty::BATCH_SCHEDULING_ALGORITHM, "conservative_bf"}},
+                                                    {}));
+        } else {
+            std::string path_to_tracefile = "/tmp/tracefile.swf";
+            createTraceFile(path_to_tracefile, tracefile_scheme);
+            batch_service = simulation.add(
+                    new wrench::BatchComputeService("ComputeNode_0", nodes, "",
+                                                    {{wrench::BatchComputeServiceProperty::BATCH_SCHEDULING_ALGORITHM,    "conservative_bf"},
+                                                     {wrench::BatchComputeServiceProperty::SIMULATED_WORKLOAD_TRACE_FILE, path_to_tracefile}},
+                                                    {}));
+        }
+
+        wms = simulation.add(
+                new wrench::WorkflowManager({batch_service}, {storage_service}, "WMSHost", nodes.size(), num_cores));
+
+        // Add workflow to wms
+        wms->addWorkflow(&workflow);
+
+        // Start the simulation. Currently cannot start the simulation in a different thread or else it will
+        // seg fault. Most likely related to how simgrid handles threads so the web server has to started
+        // on a different thread.
+        simulation.launch();
+#endif
+    }
+};
+
 
 // Main function
 int main(int argc, char **argv)
@@ -430,13 +503,11 @@ int main(int argc, char **argv)
     int core_count;
     std::string tracefile_scheme;
 
-    // Let WRENCH grab its own command-line arguments
-    simulation.init(&argc, argv);
-
     // Parse command-line arguments
     po::options_description desc("Allowed options");
     desc.add_options()
             ("help", "show help message")
+            ("wrench-full-logs", "wrench-specific flag")
             ("nodes", po::value<int>()->default_value(4)->notifier(
                     in(1, INT_MAX, "nodes")), "number of compute nodes in the cluster")
             ("cores", po::value<int>()->default_value(1)->notifier(
@@ -472,59 +543,12 @@ int main(int argc, char **argv)
         return 1;
     }
 
-//    // Check validity of the tracefile, if any
-//    if (tracefile != "none") {
-//        try {
-//            wrench::TraceFileLoader::loadFromTraceFile(tracefile, false, 0);
-//        } catch(std::invalid_argument &e) {
-//            std::printf("Invalid tracefile (%s)\n",e.what());
-//            return -1;
-//        }
-//    }
-
     // Print some logging
     cerr << "Simulating a cluster with " << num_cluster_nodes << " " << core_count << "-core nodes.\n";
     cerr << "Background workload using scheme " + tracefile_scheme << ".\n";
     cerr << "Parallel program is called " << pp_name << ".\n";
     cerr << "Its sequential work is " << pp_seqwork << " seconds.\n";
     cerr << "Its parallel work is " << pp_parwork << " seconds.\n";
-
-    // XML generated then read
-    write_xml(num_cluster_nodes, core_count);
-    std::string simgrid_config = "config.xml";
-
-    // Instantiate Simulated Platform
-    simulation.instantiatePlatform(simgrid_config);
-
-    // Generate vector containing variable number of compute nodes
-    std::vector<std::string> nodes = {"ComputeNode_0"};
-    for(int i = 1; i < num_cluster_nodes; ++i)
-        nodes.push_back("ComputeNode_" + std::to_string(i));
-
-    // Construct all services
-    auto storage_service = simulation.add(new wrench::SimpleStorageService(
-            "WMSHost", {"/"}, {{wrench::SimpleStorageServiceProperty::BUFFER_SIZE, "10000000"}}, {}));
-
-    std::shared_ptr<wrench::BatchComputeService> batch_service;
-    if (tracefile_scheme == "none") {
-        batch_service = simulation.add(
-                new wrench::BatchComputeService("ComputeNode_0", nodes, "",
-                                                {{wrench::BatchComputeServiceProperty::BATCH_SCHEDULING_ALGORITHM, "conservative_bf"}},
-                                                {}));
-    } else {
-        std::string path_to_tracefile = "/tmp/tracefile.swf";
-        createTraceFile(path_to_tracefile, tracefile_scheme);
-        batch_service = simulation.add(
-                new wrench::BatchComputeService("ComputeNode_0", nodes, "",
-                                                {{wrench::BatchComputeServiceProperty::BATCH_SCHEDULING_ALGORITHM, "conservative_bf"},
-                                                 {wrench::BatchComputeServiceProperty::SIMULATED_WORKLOAD_TRACE_FILE, path_to_tracefile}},
-                                                {}));
-    }
-
-    wms = simulation.add(new wrench::WorkflowManager({batch_service}, {storage_service}, "WMSHost", nodes.size(), core_count));
-
-    // Add workflow to wms
-    wms->addWorkflow(&workflow);
 
     // Handle GET requests
     server.Get("/api/time", getTime);
@@ -548,13 +572,21 @@ int main(int argc, char **argv)
     server.set_mount_point("/", "../client");
     server.set_mount_point("/", ".client");
 
+//    auto b =  Bogus();
+
+//    std::thread bogus_thread(Bogus::bogus, argc, argv,
+//                             num_cluster_nodes, core_count, tracefile_scheme);
+
+    // Start the simulation in a separate thread
+    std::thread simulation_thread(SimulationLauncher::createAndLaunchSimulation, argc, argv,
+                                  num_cluster_nodes, core_count, tracefile_scheme);
+
     // Initialize server on a separate thread since simgrid uses some special handling which
     // blocks the web server from running otherwise.
-    std::thread server_thread(init_server, port_number);
+//    std::thread server_thread(init_server, port_number);
 
-    // Start the simulation. Currently cannot start the simulation in a different thread or else it will
-    // seg fault. Most likely related to how simgrid handles threads so the web server has to started
-    // on a different thread.
-    simulation.launch();
+    std::printf("Listening on port: %d\n", port_number);
+    server.listen("0.0.0.0", port_number);
+
     return 0;
 }
