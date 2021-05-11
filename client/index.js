@@ -12,14 +12,16 @@ const fitAddon = new FitAddon();
 term.loadAddon(fitAddon);
 let termBuffer;
 
-// Creates faked filesystem
+// Creates fake filesystem
 const filesystem = new Filesystem();
 
-// Create command history
+// Data structures for command history
 let history = []
 let historyCursor = -1;
 const historyDepth = 16;
 
+// Global to keep track of trailing white spaces on the command-line
+// (because backspace does not remove them)
 let trailingWhiteSpaces = 0;
 
 // Holds current simulation time
@@ -30,9 +32,6 @@ let fileOpen = false;
 
 // Variables to hold DOM elements
 let clock;
-let add1Button;
-let add10Button;
-let add60Button;
 let textArea;
 let batchEditor;
 let cancelButton;
@@ -42,13 +41,7 @@ let slurmHoursInput;
 let slurmMinutesInput;
 let slurmSecondsInput;
 
-// batch.slurm variables
-// let slurmNodes = 32;
-// let slurmHour = 10;
-// let slurmMinute = 0;
-// let slurmSeconds = 0;
-
-// parallel program and clustercharacteristics
+// parallel program and cluster characteristics, all obtained from the server
 let pp_name;
 let pp_seqwork;
 let pp_parwork;
@@ -59,13 +52,13 @@ window.onload = main;
 
 // Miscellaneous values
 let openedFile = "";
-// let jobNum = 1;
 //let serverAddress = "192.168.0.20/api";
 let serverAddress = "localhost/api";
 
 // Unsupported commands with error messages
 let unsupportedCommands = {};
 unsupportedCommands["vi"] = "(use the 'edit' command)";
+unsupportedCommands["vim"] = "(use the 'edit' command)";
 unsupportedCommands["nano"] = "(use the 'edit' command)";
 unsupportedCommands["jedit"] = "(use the 'edit' command)";
 unsupportedCommands["emacs"] = "(use the 'edit' command)";
@@ -74,11 +67,13 @@ unsupportedCommands["emacs"] = "(use the 'edit' command)";
 /* HELPER FUNCTIONS                                                   */
 /**********************************************************************/
 
+// Function that returns the prompt string, with control characters for color
 function prompt() {
     return `\u001B[1;34m${filesystem.getWorkingDir()}$\u001B[0m `;
     // return `${filesystem.getWorkingDir()}$ `;
 }
 
+// Returns the prompt length, ignoring the control characters for color
 function promptLength() {
     // return `\u001B[1;34m${filesystem.getWorkingDir()}$\u001B[0m `.length;
     return `${filesystem.getWorkingDir()}$ `.length;
@@ -136,10 +131,9 @@ function eraseCurrentCommandLine() {
 }
 
 /**
- * Saves the file to fake filesystem and returns control to terminal
- * while hiding text editor
+ * Cancel interaction with text editor and go back to terminal
  */
-function cancelFile() {
+function exitTextEditor() {
 
     // Adjust the editing area and environmental values
     textArea.contentEditable = false;
@@ -163,28 +157,13 @@ function cancelFile() {
  * Saves the file to fake filesystem and returns control to terminal
  * while hiding text editor
  */
-function exitFile() {
+function saveAndExitTextEditor() {
 
     // Saves file to filesystem
     filesystem.saveFile(openedFile, textEditor.innerText);
 
-    // Adjust the editing area and environmental values
-    textArea.contentEditable = false;
-    textArea.style.display = "none";
-    batchEditor.style.display = "none";
-    openedFile = "";
-    fileOpen = false;
-
-    // This particular line is needed if closing the editBatchFile. Doesn't
-    // affect regular file opening
-    textEditor.setAttribute("contentEditable", true);
-
-    // Show terminal
-    document.getElementById('terminal').style.display = "";
-
-
-    // Restarts blinking on line.
-    term.setOption('cursorBlink', true);
+    // Exit the text editor
+    exitTextEditor();
 
 }
 
@@ -260,12 +239,13 @@ function changeBatch() {
     let slurmMinuteIsNaN = isNaN(slurmMinute);
     let slurmSecondsIsNaN = isNaN(slurmSeconds);
 
-    // Update background color
+    // Update background color if Nan
     slurmNodesInput.style.backgroundColor   = (slurmNodesIsNaN   ? "#FF3333" : "#FFFFFF");
     slurmHoursInput.style.backgroundColor   = (slurmHourIsNaN    ? "#FF3333" : "#FFFFFF");
     slurmMinutesInput.style.backgroundColor = (slurmMinuteIsNaN  ? "#FF3333" : "#FFFFFF");
     slurmSecondsInput.style.backgroundColor = (slurmSecondsIsNaN ? "#FF3333" : "#FFFFFF");
 
+    // Disable the save button if at least one Nan
     saveAndExitButton.disabled = slurmNodesIsNaN || slurmHourIsNaN || slurmMinuteIsNaN || slurmSecondsIsNaN;
 
     // Regenerates the content displayed.
@@ -296,8 +276,6 @@ async function sendBatch(config) {
     let nodes = parseInt(config[1].split('=')[1]);
     let parallel_program = config[7].split('/')[1];
 
-
-    // console.log("jobNum = " + jobNum);
     // Sets the body of the request
     let body = {
         job: {
@@ -835,17 +813,7 @@ async function processCommand(commandLine) {
 function handleTab() {
 
     let currentLine = getCurrentCommandLine(false);
-    // console.log("currentLine = '" + currentLine + "'");
-    // console.log("trailing white spaces = " + trailingWhiteSpaces);
     currentLine = currentLine.substr(0, currentLine.length - trailingWhiteSpaces);
-    // trailingWhiteSpaces = 0;
-
-    // if (currentLine.endsWith(" ")) {
-    //     return;
-    // }
-    // currentLine = currentLine.trimRight();
-
-    // console.log("cleaned up currentLine = '" + currentLine + "'");
 
     // currentLine = currentLine.trimRight();
     let lastWord;
@@ -861,11 +829,7 @@ function handleTab() {
         lastWord = tokens[tokens.length - 1];
     }
 
-    // console.log("currentLine = '" + currentLine + "'");
-
-    // console.log("lastWord = '" + lastWord + "'");
     let completion = filesystem.tabCompletion(lastWord);
-    // console.log("COMPLETION= " + completion);
     if (completion.length === 1) {
         term.write("\b \b".repeat(lastWord.length));
         term.write(completion[0]);
@@ -1118,27 +1082,6 @@ function initializeTerminal() {
     filesystem.saveFile("batch.slurm", batchSlurm);
     filesystem.saveFile(pp_name, "This is binary.");
 
-    // README.terminal text
-    // let READMEText = "This terminal supports simple versions of the following Shell commands:\n";
-    // READMEText += "  - clear (clear the terminal)\n";
-    // READMEText += "  - pwd (show working directory)\n";
-    // READMEText += "  - cd <path> (change working directory)\n";
-    // READMEText += "  - ls [path] (list files)\n";
-    // READMEText += "  - cat <path to file> (show file content)\n";
-    // READMEText += "  - cp <path> <path> (copy files)\n";
-    // READMEText += "  - rm [-r] <path> (remove files)\n";
-    // READMEText += "  - date [-r <path>] (show current date or a file's last modification date)\n";
-    // READMEText += "  - history (show command history, support !! and !# to recall commands)\n";
-    // READMEText += "  - edit <path to file> (edit a file)";
-    // filesystem.saveFile("README_shell", READMEText);
-
-    // README.slurm text
-    // READMEText = "This terminal supports simple versions of the following Slurm commands:\n";
-    // READMEText += "  - sbatch <path to .slurm file> (submit a batch job)\n";
-    // READMEText += "  - squeue (show batch queue)\n";
-    // READMEText += "  - scancel <job name> (cancel batch job)";
-    // filesystem.saveFile("README_slurm", READMEText);
-
     // Finalize setup
     fitAddon.fit();
     term.write("Terminal initialized. Type 'help' for instructions...\r\n\r\n" + prompt())
@@ -1159,7 +1102,6 @@ async function queryServer() {
 /**
  * Handles all events generated by server and creates corresponding files for success.
  * @param events: Array of events containing complete and failures from server
- * @param time: Current server time to represent what time output file will be created
  */
 async function handleEvents(events) {
     // Loop through array of events
@@ -1219,17 +1161,6 @@ async function updateClockAndQueryServer() {
 }
 
 /**
- * FUNCTIONS USED TO HANDLE MOVING TIME BUTTONS
- */
-
-// TODO: Implement waitForNextEvent functionality. Will require server changes
-// where the event will be returned as part of the json object where the handleEvent
-// function here will be called. Time will be updated accordingly
-function waitNext() {
-
-}
-
-/**
  * Adds x minute to clock and updates server.
  */
 async function addTime(numSeconds) {
@@ -1244,38 +1175,6 @@ async function addTime(numSeconds) {
     updateClock();
 }
 
-/**
- * Adds 1 minute to clock and updates server.
- */
-async function add1() {
-    simTime.setTime(simTime.getTime() + 60000);
-    let res = await fetch(`http://${serverAddress}/add1`, { method: 'POST' });
-    res = await res.json();
-    handleEvents(res.events);
-    updateClock();
-}
-
-/**
- * Adds 10 minute to clock and updates server.
- */
-async function add10() {
-    simTime.setTime(simTime.getTime() + 600000);
-    let res = await fetch(`http://${serverAddress}/add10`, { method: 'POST' });
-    res = await res.json();
-    handleEvents(res.events);
-    updateClock();
-}
-
-/**
- * Adds 1 hour to clock and updates server.
- */
-async function add60() {
-    simTime.setTime(simTime.getTime() + 3600000);
-    let res = await fetch(`http://${serverAddress}/add60`, { method: 'POST' });
-    res = await res.json();
-    handleEvents(res.events);
-    updateClock();
-}
 
 /**
  * Entry function to run after the HTML has fully loaded.
@@ -1284,8 +1183,6 @@ function main() {
 
     // Set up functions which need to be updated every specified interval
     setInterval(updateClockAndQueryServer, 1000);
-
-    let response;
 
     // Initialize server clock and retrieve parallel program info
     fetch(`http://${serverAddress}/start`, { method: 'POST' })
@@ -1300,14 +1197,10 @@ function main() {
             initializeTerminal();
         });
 
-
     // Get and set DOM elements
     clock = document.getElementById('clock');
     textArea = document.getElementById('textArea');
     batchEditor = document.getElementById('batchEditor');
-    // add1Button = document.getElementById('add1');
-    // add10Button = document.getElementById('add10');
-    // add60Button = document.getElementById('add60');
     cancelButton = document.getElementById('cancel');
     saveAndExitButton = document.getElementById('exit');
     slurmNodesInput = document.getElementById('slurmNodes');
@@ -1315,13 +1208,9 @@ function main() {
     slurmMinutesInput = document.getElementById('slurmMinutes');
     slurmSecondsInput = document.getElementById('slurmSeconds');
 
-
     // Setup event handlers
-    // add1Button.addEventListener("click", add1, false);
-    // add10Button.addEventListener("click", add10, false);
-    // add60Button.addEventListener("click", add60, false);
-    cancelButton.addEventListener("click", cancelFile, false);
-    saveAndExitButton.addEventListener("click", exitFile, false);
+    cancelButton.addEventListener("click", exitTextEditor, false);
+    saveAndExitButton.addEventListener("click", saveAndExitTextEditor, false);
     slurmNodesInput.addEventListener("change", changeBatch, false);
     slurmHoursInput.addEventListener("change", changeBatch, false);
     slurmMinutesInput.addEventListener("change", changeBatch, false);
