@@ -215,95 +215,6 @@ void addTime(const Request& req, Response& res)
     res.set_content(body.dump(), "application/json");
 }
 
-/**
- * @brief Path handling adding of 1 minute to current server simulated time.
- * 
- * @param req HTTP request object
- * @param res HTTP response object
- */
-void add1(const Request& req, Response& res)
-{
-    std::printf("Path: %s\nBody: %s\n\n", req.path.c_str(), req.body.c_str());
-    std::queue<std::string> status;
-    std::vector<std::string> events;
-    time_start -= 60000;
-
-    // Retrieve the event statuses during the 1 minute skip period.
-    wms->getEventStatuses(status, (get_time() - time_start) / 1000);
-
-    while(!status.empty())
-    {
-        events.push_back(status.front());
-        status.pop();
-    }
-
-    json body;
-    auto event_list = events;
-    body["time"] = get_time() - time_start;
-    body["events"] = event_list;
-    res.set_header("access-control-allow-origin", "*");
-    res.set_content(body.dump(), "application/json");
-}
-
-/**
- * @brief Path handling adding of 10 minutes to current server simulated time.
- * 
- * @param req HTTP request object
- * @param res HTTP response object
- */
-void add10(const Request& req, Response& res)
-{
-    std::printf("Path: %s\nBody: %s\n\n", req.path.c_str(), req.body.c_str());
-    std::queue<std::string> status;
-    std::vector<std::string> events;
-    time_start -= 60000 * 10;
-
-    // Retrieve the event statuses during the 10 minute skip period.
-    wms->getEventStatuses(status, (get_time() - time_start) / 1000);
-
-    while(!status.empty())
-    {
-        events.push_back(status.front());
-        status.pop();
-    }
-
-    json body;
-    auto event_list = events;
-    body["time"] = get_time() - time_start;
-    body["events"] = event_list;
-    res.set_header("access-control-allow-origin", "*");
-    res.set_content(body.dump(), "application/json");
-}
-
-/**
- * @brief Path handling adding of 1 hour to current server simulated time.
- * 
- * @param req HTTP request object
- * @param res HTTP response object
- */
-void add60(const Request& req, Response& res)
-{
-    std::printf("Path: %s\nBody: %s\n\n", req.path.c_str(), req.body.c_str());
-    std::queue<std::string> status;
-    std::vector<std::string> events;
-    time_start -= 60000 * 60;
-
-    // Retrieve the event statuses during the 1 hour skip period.
-    wms->getEventStatuses(status, (get_time() - time_start) / 1000);
-
-    while(!status.empty())
-    {
-        events.push_back(status.front());
-        status.pop();
-    }
-
-    json body;
-    auto event_list = events;
-    body["time"] = get_time() - time_start;
-    body["events"] = event_list;
-    res.set_header("access-control-allow-origin", "*");
-    res.set_content(body.dump(), "application/json");
-}
 
 /**
  * @brief Path handling adding a job to the simulated batch scheduler.
@@ -624,16 +535,14 @@ int main(int argc, char **argv)
     server.Post("/api/start", start);
     server.Post("/api/stop", stop);
     server.Post("/api/addTime", addTime);
-    server.Post("/api/add1", add1);
-    server.Post("/api/add10", add10);
-    server.Post("/api/add60", add60);
     server.Post("/api/addJob", addJob);
     server.Post("/api/cancelJob", cancelJob);
 
     server.set_error_handler(error_handling);
 
     // Path is relative so if you build in a different directory, you will have to change the relative path.
-    // Currently set so that it can try find the client directory in any location. Current implementation would have a security risk
+    // Currently set so that it can try find the client directory in any location. 
+    // Current implementation would have a security risk
     // since any file in that directory can be loaded.
     server.set_mount_point("/", "../../client");
     server.set_mount_point("/", "../client");
