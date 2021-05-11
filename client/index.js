@@ -43,10 +43,10 @@ let slurmMinutesInput;
 let slurmSecondsInput;
 
 // batch.slurm variables
-let slurmNodes = 32;
-let slurmHour = 10;
-let slurmMinute = 0;
-let slurmSeconds = 0;
+// let slurmNodes = 32;
+// let slurmHour = 10;
+// let slurmMinute = 0;
+// let slurmSeconds = 0;
 
 // parallel program and clustercharacteristics
 let pp_name;
@@ -152,6 +152,9 @@ function cancelFile() {
     // affect regular file opening
     textEditor.setAttribute("contentEditable", true);
 
+    // Show terminal
+    document.getElementById('terminal').style.display = "";
+
     // Restarts blinking on line.
     term.setOption('cursorBlink', true);
 }
@@ -176,6 +179,10 @@ function exitFile() {
     // affect regular file opening
     textEditor.setAttribute("contentEditable", true);
 
+    // Show terminal
+    document.getElementById('terminal').style.display = "";
+
+
     // Restarts blinking on line.
     term.setOption('cursorBlink', true);
 
@@ -187,13 +194,26 @@ function exitFile() {
  * @param text: Text in the file to be opened
  */
 function editBatchFile(filename, text) {
+
+    // Hide terminal
+    document.getElementById('terminal').style.display = "none";
+
     // Makes sure the text is not directly editable.
     textEditor.setAttribute("contentEditable", false);
-    // Sets up the current variables of file to be displayed in the form.
-    slurmNodesInput.value = slurmNodes;
-    slurmHoursInput.value = padZero(slurmHour.toString());
-    slurmMinutesInput.value = padZero(slurmMinute.toString());
-    slurmSecondsInput.value = padZero(slurmSeconds.toString());
+
+    // Set input fields to values in the file
+    let lines = text.split("\n");
+    for (let l of lines) {
+        // console.log("LINES = " + l);
+        if (l.startsWith("#SBATCH --nodes=")) {
+            slurmNodesInput.value = l.replace("#SBATCH --nodes=","").trim();
+        } else if (l.startsWith("#SBATCH --time ")) {
+            let timeSpec = l.replace("#SBATCH --time", "").trim().split(":");
+            slurmHoursInput.value = timeSpec[0];
+            slurmMinutesInput.value = timeSpec[1];
+            slurmSecondsInput.value = timeSpec[2];
+        }
+    }
 
     // Sets up the text area to be representative of file with environmental variables set.
     textEditor.innerText = text;
@@ -223,10 +243,10 @@ function editFile(filename, text) {
  */
 function changeBatch() {
     // Retrieves the values and set them to the global variables.
-    slurmNodes = parseInt(slurmNodesInput.value);
-    slurmHour = parseInt(slurmHoursInput.value);
-    slurmMinute = parseInt(slurmMinutesInput.value);
-    slurmSeconds = parseInt(slurmSecondsInput.value);
+    let slurmNodes = parseInt(slurmNodesInput.value);
+    let slurmHour = parseInt(slurmHoursInput.value);
+    let slurmMinute = parseInt(slurmMinutesInput.value);
+    let slurmSeconds = parseInt(slurmSecondsInput.value);
 
     // Retrieves the string version of the values.
     let slurmNodesText = slurmNodes.toString();
@@ -257,7 +277,7 @@ function changeBatch() {
     batchSlurm += slurmMinuteText;
     batchSlurm += ":";
     batchSlurm += slurmSecondsText;
-    batchSlurm += "\n#SBATCH --output=job-%A.err\n#SBATCH --output=job-%A.out\nsrun ./" + pp_name;
+    batchSlurm += "\n#SBATCH --error=job-%A.err\n#SBATCH --output=job-%A.out\nsrun ./" + pp_name;
 
     textEditor.innerText = batchSlurm;
 }
@@ -1078,7 +1098,8 @@ function printHelp(topic) {
  * Initializes the terminal to be usable on webapp.
  */
 function initializeTerminal() {
-    term.open(document.getElementById('terminal'));
+    let doc = document.getElementById('terminal');
+    term.open(doc);
     term.setOption('cursorBlink', true);
     // Currently experimental hence this weird calling approach which does not match xterm docs
     termBuffer = term.buffer.active;
@@ -1093,7 +1114,7 @@ function initializeTerminal() {
     let batchSlurm = "#!/bin/bash\n#SBATCH --nodes=" + num_cluster_nodes;
     batchSlurm += "\n#SBATCH --tasks-per-node=1\n#SBATCH --cpus-per-task=10\n#SBATCH --time ";
     batchSlurm += "10:00:00";
-    batchSlurm += "\n#SBATCH --output=job-%A.err\n#SBATCH --output=job-%A.out\nsrun ./" + pp_name;
+    batchSlurm += "\n#SBATCH --error=job-%A.err\n#SBATCH --output=job-%A.out\nsrun ./" + pp_name;
     filesystem.saveFile("batch.slurm", batchSlurm);
     filesystem.saveFile(pp_name, "This is binary.");
 
@@ -1276,7 +1297,6 @@ function main() {
             pp_seqwork = res["pp_seqwork"];
             pp_parwork = res["pp_parwork"];
             num_cluster_nodes = res["num_cluster_nodes"];
-            slurmNodes = num_cluster_nodes
             initializeTerminal();
         });
 
