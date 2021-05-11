@@ -36,6 +36,8 @@ include_directories(src/ include/ ${SimGrid_INCLUDE_DIR}/include /usr/local/incl
 # Add source to this project's executable.
 add_executable (TestServer
     "server.cpp"
+    "SimulationThreadState.cpp"
+    "SimulationThreadState.h"
     "httplib.h"
     "workflow_manager.h"
     "workflow_manager.cpp")
