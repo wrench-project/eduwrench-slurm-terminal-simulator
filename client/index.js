@@ -817,7 +817,7 @@ function handleTab() {
 
     // currentLine = currentLine.trimRight();
     let lastWord;
-    if (currentLine.endsWith(".")) {
+    if (currentLine.endsWith("/.") || currentLine.endsWith("/..") || currentLine.endsWith(" .") || currentLine.endsWith(" ..")) {
         term.write("/");
         trailingWhiteSpaces--;
         return;
