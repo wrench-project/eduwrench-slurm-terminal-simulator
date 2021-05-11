@@ -532,7 +532,7 @@ int main(int argc, char **argv)
                     in(1, INT_MAX, "cores")), "number of cores per compute node")
             ("tracefile", po::value<std::string>()->default_value("none"), "background workload trace file scheme (none, rightnow)")
             ("pp_name", po::value<std::string>()->default_value("parallel_program"), "parallel program name")
-            ("pp_seqwork", po::value<int>()->default_value(3600)->notifier(
+            ("pp_seqwork", po::value<int>()->default_value(600)->notifier(
                     in(1, INT_MAX, "pp_seqwork")), "parallel program's sequential work in seconds")
             ("pp_parwork", po::value<int>()->default_value(3600)->notifier(
                     in(1, INT_MAX, "pp_parwork")), "parallel program's parallelizable work in seconds")

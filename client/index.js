@@ -161,6 +161,7 @@ function cancelFile() {
  * while hiding text editor
  */
 function exitFile() {
+
     // Saves file to filesystem
     filesystem.saveFile(openedFile, textEditor.innerText);
 
@@ -233,11 +234,31 @@ function changeBatch() {
     let slurmMinuteText = padZero(slurmMinute.toString());
     let slurmSecondsText = padZero(slurmSeconds.toString());
 
+    // Determine NaN-ness
+    let slurmNodesIsNaN = isNaN(slurmNodes);
+    let slurmHourIsNaN = isNaN(slurmHour);
+    let slurmMinuteIsNaN = isNaN(slurmMinute);
+    let slurmSecondsIsNaN = isNaN(slurmSeconds);
+
+    // Update background color
+    slurmNodesInput.style.backgroundColor   = (slurmNodesIsNaN   ? "#FF3333" : "#FFFFFF");
+    slurmHoursInput.style.backgroundColor   = (slurmHourIsNaN    ? "#FF3333" : "#FFFFFF");
+    slurmMinutesInput.style.backgroundColor = (slurmMinuteIsNaN  ? "#FF3333" : "#FFFFFF");
+    slurmSecondsInput.style.backgroundColor = (slurmSecondsIsNaN ? "#FF3333" : "#FFFFFF");
+
+    saveAndExitButton.disabled = slurmNodesIsNaN || slurmHourIsNaN || slurmMinuteIsNaN || slurmSecondsIsNaN;
+
     // Regenerates the content displayed.
-    let batchSlurm = "#!/bin/bash\n#SBATCH --nodes=" + slurmNodesText;
+    let batchSlurm = "#!/bin/bash\n#SBATCH --nodes=";
+    batchSlurm += slurmNodesText;
     batchSlurm += "\n#SBATCH --tasks-per-node=1\n#SBATCH --cpus-per-task=10\n#SBATCH --time ";
-    batchSlurm += slurmHourText + ":" + slurmMinuteText + ":" + slurmSecondsText;
+    batchSlurm += slurmHourText
+    batchSlurm += ":";
+    batchSlurm += slurmMinuteText;
+    batchSlurm += ":";
+    batchSlurm += slurmSecondsText;
     batchSlurm += "\n#SBATCH --output=job-%A.err\n#SBATCH --output=job-%A.out\nsrun ./" + pp_name;
+
     textEditor.innerText = batchSlurm;
 }
 
