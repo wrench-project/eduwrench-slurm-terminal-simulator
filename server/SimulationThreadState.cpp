@@ -1,18 +1,18 @@
+#include "httplib.h"
 #include "SimulationThreadState.h"
 #include "workflow_manager.h"
 
 #include <unistd.h>
 
-#include <chrono>
 #include <cstdio>
 #include <string>
 #include <vector>
-#include <thread>
-
-#include <boost/program_options.hpp>
 
 #include <nlohmann/json.hpp>
 #include <wrench.h>
+
+std::shared_ptr<wrench::WorkflowManager> SimulationThreadState::wms;
+
 
 /**
  * @brief Creates and writes the XML config file to be used by wrench to configure simgrid.
@@ -50,15 +50,6 @@ void write_xml(int nodes, int cores)
     outputXML.close();
 }
 
-auto in = [](const auto &min, const auto &max, char const * const opt_name){
-    return [opt_name, min, max](const auto &v){
-        if(v < min || v > max){
-            throw po::validation_error
-                    (po::validation_error::invalid_option_value,
-                     opt_name, std::to_string(v));
-        }
-    };
-};
 
 int randInt(int min, int max) {
     return rand() % (max - min + 1) + min;
@@ -84,17 +75,17 @@ void appendRightNowWorkloadJob(FILE *f, int num_nodes, int min_time, int max_tim
 }
 
 
-void createRightNowWorkload(FILE *f) {
+void createRightNowWorkload(FILE *f, int num_nodes) {
 
     std::vector<int> job_sizes;
 
-    if (num_cluster_nodes == 32) {
+    if (num_nodes == 32) {
         // Space to leave: 4
         job_sizes = {7, 13, 14, 21, 26};
-    } else if (num_cluster_nodes == 20) {
+    } else if (num_nodes == 20) {
 
     } else {
-        std::cerr << "No rightnow workload scheme available for " << num_cluster_nodes << " nodes\n";
+        std::cerr << "No rightnow workload scheme available for " << num_nodes << " nodes\n";
         std::cerr << "You could run the ./computeRightnowJobSizes script...\n";
         exit(1);
     }
@@ -122,11 +113,11 @@ void createRightNowWorkload(FILE *f) {
 
 }
 
-void createTraceFile(std::string path, std::string scheme) {
+void createTraceFile(std::string path, std::string scheme, int num_nodes) {
     // Create another invalid trace file
     auto trace_file  = fopen(path.c_str(), "w");
     if (scheme == "rightnow") {
-        createRightNowWorkload(trace_file);
+        createRightNowWorkload(trace_file, num_nodes);
     } else {
         throw std::invalid_argument("Unknown tracefile_scheme " + scheme);
     }
@@ -136,7 +127,7 @@ void createTraceFile(std::string path, std::string scheme) {
 }
 
 
-static void SimulationThreadState::createAndLaunchSimulation(int main_argc, char **main_argv, int num_nodes, int num_cores,
+void SimulationThreadState::createAndLaunchSimulation(int main_argc, char **main_argv, int num_nodes, int num_cores,
                                                              std::string tracefile_scheme) {
     // Make a copy of argc and argv
     int argc = main_argc;
@@ -175,7 +166,7 @@ static void SimulationThreadState::createAndLaunchSimulation(int main_argc, char
                                                 {}));
     } else {
         std::string path_to_tracefile = "/tmp/tracefile.swf";
-        createTraceFile(path_to_tracefile, tracefile_scheme);
+        createTraceFile(path_to_tracefile, tracefile_scheme, num_nodes);
         batch_service = simulation.add(
                 new wrench::BatchComputeService("ComputeNode_0", nodes, "",
                                                 {{wrench::BatchComputeServiceProperty::BATCH_SCHEDULING_ALGORITHM,    "conservative_bf"},
@@ -183,7 +174,7 @@ static void SimulationThreadState::createAndLaunchSimulation(int main_argc, char
                                                 {}));
     }
 
-    this->wms = simulation.add(
+    wms = simulation.add(
             new wrench::WorkflowManager({batch_service}, {storage_service}, "WMSHost", nodes.size(), num_cores));
 
     // Add workflow to wms
@@ -194,5 +185,9 @@ static void SimulationThreadState::createAndLaunchSimulation(int main_argc, char
     // seg fault. Most likely related to how simgrid handles threads so the web server has to started
     // on a different thread.
     simulation.launch();
+}
+
+void SimulationThreadState::getEventStatuses(queue<std::string> &statuses, const time_t &time) {
+    wms->getEventStatuses(statuses, time);
 }
 

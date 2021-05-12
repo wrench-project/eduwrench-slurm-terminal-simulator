@@ -4,7 +4,7 @@
 
 class SimulationThreadState {
 public:
-    std::shared_ptr<wrench::WorkflowManager> wms;
+    static std::shared_ptr<wrench::WorkflowManager> wms;
 
     static void  getEventStatuses(std::queue<std::string>& statuses, const time_t& time);
 
