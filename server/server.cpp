@@ -14,6 +14,9 @@
 #include <nlohmann/json.hpp>
 #include <wrench.h>
 
+#define SIMULATION_RESET 100
+#define SIMULATION_END 101
+bool simulation_reset = false;
 
 // Define a long function which is used multiple times to retrieve the time
 #define get_time() (std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count())
@@ -184,6 +187,8 @@ void reset(const Request& req, Response& res)
     // Join with simulation thread
     simulation_thread.join();
 
+    simulation_reset = true;
+
     res.set_header("access-control-allow-origin", "*");
     server.stop();
 }
@@ -299,7 +304,12 @@ void error_handling(const Request& req, Response& res)
     std::printf("%d\n", res.status);
 }
 
-// Main function
+/**
+ * @brief Real main function
+ * @param argc
+ * @param argv
+ * @return
+ */
 int real_main(int argc, char **argv)
 {
     int port_number;
@@ -404,31 +414,39 @@ int real_main(int argc, char **argv)
     // Start the server
     std::printf("Listening on port: %d\n", port_number);
     server.listen("0.0.0.0", port_number);
-    std::cerr << "Simulation reset!\n";
-//    std::cerr << "SNAPPED OUT OF LISTEN\n";
 
-    return 0;
+    return (simulation_reset ? SIMULATION_RESET : SIMULATION_END);
 }
 
+/**
+ * @brief Main function
+ * @param argc
+ * @param argv
+ * @return
+ */
+
 int main(int argc, char **argv) {
-    while (1) {
-        printf("Spawning a child\n");
-        pid_t pid = fork();
-        if (!pid) {
+
+    // Loop that keeps restarting the server every time it stops
+    // due to a simulation reset
+    while (true) {
+        pid_t child = fork();
+        if (!child) {
+            // Set the start time
             time_start = get_time();
-            printf("%d: I am a new child\n", getpid());
-            printf("%d: (running simulation)\n", getpid());
-            real_main(argc, argv);
-            printf("%d: terminating\n", getpid());
-            exit(69);
+            // Call the real main function which returns:
+            //  - SIMULATION_END if simulation should stop
+            //  - SIMULATION_RESET if simulation should reset and restart
+            int ret_value = real_main(argc, argv);
+            exit(ret_value);
         }
 
         int exit_code = 0;
-        waitpid(pid, &exit_code, 0);
+        waitpid(child, &exit_code, 0);
         exit_code = WEXITSTATUS(exit_code);
 
-        printf("Exit code = %d\n", exit_code);
-        if (exit_code == 69) {
+        if (exit_code == SIMULATION_RESET) {
+            std::cerr << "Simulation reset!\n";
             continue;
         } else {
             break;
