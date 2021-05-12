@@ -34,6 +34,7 @@ let fileOpen = false;
 let clock;
 let textArea;
 let batchEditor;
+let resetButton;
 let cancelButton;
 let saveAndExitButton;
 let slurmNodesInput;
@@ -1058,6 +1059,23 @@ function printHelp(topic) {
     term.write(justifyText(helpMessage + "\n", 70, false, true));
 }
 
+async function resetSimulation() {
+
+    // Sends a POST request to the server
+    let res = await fetch(`http://${serverAddress}/reset`, { method: 'POST'});
+
+    term.clear();
+    // Do a start
+    await fetch(`http://${serverAddress}/start`, { method: 'POST' });
+
+    // Query server for current time
+    let serverTime = await queryServer();
+    simTime.setTime(serverTime);
+
+    updateClock();
+
+}
+
 /**
  * Initializes the terminal to be usable on webapp.
  */
@@ -1096,6 +1114,7 @@ async function queryServer() {
     let res = await fetch(`http://${serverAddress}/query`, { method: 'GET' });
     res = await res.json();
     handleEvents(res.events);
+    // console.log("SERVER TOLD ME TIME = " + res["time"]);
     return res["time"];
 }
 
@@ -1157,6 +1176,7 @@ async function updateClockAndQueryServer() {
     if(Math.abs(serverTime - simTime.getTime()) > 500) {
         simTime.setTime(serverTime);
     }
+
     updateClock();
 }
 
@@ -1201,6 +1221,7 @@ function main() {
     clock = document.getElementById('clock');
     textArea = document.getElementById('textArea');
     batchEditor = document.getElementById('batchEditor');
+    resetButton = document.getElementById('resetbutton');
     cancelButton = document.getElementById('cancel');
     saveAndExitButton = document.getElementById('exit');
     slurmNodesInput = document.getElementById('slurmNodes');
@@ -1209,6 +1230,7 @@ function main() {
     slurmSecondsInput = document.getElementById('slurmSeconds');
 
     // Setup event handlers
+    resetButton.addEventListener("click", resetSimulation, false);
     cancelButton.addEventListener("click", exitTextEditor, false);
     saveAndExitButton.addEventListener("click", saveAndExitTextEditor, false);
     slurmNodesInput.addEventListener("change", changeBatch, false);

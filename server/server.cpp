@@ -37,27 +37,16 @@ std::thread simulation_thread;
 SimulationThreadState *simulation_thread_state;
 
 /**
- * @brief Wrench simulation object
- */
-//wrench::Simulation simulation;
-
-/**
- * @brief Wrench workflow object
- */
-//wrench::Workflow workflow;
-
-/**
- * @brief Wrench workflow manager
- */
-//std::shared_ptr<wrench::WorkflowManager> wms;
-
-/**
  * Ugly globals
  */
+int original_argc;
+char **original_argv;
 std::string pp_name;
 int pp_seqwork;
 int pp_parwork;
 int num_cluster_nodes;
+int num_cores_per_node;
+std::string tracefile_scheme;
 
 
 // GET PATHS
@@ -167,8 +156,36 @@ void stop(const Request& req, Response& res)
 {
     std::printf("Path: %s\nBody: %s\n\n", req.path.c_str(), req.body.c_str());
 
+    // Stop the server
     simulation_thread_state->stopServer();
+    // Join with the thread
+    simulation_thread.join();
+    // Erase the simulated state
+    delete simulation_thread_state;
+    // Create a new simulated state
+
     res.set_header("access-control-allow-origin", "*");
+}
+
+/**
+ * @brief Path handling the resetting of the simulation.
+ *
+ * @param req HTTP request object
+ * @param res HTTP response object
+ */
+void reset(const Request& req, Response& res)
+{
+    std::printf("Path: %s\nBody: %s\n\n", req.path.c_str(), req.body.c_str());
+
+    // TODO: DOES NOT WORK
+
+    // Stop simulation
+    simulation_thread_state->stopServer();
+    // Join with simulation thread
+    simulation_thread.join();
+
+    res.set_header("access-control-allow-origin", "*");
+    server.stop();
 }
 
 /**
@@ -283,11 +300,17 @@ void error_handling(const Request& req, Response& res)
 }
 
 // Main function
-int main(int argc, char **argv)
+int real_main(int argc, char **argv)
 {
     int port_number;
-    int core_count;
-    std::string tracefile_scheme;
+
+    // Save the arguments
+    original_argc = argc;
+    original_argv = (char **) calloc(argc, sizeof(char *));
+    for (int i = 0; i < argc; i++) {
+        original_argv[i] = (char *)calloc(strlen(argv[i]), sizeof(char));
+        strcpy(original_argv[i], argv[i]);
+    }
 
     // Generic lambda to check if a number is in some range
     auto in = [](const auto &min, const auto &max, char const * const opt_name){
@@ -304,7 +327,7 @@ int main(int argc, char **argv)
     po::options_description desc("Allowed options");
     desc.add_options()
             ("help", "show help message")
-            ("wrench-full-logs", "wrench-specific flag")
+            ("wrench-full-log", "wrench-specific flag")
             ("nodes", po::value<int>()->default_value(4)->notifier(
                     in(1, INT_MAX, "nodes")), "number of compute nodes in the cluster")
             ("cores", po::value<int>()->default_value(1)->notifier(
@@ -328,20 +351,21 @@ int main(int argc, char **argv)
         return 1;
     }
     num_cluster_nodes = vm["nodes"].as<int>();
-    core_count = vm["cores"].as<int>();
+    num_cores_per_node = vm["cores"].as<int>();
     tracefile_scheme = vm["tracefile"].as<std::string>();
     pp_name = vm["pp_name"].as<std::string>();
     pp_seqwork = vm["pp_seqwork"].as<int>();
     pp_parwork = vm["pp_parwork"].as<int>();
     port_number = vm["port"].as<int>();
 
+    // Print help message and exit if needed
     if (vm.count("help")) {
         cout << desc << "\n";
         return 1;
     }
 
     // Print some logging
-    cerr << "Simulating a cluster with " << num_cluster_nodes << " " << core_count << "-core nodes.\n";
+    cerr << "Simulating a cluster with " << num_cluster_nodes << " " << num_cores_per_node << "-core nodes.\n";
     cerr << "Background workload using scheme " + tracefile_scheme << ".\n";
     cerr << "Parallel program is called " << pp_name << ".\n";
     cerr << "Its sequential work is " << pp_seqwork << " seconds.\n";
@@ -355,10 +379,12 @@ int main(int argc, char **argv)
     // Handle POST requests
     server.Post("/api/start", start);
     server.Post("/api/stop", stop);
+    server.Post("/api/reset", reset);
     server.Post("/api/addTime", addTime);
     server.Post("/api/addJob", addJob);
     server.Post("/api/cancelJob", cancelJob);
 
+    // Set some generic error handler
     server.set_error_handler(error_handling);
 
     // Path is relative so if you build in a different directory, you will have to change the relative path.
@@ -372,12 +398,41 @@ int main(int argc, char **argv)
     // Start the simulation in a separate thread
     simulation_thread_state = new SimulationThreadState();
     simulation_thread = std::thread(&SimulationThreadState::createAndLaunchSimulation,
-                                    simulation_thread_state, argc, argv,
-                                    num_cluster_nodes, core_count, tracefile_scheme);
+                                    simulation_thread_state, original_argc, original_argv,
+                                    num_cluster_nodes, num_cores_per_node, tracefile_scheme);
 
     // Start the server
     std::printf("Listening on port: %d\n", port_number);
     server.listen("0.0.0.0", port_number);
+    std::cerr << "Simulation reset!\n";
+//    std::cerr << "SNAPPED OUT OF LISTEN\n";
 
     return 0;
+}
+
+int main(int argc, char **argv) {
+    while (1) {
+        printf("Spawning a child\n");
+        pid_t pid = fork();
+        if (!pid) {
+            time_start = get_time();
+            printf("%d: I am a new child\n", getpid());
+            printf("%d: (running simulation)\n", getpid());
+            real_main(argc, argv);
+            printf("%d: terminating\n", getpid());
+            exit(69);
+        }
+
+        int exit_code = 0;
+        waitpid(pid, &exit_code, 0);
+        exit_code = WEXITSTATUS(exit_code);
+
+        printf("Exit code = %d\n", exit_code);
+        if (exit_code == 69) {
+            continue;
+        } else {
+            break;
+        }
+    }
+    exit(0);
 }

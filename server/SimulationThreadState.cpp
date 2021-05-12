@@ -11,8 +11,6 @@
 #include <nlohmann/json.hpp>
 #include <wrench.h>
 
-//std::shared_ptr<wrench::WorkflowManager> SimulationThreadState::wms;
-
 
 /**
  * @brief Creates and writes the XML config file to be used by wrench to configure simgrid.
@@ -128,16 +126,17 @@ void createTraceFile(std::string path, std::string scheme, int num_nodes) {
 
 
 void SimulationThreadState::createAndLaunchSimulation(int main_argc, char **main_argv, int num_nodes, int num_cores,
-                                                             std::string tracefile_scheme) {
+                                                      std::string tracefile_scheme) {
+    static bool never_called = true;
+
     // Make a copy of argc and argv
     int argc = main_argc;
     char **argv = (char **) calloc(main_argc, sizeof(char *));
     for (int i = 0; i < main_argc; i++) {
-        argv[i] = (char *)calloc(strlen(main_argv[i]), sizeof(char));
-        argv[i] = strcpy(argv[i], main_argv[i]);
+        argv[i] = (char *) calloc(strlen(main_argv[i]), sizeof(char));
+        strcpy(argv[i], main_argv[i]);
     }
 
-    wrench::Simulation simulation;
 
     // Let WRENCH grab its own command-line arguments, if any
     simulation.init(&argc, argv);
@@ -148,6 +147,7 @@ void SimulationThreadState::createAndLaunchSimulation(int main_argc, char **main
 
     // Instantiate Simulated Platform
     simulation.instantiatePlatform(simgrid_config);
+
 
     // Generate vector containing variable number of compute nodes
     std::vector<std::string> nodes = {"ComputeNode_0"};
@@ -187,27 +187,27 @@ void SimulationThreadState::createAndLaunchSimulation(int main_argc, char **main
     simulation.launch();
 }
 
-void SimulationThreadState::getEventStatuses(queue<std::string> &statuses, const time_t &time) {
+void SimulationThreadState::getEventStatuses(queue<std::string> &statuses, const time_t &time) const {
     this->wms->getEventStatuses(statuses, time);
 }
 
 std::string SimulationThreadState::addJob(const double& requested_duration,
-                   const unsigned int& num_nodes, const double& actual_duration) {
+                                          const unsigned int& num_nodes, const double& actual_duration) const {
     return this->wms->addJob(requested_duration, num_nodes, actual_duration);
 }
 
-bool SimulationThreadState::cancelJob(const std::string& job_name) {
+bool SimulationThreadState::cancelJob(const std::string& job_name) const {
     return this->wms->cancelJob(job_name);
 }
 
-void SimulationThreadState::stopServer() {
+void SimulationThreadState::stopServer() const {
     this->wms->stopServer();
 }
 
-std::vector<std::string> SimulationThreadState::getQueue() {
+std::vector<std::string> SimulationThreadState::getQueue() const {
     return this->wms->getQueue();
 }
 
-double SimulationThreadState::getSimulationTime() {
+double SimulationThreadState::getSimulationTime() const {
     return this->wms->simulationTime;
 }
