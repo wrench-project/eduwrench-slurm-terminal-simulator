@@ -33,7 +33,7 @@ namespace wrench {
 
         void stopServer();
 
-        std::vector<std::string> get_queue();
+        std::vector<std::string> getQueue();
 
     private:
         int main() override;

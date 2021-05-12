@@ -255,7 +255,7 @@ namespace wrench {
      * 
      * @return std::vector<std::string> List of job statuses with relevant information.
      */
-    std::vector<std::string> WorkflowManager::get_queue()
+    std::vector<std::string> WorkflowManager::getQueue()
     {
         std::vector<std::tuple<std::string,std::string,int,int,int,double,double>> i_queue;
         std::vector<std::string> queue;

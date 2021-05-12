@@ -100,7 +100,7 @@ void getQuery(const Request& req, Response& res)
     std::vector<std::string> events;
 
     // Retrieves event statuses from servers and
-    SimulationThreadState::getEventStatuses(status, (get_time() - time_start) / 1000);
+    simulation_thread_state->getEventStatuses(status, (get_time() - time_start) / 1000);
 
     while(!status.empty())
     {
@@ -128,7 +128,7 @@ void getQueue(const Request& req, Response& res)
 
     json body;
     body["time"] = get_time() - time_start;
-    body["queue"] = SimulationThreadState::wms->get_queue();;
+    body["queue"] = simulation_thread_state->getQueue();;
 
     res.set_header("access-control-allow-origin", "*");
     res.set_content(body.dump(), "application/json");
@@ -167,7 +167,7 @@ void stop(const Request& req, Response& res)
 {
     std::printf("Path: %s\nBody: %s\n\n", req.path.c_str(), req.body.c_str());
 
-    SimulationThreadState::wms->stopServer();
+    simulation_thread_state->stopServer();
     res.set_header("access-control-allow-origin", "*");
 }
 
@@ -188,7 +188,7 @@ void addTime(const Request& req, Response& res)
     time_start -= req_body["increment"].get<int>() * 1000;
 
     // Retrieve the event statuses during the  skip period.
-    SimulationThreadState::wms->getEventStatuses(status, (get_time() - time_start) / 1000);
+    simulation_thread_state->getEventStatuses(status, (get_time() - time_start) / 1000);
     cerr << "status.size() = " << status.size()  << "\n";
 
     while(!status.empty())
@@ -198,7 +198,7 @@ void addTime(const Request& req, Response& res)
     }
 
     // Let the simulation catch up
-    while ((get_time() - time_start) / 1000 > SimulationThreadState::wms->simulationTime) {
+    while ((get_time() - time_start) / 1000 > simulation_thread_state->getSimulationTime()) {
         usleep(1000);
     }
 
@@ -229,7 +229,7 @@ void addJob(const Request& req, Response& res)
     json body;
 
     // Pass parameters in to function to add a job.
-    std::string jobID = SimulationThreadState::wms->addJob(requested_duration, num_nodes, actual_duration);
+    std::string jobID = simulation_thread_state->addJob(requested_duration, num_nodes, actual_duration);
 
     // Retrieve the return value from adding ajob to determine if successful.
     if(!jobID.empty())
@@ -262,7 +262,7 @@ void cancelJob(const Request& req, Response& res)
     body["time"] = get_time() - time_start;
     body["success"] = false;
     // Send cancel job to wms and set success in job cancelation if can be done.
-    if(SimulationThreadState::wms->cancelJob(req_body["jobName"].get<std::string>()))
+    if(simulation_thread_state->cancelJob(req_body["jobName"].get<std::string>()))
         body["success"] = true;
 
     res.set_header("access-control-allow-origin", "*");
@@ -371,8 +371,9 @@ int main(int argc, char **argv)
 
     // Start the simulation in a separate thread
     simulation_thread_state = new SimulationThreadState();
-    simulation_thread = std::thread(SimulationThreadState::createAndLaunchSimulation, argc, argv,
-                                  num_cluster_nodes, core_count, tracefile_scheme);
+    simulation_thread = std::thread(&SimulationThreadState::createAndLaunchSimulation,
+                                    simulation_thread_state, argc, argv,
+                                    num_cluster_nodes, core_count, tracefile_scheme);
 
     // Start the server
     std::printf("Listening on port: %d\n", port_number);

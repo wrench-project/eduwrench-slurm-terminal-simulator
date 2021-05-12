@@ -11,7 +11,7 @@
 #include <nlohmann/json.hpp>
 #include <wrench.h>
 
-std::shared_ptr<wrench::WorkflowManager> SimulationThreadState::wms;
+//std::shared_ptr<wrench::WorkflowManager> SimulationThreadState::wms;
 
 
 /**
@@ -174,12 +174,12 @@ void SimulationThreadState::createAndLaunchSimulation(int main_argc, char **main
                                                 {}));
     }
 
-    wms = simulation.add(
+    this->wms = simulation.add(
             new wrench::WorkflowManager({batch_service}, {storage_service}, "WMSHost", nodes.size(), num_cores));
 
     // Add workflow to wms
     wrench::Workflow workflow;
-    wms->addWorkflow(&workflow);
+    this->wms->addWorkflow(&workflow);
 
     // Start the simulation. Currently cannot start the simulation in a different thread or else it will
     // seg fault. Most likely related to how simgrid handles threads so the web server has to started
@@ -188,6 +188,26 @@ void SimulationThreadState::createAndLaunchSimulation(int main_argc, char **main
 }
 
 void SimulationThreadState::getEventStatuses(queue<std::string> &statuses, const time_t &time) {
-    wms->getEventStatuses(statuses, time);
+    this->wms->getEventStatuses(statuses, time);
 }
 
+std::string SimulationThreadState::addJob(const double& requested_duration,
+                   const unsigned int& num_nodes, const double& actual_duration) {
+    return this->wms->addJob(requested_duration, num_nodes, actual_duration);
+}
+
+bool SimulationThreadState::cancelJob(const std::string& job_name) {
+    return this->wms->cancelJob(job_name);
+}
+
+void SimulationThreadState::stopServer() {
+    this->wms->stopServer();
+}
+
+std::vector<std::string> SimulationThreadState::getQueue() {
+    return this->wms->getQueue();
+}
+
+double SimulationThreadState::getSimulationTime() {
+    return this->wms->simulationTime;
+}
