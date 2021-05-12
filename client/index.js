@@ -147,7 +147,8 @@ function exitTextEditor() {
     // affect regular file opening
     textEditor.setAttribute("contentEditable", true);
 
-    // Show terminal
+    // Show terminal and reset time button
+    resetButton.style.display = "";
     document.getElementById('terminal').style.display = "";
 
     // Restarts blinking on line.
@@ -177,6 +178,7 @@ function editBatchFile(filename, text) {
 
     // Hide terminal
     document.getElementById('terminal').style.display = "none";
+    resetButton.style.display = "none";
 
     // Makes sure the text is not directly editable.
     textEditor.setAttribute("contentEditable", false);
@@ -210,6 +212,10 @@ function editBatchFile(filename, text) {
  * @param text: Text of document
  */
 function editFile(filename, text) {
+    // Hide terminal
+    document.getElementById('terminal').style.display = "none";
+    resetButton.style.display = "none";
+
     // Sets up the text area to be representative of file with environmental variables set.
     textEditor.innerText = text;
     textArea.style.display = "block";
