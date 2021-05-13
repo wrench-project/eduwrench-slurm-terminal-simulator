@@ -133,7 +133,7 @@ void SimulationThreadState::createAndLaunchSimulation(int main_argc, char **main
     int argc = main_argc;
     char **argv = (char **) calloc(main_argc, sizeof(char *));
     for (int i = 0; i < main_argc; i++) {
-        argv[i] = (char *) calloc(strlen(main_argv[i]), sizeof(char));
+        argv[i] = (char *) calloc(strlen(main_argv[i]) + 1, sizeof(char));
         strcpy(argv[i], main_argv[i]);
     }
 

@@ -322,7 +322,7 @@ int real_main(int argc, char **argv)
     original_argc = argc;
     original_argv = (char **) calloc(argc, sizeof(char *));
     for (int i = 0; i < argc; i++) {
-        original_argv[i] = (char *)calloc(strlen(argv[i]), sizeof(char));
+        original_argv[i] = (char *)calloc(strlen(argv[i]) + 1, sizeof(char));
         strcpy(original_argv[i], argv[i]);
     }
 
