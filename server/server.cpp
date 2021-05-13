@@ -14,6 +14,10 @@
 #include <nlohmann/json.hpp>
 #include <wrench.h>
 
+#include <sys/types.h>
+#include <sys/wait.h>
+
+
 #define SIMULATION_RESET 100
 #define SIMULATION_END 101
 bool simulation_reset = false;
