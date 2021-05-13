@@ -17,10 +17,19 @@
 #include <sys/types.h>
 #include <sys/wait.h>
 
+#include <signal.h>
 
 #define SIMULATION_RESET 100
 #define SIMULATION_END 101
 bool simulation_reset = false;
+
+void signal_handler(int sig) {
+    if (sig == SIGSEGV) {
+        exit(SIMULATION_RESET);
+    }
+}
+
+
 
 // Define a long function which is used multiple times to retrieve the time
 #define get_time() (std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count())
@@ -305,7 +314,7 @@ void cancelJob(const Request& req, Response& res)
  */
 void error_handling(const Request& req, Response& res)
 {
-    std::printf("%d\n", res.status);
+    std::printf("%d: %s|%s\n", res.status, req.path.c_str(), req.body.c_str());
 }
 
 /**
@@ -364,7 +373,6 @@ int real_main(int argc, char **argv)
         cerr << "Error: " << e.what() << "\n";
         return 1;
     }
-    std::cerr << "HERE\n";
     num_cluster_nodes = vm["nodes"].as<int>();
     num_cores_per_node = vm["cores"].as<int>();
     tracefile_scheme = vm["tracefile"].as<std::string>();
@@ -439,6 +447,10 @@ int main(int argc, char **argv) {
         if (!child) {
             // Set the start time
             time_start = get_time();
+            // Setup a handled for segfault, while waiting to figure out
+            // why rapid-fire simulation resets cause segfaults on Mac even
+            // though valgrind shows no problems in linux
+            signal(SIGSEGV, signal_handler);
             // Call the real main function which returns:
             //  - SIMULATION_END if simulation should stop
             //  - SIMULATION_RESET if simulation should reset and restart

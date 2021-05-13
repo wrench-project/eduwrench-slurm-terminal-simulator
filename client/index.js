@@ -1060,9 +1060,13 @@ function printHelp(topic) {
         helpMessage = "help: unknown help topic";
     }
     term.write(justifyText(helpMessage + "\n", 70, false, true));
+    term.write(justifyText(helpMessage + "\n", 70, false, true));
 }
 
 async function resetSimulation() {
+
+    // Disable button
+    // resetButton.disabled = true;
 
     // Sends a POST request to the server
     let res = await fetch(`http://${serverAddress}/reset`, { method: 'POST'});
@@ -1085,6 +1089,9 @@ async function resetSimulation() {
     let serverTime = await queryServer();
     simTime.setTime(serverTime);
     updateClock();
+
+    // resetButton.disabled = false;
+
 
 }
 
