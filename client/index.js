@@ -335,59 +335,61 @@ function cancelJob(jobName) {
 async function getQueue() {
     // Makes GET request to get the current queue
     let res = await fetch(`http://${serverAddress}/getQueue`, { method: 'POST' });
-    let q = await res.json();
+    res = await res.json();
 
     // Writes the table headers
     term.write('\rJOBNAME   USER       NODES  START TIME      REQ TIME   STATUS\r\n');
-    // Writes to terminal each job within the queue
-    let q_parse = q.split(",");
-    // Sets job name which will display only 15 characters
-    let jobName = q_parse[1].split("_").slice(1).join("_").slice(0,10);
-    // Sets user name which will display only 10 characters
-    let user = q_parse[0].slice(0,10);
-    // Sets up node count
-    let nodes = q_parse[2];
-    // Sets up requested time
-    let rTime = q_parse[3];
-    // Sets the startTime to closest whole millisecond value
-    let startTime = Math.round(parseFloat(q_parse[4]));
-    // Sets up variable if startTime is not available since job isn't running
-    let sTime = "n/a            "
-    // Sets up variable which could change if job is running or not.
-    // let status = '\u001B[1mRUNNING\u001B[0m';
-    let status = '\u001B[1;32mRUNNING\u001B[0m';
-    // Pads the string with spaces to make sure it fits into table formatting
-    while(jobName.length < 9) {
-        jobName += ' ';
-    }
-    while(user.length < 10) {
-        user += ' ';
-    }
-    while(nodes.length < 6) {
-        nodes += ' ';
-    }
-    // Sets up the startTime variable correctly where if negative means it's not running.
-    if(startTime < 0) {
-        status = 'PENDING';
-    } else {
-        // Finds out the time and correctly generates the UTC time
-        let t = new Date(0);
-        t.setSeconds(startTime);
-        let day = padZero(t.getUTCMonth() + 1) + "/" + padZero(t.getUTCDate())
-        sTime = day + " " + padZero(t.getUTCHours()) + ":" + padZero(t.getUTCMinutes()) +
-            ":" + padZero(t.getUTCSeconds()) + " " ;
-    }
-    // Format the requested time
-    {
-        // Finds out the time and correctly generates the UTC time
-        let t = new Date(0);
-        t.setSeconds(Math.round(parseFloat(rTime)));
-        rTime = padZero(t.getUTCHours()) + ":" + padZero(t.getUTCMinutes()) +
-            ":" + padZero(t.getUTCSeconds()) + "  ";
-    }
-    // Write to terminal the job
-    term.write(`${jobName} ${user} ${nodes} ${sTime} ${rTime} ${status}` + "\r\n");
 
+    for(const q of res.queue) {
+        // Writes to terminal each job within the queue
+        let q_parse = q.split(",");
+        // Sets job name which will display only 15 characters
+        let jobName = q_parse[1].split("_").slice(1).join("_").slice(0, 10);
+        // Sets user name which will display only 10 characters
+        let user = q_parse[0].slice(0, 10);
+        // Sets up node count
+        let nodes = q_parse[2];
+        // Sets up requested time
+        let rTime = q_parse[3];
+        // Sets the startTime to closest whole millisecond value
+        let startTime = Math.round(parseFloat(q_parse[4]));
+        // Sets up variable if startTime is not available since job isn't running
+        let sTime = "n/a            "
+        // Sets up variable which could change if job is running or not.
+        // let status = '\u001B[1mRUNNING\u001B[0m';
+        let status = '\u001B[1;32mRUNNING\u001B[0m';
+        // Pads the string with spaces to make sure it fits into table formatting
+        while (jobName.length < 9) {
+            jobName += ' ';
+        }
+        while (user.length < 10) {
+            user += ' ';
+        }
+        while (nodes.length < 6) {
+            nodes += ' ';
+        }
+        // Sets up the startTime variable correctly where if negative means it's not running.
+        if (startTime < 0) {
+            status = 'PENDING';
+        } else {
+            // Finds out the time and correctly generates the UTC time
+            let t = new Date(0);
+            t.setSeconds(startTime);
+            let day = padZero(t.getUTCMonth() + 1) + "/" + padZero(t.getUTCDate())
+            sTime = day + " " + padZero(t.getUTCHours()) + ":" + padZero(t.getUTCMinutes()) +
+                ":" + padZero(t.getUTCSeconds()) + " ";
+        }
+        // Format the requested time
+        {
+            // Finds out the time and correctly generates the UTC time
+            let t = new Date(0);
+            t.setSeconds(Math.round(parseFloat(rTime)));
+            rTime = padZero(t.getUTCHours()) + ":" + padZero(t.getUTCMinutes()) +
+                ":" + padZero(t.getUTCSeconds()) + "  ";
+        }
+        // Write to terminal the job
+        term.write(`${jobName} ${user} ${nodes} ${sTime} ${rTime} ${status}` + "\r\n");
+    }
     term.write(prompt());
 }
 
