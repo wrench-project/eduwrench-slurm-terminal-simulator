@@ -614,20 +614,16 @@ function resetTime() {
     // Remove all .out and .err files and reset all creation times to zero
     let toRemove = [];
     for (const key in this.contents) {
-        console.log("KEY = " + key);
         if (this.contents[key].name.endsWith(".err") || this.contents[key].name.endsWith(".out")) {
             console.log(this.contents[key]);
             if (this.contents[key].deletable) {
-                console.log("DELETABLE");
                 toRemove.push(key);
             }
         } else {
             this.contents[key].created = 0;
         }
     }
-    console.log("---> " + toRemove.length);
     for (const key of toRemove) {
-        console.log("REMOVING " + key);
         delete this.contents[key];
     }
 
