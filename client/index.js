@@ -390,7 +390,6 @@ async function getQueue() {
         // Write to terminal the job
         term.write(`${jobName} ${user} ${nodes} ${sTime} ${rTime} ${status}` + "\r\n");
     }
-    term.write(prompt());
 }
 
 function getDate(t) {
