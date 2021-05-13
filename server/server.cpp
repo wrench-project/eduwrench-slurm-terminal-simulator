@@ -384,7 +384,6 @@ int real_main(int argc, char **argv)
     // Handle GET requests
     server.Get("/api/time", getTime);
     server.Get("/api/query", getQuery);
-    server.Get("/api/getQueue", getQueue);
 
     // Handle POST requests
     server.Post("/api/start", start);
@@ -393,6 +392,7 @@ int real_main(int argc, char **argv)
     server.Post("/api/addTime", addTime);
     server.Post("/api/addJob", addJob);
     server.Post("/api/cancelJob", cancelJob);
+    server.Post("/api/getQueue", getQueue);
 
     // Set some generic error handler
     server.set_error_handler(error_handling);
