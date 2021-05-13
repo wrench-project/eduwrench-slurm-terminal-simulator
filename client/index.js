@@ -297,8 +297,6 @@ async function sendBatch(config) {
     // Parses the return value and decides what to generate/write
     res = await res.json();
     if(!res.success) {
-        // filesystem.createFile(".err", simTime.getTime());
-        // filesystem.saveFile(".err", "Number of nodes exceeds what is available in system");
         term.write("sbatch: requested number of nodes exceeds available number of nodes (fix your .slurm file)\r\n");
     } else {
         // Writes to terminal the job name. Since the server returns "standard_job_x" we need to remove the standard
@@ -607,7 +605,7 @@ async function processCommand(commandLine) {
             // If multiple files are to be made loop through arguments and create them.
             for(let i = 1; i < commandLineTokens.length; i++) {
                 // Creates the file while providing the current simulated time.
-                let f = filesystem.createFile(commandLineTokens[i], simTime.getTime());
+                let f = filesystem.createFile(commandLineTokens[i], simTime.getTime(), false, true);
                 // If filesystem returns an error, print out error.
                 if(f !== "") {
                     term.write("touch: " + f + "\r\n");
@@ -1071,13 +1069,22 @@ async function resetSimulation() {
     let res = await fetch(`http://${serverAddress}/reset`, { method: 'POST'});
 
     term.clear();
+
     // Do a start
     await fetch(`http://${serverAddress}/start`, { method: 'POST' });
 
-    // Query server for current time
+    filesystem.resetTime();
+
+    // Erase the prompt because it seems it's still there... not sure why
+    for (let i=0; i < promptLength(); i++) {
+        term.write("\b");
+    }
+    term.write("All .out and .err files have been removed and time was reset to zero.\r\n");
+    term.write("Type 'help' for instructions...\r\n\r\n" + prompt())
+
+    // Query server for current time and update clock
     let serverTime = await queryServer();
     simTime.setTime(serverTime);
-
     updateClock();
 
 }
@@ -1140,11 +1147,11 @@ async function handleEvents(events) {
         // Checks if job has been completed and creates a binary file representative of output file.
         if(status === "StandardJobCompletedEvent") {
             let fileName = jobName.split("_").slice(1).join("_") + ".out";
-            filesystem.createFile(fileName, time * 1000);
+            filesystem.createFile(fileName, time * 1000, false, true);
             filesystem.saveFile(fileName, "Job successfully completed");
         } else if (status === "StandardJobFailedEvent") {
             let fileName = jobName.split("_").slice(1).join("_") + ".err";
-            filesystem.createFile(fileName, time * 1000);
+            filesystem.createFile(fileName, time * 1000, false, true);
             filesystem.saveFile(fileName, "Program killed due to job expiring");
         } else {
             console.log("Unknown event status: " + status);
