@@ -334,8 +334,8 @@ function cancelJob(jobName) {
  */
 async function getQueue() {
     // Makes GET request to get the current queue
-    let res = await fetch(`http://${serverAddress}/getQueue`, { method: 'GET' });
-    res = res = await res.json();
+    let res = await fetch(`http://${serverAddress}/getQueue`, { method: 'POST' });
+    res = await res.json();
 
     // Writes the table headers
     term.write('\rJOBNAME   USER       NODES  START TIME      REQ TIME   STATUS\r\n');
