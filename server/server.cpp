@@ -364,6 +364,7 @@ int real_main(int argc, char **argv)
         cerr << "Error: " << e.what() << "\n";
         return 1;
     }
+    std::cerr << "HERE\n";
     num_cluster_nodes = vm["nodes"].as<int>();
     num_cores_per_node = vm["cores"].as<int>();
     tracefile_scheme = vm["tracefile"].as<std::string>();

@@ -167,11 +167,11 @@ void SimulationThreadState::createAndLaunchSimulation(int main_argc, char **main
     } else {
         std::string path_to_tracefile = "/tmp/tracefile.swf";
         createTraceFile(path_to_tracefile, tracefile_scheme, num_nodes);
-        batch_service = simulation.add(
-                new wrench::BatchComputeService("ComputeNode_0", nodes, "",
-                                                {{wrench::BatchComputeServiceProperty::BATCH_SCHEDULING_ALGORITHM,    "conservative_bf"},
-                                                 {wrench::BatchComputeServiceProperty::SIMULATED_WORKLOAD_TRACE_FILE, path_to_tracefile}},
-                                                {}));
+        auto foo = new wrench::BatchComputeService("ComputeNode_0", nodes, "",
+                                        {{wrench::BatchComputeServiceProperty::BATCH_SCHEDULING_ALGORITHM,    "conservative_bf"},
+                                         {wrench::BatchComputeServiceProperty::SIMULATED_WORKLOAD_TRACE_FILE, path_to_tracefile}},
+                                        {});
+        batch_service = simulation.add(foo);
     }
 
     this->wms = simulation.add(
