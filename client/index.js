@@ -1063,26 +1063,28 @@ function sleep(ms) {
 async function resetSimulation() {
 
     // Disable reset button
-    resetButton.disabled = true;
+    // resetButton.disabled = true;
+    resetButton.style.display = "none";
+    // terminalArea.style.display = "none";
+    holdonArea.style.display = "";
 
     // Stop the periodic time query for now
     clearInterval(updateClockTimer);
     // clock.innerText = `12:00:00 AM`;
-    clock.innerText = ` `;
-    terminalArea.style.display = "none";
-    holdonArea.style.display = "";
-    term.clear();
+    // clock.innerText = ` `;
+    term.setOption("disableStdin", true);
 
     // Sends a POST request to the server
     let res = await fetch(`http://${serverAddress}/reset`, { method: 'POST'});
 
     // Sleep for 3s, which should be enough for the server to restart
-    await sleep(3000);
+    await sleep(5000);
 
     // Do a start again
     await fetch(`http://${serverAddress}/start`, { method: 'POST' });
 
     // Reset the clock periodic activity
+    // clock.innerText = `12:00:00 AM`;
     clock.innerText = `12:00:00 AM`;
     updateClockTimer = setInterval(updateClockAndQueryServer, 1000);
 
@@ -1093,15 +1095,18 @@ async function resetSimulation() {
     for (let i=0; i < promptLength(); i++) {
         term.write("\b");
     }
+    term.clear();
     term.write("All .out and .err files have been removed and time was reset to zero.\r\n");
     term.write("Type 'help' for instructions...\r\n\r\n" + prompt())
+    term.setOption("disableStdin", false);
 
     // Re-show terminal
     holdonArea.style.display = "none";
-    terminalArea.style.display = "";
+    resetButton.style.display = "";
+    // terminalArea.style.display = "";
 
     // Re-enable reset button
-    resetButton.disabled = false;
+    // resetButton.disabled = false;
 
 }
 
