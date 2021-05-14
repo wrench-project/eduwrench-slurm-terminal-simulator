@@ -34,7 +34,8 @@ let fileOpen = false;
 let clock;
 let textArea;
 let terminalArea;
-let holdonArea;
+let fastforwardArea;
+let rewindArea;
 let batchEditor;
 let resetButton;
 let cancelButton;
@@ -479,11 +480,13 @@ async function processCommand(commandLine) {
             timeToSleep += unit*parsed;
             unit *= 60;
         }
-        if (timeToSleep > 1000) {
-            resetButton.disabled = true;
+        if (timeToSleep > 5000) {
+            resetButton.style.display = "none";
+            fastforwardArea.style.display = "";
         }
         await addTime(timeToSleep);
-        resetButton.disabled = false;
+        resetButton.style.display = "";
+        fastforwardArea.style.display = "none";
         return;
     }
 
@@ -1069,7 +1072,7 @@ async function resetSimulation() {
     // resetButton.disabled = true;
     resetButton.style.display = "none";
     // terminalArea.style.display = "none";
-    holdonArea.style.display = "";
+    rewindArea.style.display = "";
 
     // Stop the periodic time query for now
     clearInterval(updateClockTimer);
@@ -1104,7 +1107,7 @@ async function resetSimulation() {
     term.setOption("disableStdin", false);
 
     // Re-show terminal
-    holdonArea.style.display = "none";
+    rewindArea.style.display = "none";
     resetButton.style.display = "";
     // terminalArea.style.display = "";
 
@@ -1257,7 +1260,8 @@ function main() {
     // Get and set DOM elements
     clock = document.getElementById('clock');
     terminalArea =  document.getElementById('terminal');
-    holdonArea = document.getElementById('holdon');
+    fastforwardArea = document.getElementById('fastforward');
+    rewindArea = document.getElementById('rewind');
     textArea = document.getElementById('textArea');
     batchEditor = document.getElementById('batchEditor');
     resetButton = document.getElementById('resetbutton');

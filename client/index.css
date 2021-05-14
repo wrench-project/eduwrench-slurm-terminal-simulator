@@ -27,7 +27,7 @@
     box-shadow: none;
 }
 
-.loader {
+.loader-backward {
     border: 12px solid #333333;
     border-top: 12px solid #649acc;
     border-radius: 100%;
@@ -36,8 +36,17 @@
     animation: spin 1s linear infinite reverse;
 }
 
+
+.loader-forward {
+    border: 12px solid #333333;
+    border-top: 12px solid #649acc;
+    border-radius: 100%;
+    width: 40px;
+    height: 40px;
+    animation: spin 1s linear infinite;
+}
+
 @keyframes spin {
     0% { transform: rotate(0deg); }
     100% { transform: rotate(360deg); }
 }
-

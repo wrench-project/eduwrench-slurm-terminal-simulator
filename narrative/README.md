@@ -109,8 +109,8 @@ and you would be running these jobs for different input files.
 ## Simulation activity
 
 The simulation app at the bottom of this page presents you with a simulated
-Linux terminal on the cluster's head node.  Type `help` to get some
-guidance. 
+Linux terminal on the cluster's head node.  **Type `help` to get some
+guidance.**
 
 Recall that *myprogram* runs in $2 + 20/n$ hours  on $n$ nodes.  Use the app to
 do (at least) the following:
@@ -119,81 +119,110 @@ do (at least) the following:
     - Edit the batch script to specify that you want
       to run *myprogram* on 4 nodes (`edit` command). Specify a duration that is sufficient
       for *myprogram* to complete successfully.
-    - Submit this job to the batch scheduled and move time forward (`sleep` command) until after the job should have completed. 
-    - Double check the content and creation date (`date -r` command) of the .out and/or .err files.
-    - Did the job complete?
+    - Submit this job to the batch scheduled and move time forward (using `sleep` command) until after the job should have completed. 
+    - Double check the content and creation date (`ls -l` command) of the .out or .err files.
+    - Did the job complete successfully?
+    - At what time did it complete? 
     - Did it complete about when you thought it would?
 
   2. Failed job execution
 
     - Now Submit a job to run *myprogram* on 6 nodes *without* enough requested time, so that it will certainly fail. 
-    - Once enough time has passed, double-check the content and creation date of the .out and/or .err files. 
+    - Once enough time has passed, double-check the content and creation date of the .out or .err file. 
     - Did the job fail? 
-    - Did the job about when you thought it would?
+    - At what time did it fail? 
+    - Did the job file about when you thought it would?
 
-  3. Queue waiting time
-
-    - Submit a job to run *myprogram* on 8 nodes with enough requested time so that it will successfully complete.
-    - Soon after, submit another job to run *myprogram* successfully again, but using 4 nodes.
-    - Without advancing time, estimate the following:
-      - the completion time of the first job
-      - the wait time of the second job
-      - the completion time of the second job
-    - Verify your answers to the above questions by advancing the clock!
-
-
-SIMULATOR GOES HERE: ./TestServer --node 65 --pp_name myprogram --pp_seqwork 7200 --pp_parwork 72000 
+SIMULATOR GOES HERE: ./TestServer --node 32 --pp_name myprogram --pp_seqwork 7200 --pp_parwork 72000 
 
 ---
 
-# TAB #3: Job cancellation and queue
+# TAB #3: The batch queue
 
-### The scancel and squeue commands
+## The squeue command
 
-In addition to `sbatch` for submitting jobs, let's now use two other Slurm commands:
+
+The main goal of a batch scheduler is to place job requests in a *batch queue*, in which they wait for available resources. This is because resources are *space-shared*, i.e., not two jobs run can use the same compute node.  Note that Slurm can be configured not to enforce this requirement, but in all that follow we assume that it does (which is typical in production systems). 
+
+The term **turn-around time** is typically used to denote the sum of the wait time and of the execution time. For instance, say you submit a job that executes for 2 hours, but that spent 10 hours in the batch queue before being able to execute. The job's turn-around time is 10 + 2 = 12 hours.  In other words, the turn-around time is the time between submission and completion. 
+
+In the previous tab, your jobs ran immediately because there was no other job in the system. So their wait time was zero, and their turn-around time was exactly equal to their execution time.  Let's change that and showcase another useful Slurm command:
+
+   - `squeue` is used to list all jobs currently in the systems, which are either pending (i.e., submitted but not running yet) or running.
+
+
+## Simulation activity
+
+The simulation app at the bottom of this page presents you with a simulated
+Linux terminal on the cluster's head node.  **Type `help` to get some
+guidance.**
+
+Recall that the cluster has 32 compute nodes, and that *myprogram* runs in $2 + 20/n$ hours  on $n$ nodes.  Use the app to do (at least) the following:
+
+    - Submit a job to run *myprogram* on 25 nodes with enough requested time so that it will successfully complete.
+    - Use `squeue` to inspect the state of the batch queue. You should see that your job is running.
+    - Soon after, submit another job to run *myprogram* successfully again (you can modify the same .slurm file, or copy it), but using 10 nodes.
+    - Use `squeue` to inspect the state of the batch queue. You should see that your second job is "stuck" in the queue, waiting for the first job to complete. 
+    - Without advancing time, estimate the following:
+      - the turn-around time of the first job
+      - the turn-around time of the second job
+    - Verify your answers to the above questions by advancing the clock and checking .out file creation dates.
+
+
+SIMULATOR GOES HERE: ./TestServer --node 32 --pp_name myprogram --pp_seqwork 7200 --pp_parwork 72000 
+
+
+---
+
+# TAB #3: Job cancellation 
+
+### The scancel commands
+
+In addition to `sbatch` for submitting jobs, let's now use a command to cancel a job: 
 
   - `scancel` is used to cancel jobs. It takes a job ID as its single 
     command-line argument.
 
-  - *squeue* is used to list all jobs currently in the systems, which are either pending (i.e., submitted but not running yet) or running.
-
-
-### Simulated scenario
-
-The simulation app at the bottom of this page is similar to that in the
-previous tab. In the app on the previous tab, you were the only user on
-the cluster. Now, instead, **you are competing with other users!** These
-other users submit whatever jobs whenever they want, which is out of your
-control. 
 
 ### Simulation activity
 
-Recall that *myprogram* runs in $2 + 20/n$ hours  on $n$ nodes.
-Use the app to do (at least) the following:
+The simulation app at the bottom of this page presents you with a simulated
+Linux terminal on the cluster's head node.  **Type `help` to get some
+guidance.**
+
+In the previous tab, you were the only user on the cluster.
+Now, instead, **you are competing with other users!** These other users
+submit whatever jobs whenever they want, which is out of your control.
+
+Recall that the cluster has 32 compute nodes, and that *myprogram* runs in $2 + 20/n$ hours  on $n$ nodes.  Use the app to do (at least) the following:
 
   1. Job submission and cancellation
 
-    - Submit a job to run *myprogram* on 6 nodes successfully. 
+    - Submit a job to run *myprogram* on 16 nodes with enough requested time.
     - Soon after submission, inspect the state of the batch queue and answer the following questions:
         - How many jobs are currently pending?
         - How many jobs are currently running?
-        - Is your job pending or running?
-    - Then simply cancel your job.
+        - Is your job pending or running? (your username is `slurm_user`)
+    - Advance simulation time until your job has completed. You'll have to advance time by quite a lot. Imagine what it would be in the real world where, unlike in simulation, you can't fast-forward time (if you can, contact us immediately!)
+    - What was your job's wait time? (you can infer it based on the time of submission and the time of completion, since you know the execution time)
 
   2. Sneaky job submission
 
+    - Reset the time to zero, to pretend the above never happened.
     - Inspect the state of the queue and answer the following questions:
-        - How many nodes are currently in used by other jobs?
+        - How many nodes are currently in used by running jobs?
+        - How many nodes are currently idle?
     - Submit a job to run *myprogram* successfully, asking for as many nodes as possible so that your job can run right now (unless another competing job shows up in the nick of time!)
     - Inspect the state of the queue. Is your job running?
+    - Advance time until your job completes
+    - Compare an contrast your job turn-around time with that in the previous question.
 
 SIMULATOR GOES HERE: ./TestServer --node 32 --pp_name myprogram --pp_seqwork 7200 --pp_parwork 72000 --tracefile rightnow
-
 
 ### Take-away 
 
 Inspecting the batch queue to see what one can run right now on idle nodes
-can be helpful in practice!
+can be helpful in practice! Sometimes, less is more (i.e., asking for fewer resources can get the job done faster due to competition with other jobs). 
 
 ---
 
