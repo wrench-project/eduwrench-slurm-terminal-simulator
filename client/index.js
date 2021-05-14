@@ -33,6 +33,8 @@ let fileOpen = false;
 // Variables to hold DOM elements
 let clock;
 let textArea;
+let terminalArea;
+let holdonArea;
 let batchEditor;
 let resetButton;
 let cancelButton;
@@ -41,6 +43,8 @@ let slurmNodesInput;
 let slurmHoursInput;
 let slurmMinutesInput;
 let slurmSecondsInput;
+
+let updateClockTimer;
 
 // parallel program and cluster characteristics, all obtained from the server
 let pp_name;
@@ -1063,19 +1067,37 @@ function printHelp(topic) {
     term.write(justifyText(helpMessage + "\n", 70, false, true));
 }
 
+function sleep(ms) {
+    return new Promise(resolve => setTimeout(resolve, ms));
+}
+
 async function resetSimulation() {
 
-    // Disable button
-    // resetButton.disabled = true;
+    // Disable reset button
+    resetButton.disabled = true;
+
+    // Stop the periodic time query for now
+    clearInterval(updateClockTimer);
+    clock.innerText = `12:00:00 AM`;
+    terminalArea.style.display = "none";
+    holdonArea.style.display = "";
+    term.clear();
+
+
 
     // Sends a POST request to the server
     let res = await fetch(`http://${serverAddress}/reset`, { method: 'POST'});
 
-    term.clear();
+
+    await sleep(3000);
 
     // Do a start
     await fetch(`http://${serverAddress}/start`, { method: 'POST' });
 
+    // Reset the clock periodic activity
+    updateClockTimer = setInterval(updateClockAndQueryServer, 1000);
+
+    // Update file system
     filesystem.resetTime();
 
     // Erase the prompt because it seems it's still there... not sure why
@@ -1085,12 +1107,13 @@ async function resetSimulation() {
     term.write("All .out and .err files have been removed and time was reset to zero.\r\n");
     term.write("Type 'help' for instructions...\r\n\r\n" + prompt())
 
-    // Query server for current time and update clock
-    let serverTime = await queryServer();
-    simTime.setTime(serverTime);
-    updateClock();
+    // Re-show terminal
+    holdonArea.style.display = "none";
+    terminalArea.style.display = "";
 
-    // resetButton.disabled = false;
+
+    // Re-enable reset button
+    resetButton.disabled = false;
 
 
 }
@@ -1221,7 +1244,8 @@ async function addTime(numSeconds) {
 function main() {
 
     // Set up functions which need to be updated every specified interval
-    setInterval(updateClockAndQueryServer, 1000);
+    updateClockTimer = setInterval(updateClockAndQueryServer, 1000);
+    // setInterval(()=> {resetButton.disabled = false;}, 5000);
 
     // Initialize server clock and retrieve parallel program info
     fetch(`http://${serverAddress}/start`, { method: 'POST' })
@@ -1238,6 +1262,8 @@ function main() {
 
     // Get and set DOM elements
     clock = document.getElementById('clock');
+    terminalArea = document.getElementById('terminalcontainer');
+    holdonArea = document.getElementById('holdon');
     textArea = document.getElementById('textArea');
     batchEditor = document.getElementById('batchEditor');
     resetButton = document.getElementById('resetbutton');

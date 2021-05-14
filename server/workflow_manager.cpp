@@ -2,6 +2,7 @@
 
 #include <random>
 #include <iostream>
+#include <unistd.h>
 
 WRENCH_LOG_CATEGORY(workflow_manager, "Log category for WorkflowManager");
 
@@ -79,7 +80,6 @@ namespace wrench {
             // Cancel jobs
             while(not cancelJobs.empty())
             {
-//                cerr << "IN CANCELJOBS TEST\n";
                 // Retrieve compute service and job to execute job termination.
                 auto batch_service = *(this->getAvailableComputeServices<BatchComputeService>().begin());
                 auto job_name = cancelJobs.front();
@@ -98,11 +98,12 @@ namespace wrench {
                 queue_mutex.unlock();
             }
 
+
             // Moves time forward for requested time while adding any completed events to a queue.
             // Needs to be done this way because waiting for next event cannot be done on another thread.
             while(this->simulationTime < server_time)
             {
-                // Retrieve event by going through 0.5 sec increments.
+                // Retrieve event by going through sec increments.
                 auto event = this->waitForNextEvent(1.0);
                 WRENCH_INFO("TICK");
                 this->simulationTime = wrench::Simulation::getCurrentSimulatedDate();
@@ -122,6 +123,9 @@ namespace wrench {
             // Exits if server needs to stop
             if(stop)
                 break;
+            // Sleep since no matter what we're in locked step with real time and don't want
+            // to burn CPU cycles like crazy. Could probably sleep 1s...
+            usleep(100);
         }
         return 0;
     }

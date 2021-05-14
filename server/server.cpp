@@ -193,8 +193,6 @@ void reset(const Request& req, Response& res)
 {
     std::printf("Path: %s\nBody: %s\n\n", req.path.c_str(), req.body.c_str());
 
-    // TODO: DOES NOT WORK
-
     // Stop simulation
     simulation_thread_state->stopServer();
     // Join with simulation thread
