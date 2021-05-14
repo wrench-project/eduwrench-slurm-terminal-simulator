@@ -479,7 +479,11 @@ async function processCommand(commandLine) {
             timeToSleep += unit*parsed;
             unit *= 60;
         }
+        if (timeToSleep > 1000) {
+            resetButton.disabled = true;
+        }
         await addTime(timeToSleep);
+        resetButton.disabled = false;
         return;
     }
 
