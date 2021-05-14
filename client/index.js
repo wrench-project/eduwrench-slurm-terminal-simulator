@@ -1053,7 +1053,6 @@ function printHelp(topic) {
         helpMessage = "help: unknown help topic";
     }
     term.write(justifyText(helpMessage + "\n", 70, false, true));
-    term.write(justifyText(helpMessage + "\n", 70, false, true));
 }
 
 function sleep(ms) {
