@@ -44,6 +44,7 @@ let slurmHoursInput;
 let slurmMinutesInput;
 let slurmSecondsInput;
 
+// Handler for the clock update activity timer  (setInterval stuff)
 let updateClockTimer;
 
 // parallel program and cluster characteristics, all obtained from the server
@@ -57,6 +58,8 @@ window.onload = main;
 
 // Miscellaneous values
 let openedFile = "";
+
+// Server address: needs to be hardcoded
 //let serverAddress = "192.168.0.20/api";
 let serverAddress = "localhost/api";
 
@@ -75,12 +78,10 @@ unsupportedCommands["emacs"] = "(use the 'edit' command)";
 // Function that returns the prompt string, with control characters for color
 function prompt() {
     return `\u001B[1;34m${filesystem.getWorkingDir()}$\u001B[0m `;
-    // return `${filesystem.getWorkingDir()}$ `;
 }
 
 // Returns the prompt length, ignoring the control characters for color
 function promptLength() {
-    // return `\u001B[1;34m${filesystem.getWorkingDir()}$\u001B[0m `.length;
     return `${filesystem.getWorkingDir()}$ `.length;
 }
 
@@ -153,7 +154,7 @@ function exitTextEditor() {
 
     // Show terminal and reset time button
     resetButton.style.display = "";
-    document.getElementById('terminal').style.display = "";
+    terminalArea.style.display = "";
 
     // Restarts blinking on line.
     term.setOption('cursorBlink', true);
@@ -164,13 +165,10 @@ function exitTextEditor() {
  * while hiding text editor
  */
 function saveAndExitTextEditor() {
-
     // Saves file to filesystem
     filesystem.saveFile(openedFile, textEditor.innerText);
-
     // Exit the text editor
     exitTextEditor();
-
 }
 
 /**
@@ -181,7 +179,7 @@ function saveAndExitTextEditor() {
 function editBatchFile(filename, text) {
 
     // Hide terminal
-    document.getElementById('terminal').style.display = "none";
+    terminalArea.style.display = "none";
     resetButton.style.display = "none";
 
     // Makes sure the text is not directly editable.
@@ -217,7 +215,7 @@ function editBatchFile(filename, text) {
  */
 function editFile(filename, text) {
     // Hide terminal
-    document.getElementById('terminal').style.display = "none";
+    terminalArea.style.display = "none";
     resetButton.style.display = "none";
 
     // Sets up the text area to be representative of file with environmental variables set.
@@ -314,23 +312,22 @@ async function sendBatch(config) {
  * Used to cancel the simulated job running or waiting through a POST request
  * @param jobName: Name of the job to be canceled
  */
-function cancelJob(jobName) {
+async function cancelJob(jobName) {
     // Sets up the body
     let body = {
         jobName: "standard_" + jobName
     }
 
     // Sends the request asynchronously and parses as JSON
-    fetch(`http://${serverAddress}/cancelJob`, { method: 'POST', body: JSON.stringify(body)})
-        .then(res => res.json())
-        .then(res => {
-            // Prints the cancellation success
-            let status = "Successfully cancelled " + jobName;
-            if(!res.success) {
-                status = "Job cannot be cancelled. Does not exist or no permission."
-            }
-            term.write("\r" + status + "\r\n" + prompt());
-        });
+    let res = await fetch(`http://${serverAddress}/cancelJob`, { method: 'POST', body: JSON.stringify(body)});
+    res = await res.json();
+
+    // Prints the cancellation success
+    let status = "Successfully cancelled " + jobName;
+    if(!res.success) {
+        status = "Job cannot be cancelled. Does not exist or no permission."
+    }
+    term.write("\r" + status + "\r\n" + prompt());
 }
 
 /**
@@ -787,17 +784,11 @@ async function processCommand(commandLine) {
 
     // Implements equivalent of date -r in linux systems to print date of creation
     if(command === "date") {
-        // const printDate = function(t) {
-        //     let d = new Date(t);
-        //     let time = padZero(d.getUTCHours()) + ":" + padZero(d.getUTCMinutes()) + ":" + padZero(d.getUTCSeconds()) + " UTC";
-        //     term.write(padZero(d.getUTCMonth() + 1) + "/" + padZero(d.getUTCDate()) + " " + time + "\r\n");
-        // };
-
         if (commandLineTokens.length === 1) {
             term.write(getDate(simTime.getTime()) + "\r\n");
             // printDate(simTime.getTime());
         } else {
-            term.write("Usage: date [-r <path>]\r\n");
+            term.write("date: too many arguments ]\r\n");
         }
         return;
     }
@@ -808,7 +799,7 @@ async function processCommand(commandLine) {
         if (f[1] === "bin") {
             term.write(`cannot execute programs on the cluster's head node\r\n`);
         } else {
-            term.write(`operation not allowed\r\n`);
+            term.write(`operation not permitted\r\n`);
         }
     } else {
         term.write(`command '${command}' not found.\r\n`);
@@ -905,8 +896,6 @@ const notControl = /^[\S\s]$/;
  * @param seq: Input typed into the terminal, generally a single character
  */
 async function processInput(seq) {
-    // COMMENTED OUT DEBUGGING CODE TO BE REMOVED
-    // console.log(seq.length + " " + seq.charCodeAt(0).toString(16));
 
     // Ignores any input if a file is open
     if(fileOpen) {
@@ -1083,15 +1072,13 @@ async function resetSimulation() {
     holdonArea.style.display = "";
     term.clear();
 
-
-
     // Sends a POST request to the server
     let res = await fetch(`http://${serverAddress}/reset`, { method: 'POST'});
 
-
+    // Sleep for 3s, which should be enough for the server to restart
     await sleep(3000);
 
-    // Do a start
+    // Do a start again
     await fetch(`http://${serverAddress}/start`, { method: 'POST' });
 
     // Reset the clock periodic activity
@@ -1111,10 +1098,8 @@ async function resetSimulation() {
     holdonArea.style.display = "none";
     terminalArea.style.display = "";
 
-
     // Re-enable reset button
     resetButton.disabled = false;
-
 
 }
 
@@ -1122,9 +1107,10 @@ async function resetSimulation() {
  * Initializes the terminal to be usable on webapp.
  */
 function initializeTerminal() {
-    let doc = document.getElementById('terminal');
+    let doc = terminalArea;
     term.open(doc);
     term.setOption('cursorBlink', true);
+
     // Currently experimental hence this weird calling approach which does not match xterm docs
     termBuffer = term.buffer.active;
 
@@ -1251,8 +1237,6 @@ function main() {
     fetch(`http://${serverAddress}/start`, { method: 'POST' })
         .then(res => res.json())
         .then(res => {
-            // Prints the cancellation success
-            // term.write("\r" + res["pp_name"] + "\r\n" + prompt());
             pp_name = res["pp_name"];
             pp_seqwork = res["pp_seqwork"];
             pp_parwork = res["pp_parwork"];
@@ -1262,7 +1246,7 @@ function main() {
 
     // Get and set DOM elements
     clock = document.getElementById('clock');
-    terminalArea = document.getElementById('terminalcontainer');
+    terminalArea =  document.getElementById('terminal');
     holdonArea = document.getElementById('holdon');
     textArea = document.getElementById('textArea');
     batchEditor = document.getElementById('batchEditor');
