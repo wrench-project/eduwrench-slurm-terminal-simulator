@@ -1067,7 +1067,8 @@ async function resetSimulation() {
 
     // Stop the periodic time query for now
     clearInterval(updateClockTimer);
-    clock.innerText = `12:00:00 AM`;
+    // clock.innerText = `12:00:00 AM`;
+    clock.innerText = ` `;
     terminalArea.style.display = "none";
     holdonArea.style.display = "";
     term.clear();
@@ -1082,6 +1083,7 @@ async function resetSimulation() {
     await fetch(`http://${serverAddress}/start`, { method: 'POST' });
 
     // Reset the clock periodic activity
+    clock.innerText = `12:00:00 AM`;
     updateClockTimer = setInterval(updateClockAndQueryServer, 1000);
 
     // Update file system
