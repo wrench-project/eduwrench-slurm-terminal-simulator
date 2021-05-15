@@ -353,7 +353,7 @@ int real_main(int argc, char **argv)
                     in(1, INT_MAX, "nodes")), "number of compute nodes in the cluster")
             ("cores", po::value<int>()->default_value(1)->notifier(
                     in(1, INT_MAX, "cores")), "number of cores per compute node")
-            ("tracefile", po::value<std::string>()->default_value("none"), "background workload trace file scheme (none, rightnow)")
+            ("tracefile", po::value<std::string>()->default_value("none"), "background workload trace file scheme (none, rightnow, backfilling, choices)")
             ("pp_name", po::value<std::string>()->default_value("parallel_program"), "parallel program name")
             ("pp_seqwork", po::value<int>()->default_value(600)->notifier(
                     in(1, INT_MAX, "pp_seqwork")), "parallel program's sequential work in seconds")

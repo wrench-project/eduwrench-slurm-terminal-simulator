@@ -244,7 +244,16 @@ namespace wrench {
             // Check if jobs are ones submitted by user otherwise do not return anything to user.
             if(job_list[job->getName()])
             {
-                statuses.push(std::to_string(event.first) + " " + event.second->toString());
+                double submit_date = job->getSubmitDate();
+                double start_date = (*(job->getTasks().begin()))->getStartDate();
+                double end_date = (*(job->getTasks().begin()))->getEndDate();
+                if (end_date < 0) {
+                    end_date =  (*(job->getTasks().begin()))->getFailureDate();
+                }
+                statuses.push(std::to_string(event.first) + " " + event.second->toString() + " " +
+                              std::to_string(submit_date) + "|" +
+                              std::to_string(start_date) + "|" +
+                              std::to_string(end_date));
                 job_list.erase(job->getName());
             }
             events.pop();

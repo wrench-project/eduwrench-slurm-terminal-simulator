@@ -115,20 +115,22 @@ guidance.**
 Recall that *myprogram* runs in $2 + 20/n$ hours  on $n$ nodes.  Use the app to
 do (at least) the following:
 
-  1. Successful job execution
+1. **Successful job execution**
+
     - Edit the batch script to specify that you want
       to run *myprogram* on 4 nodes (`edit` command). Specify a duration that is sufficient
       for *myprogram* to complete successfully.
     - Submit this job to the batch scheduled and move time forward (using `sleep` command) until after the job should have completed. 
-    - Double check the content and creation date (`ls -l` command) of the .out or .err files.
+    - Check the content of the generated .out or .err file produced by the job.
     - Did the job complete successfully?
     - At what time did it complete? 
     - Did it complete about when you thought it would?
 
-  2. Failed job execution
+
+  2. **Failed job execution**
 
     - Now Submit a job to run *myprogram* on 6 nodes *without* enough requested time, so that it will certainly fail. 
-    - Once enough time has passed, double-check the content and creation date of the .out or .err file. 
+    - Once enough time has passed, check the content of the generated .out or .err file. 
     - Did the job fail? 
     - At what time did it fail? 
     - Did the job file about when you thought it would?
@@ -147,7 +149,6 @@ The main goal of a batch scheduler is to place job requests in a *batch queue*, 
 The term **turn-around time** is typically used to denote the sum of the wait time and of the execution time. For instance, say you submit a job that executes for 2 hours, but that spent 10 hours in the batch queue before being able to execute. The job's turn-around time is 10 + 2 = 12 hours.  In other words, the turn-around time is the time between submission and completion. 
 
 In the previous tab, your jobs ran immediately because there was no other job in the system. So their wait time was zero, and their turn-around time was exactly equal to their execution time.  Let's change that and showcase another useful Slurm command:
-
    - `squeue` is used to list all jobs currently in the systems, which are either pending (i.e., submitted but not running yet) or running.
 
 
@@ -158,7 +159,6 @@ Linux terminal on the cluster's head node.  **Type `help` to get some
 guidance.**
 
 Recall that the cluster has 32 compute nodes, and that *myprogram* runs in $2 + 20/n$ hours  on $n$ nodes.  Use the app to do (at least) the following:
-
     - Submit a job to run *myprogram* on 25 nodes with enough requested time so that it will successfully complete.
     - Use `squeue` to inspect the state of the batch queue. You should see that your job is running.
     - Soon after, submit another job to run *myprogram* successfully again (you can modify the same .slurm file, or copy it), but using 10 nodes.
@@ -166,7 +166,7 @@ Recall that the cluster has 32 compute nodes, and that *myprogram* runs in $2 + 
     - Without advancing time, estimate the following:
       - the turn-around time of the first job
       - the turn-around time of the second job
-    - Verify your answers to the above questions by advancing the clock and checking .out file creation dates.
+    - Verify your answers to the above questions by advancing the clock and checking content of the generated .out files.
 
 
 SIMULATOR GOES HERE: ./TestServer --node 32 --pp_name myprogram --pp_seqwork 7200 --pp_parwork 72000 
@@ -196,8 +196,7 @@ submit whatever jobs whenever they want, which is out of your control.
 
 Recall that the cluster has 32 compute nodes, and that *myprogram* runs in $2 + 20/n$ hours  on $n$ nodes.  Use the app to do (at least) the following:
 
-  1. Job submission and cancellation
-
+  1. **Job submission and cancellation**
     - Submit a job to run *myprogram* on 16 nodes with enough requested time.
     - Soon after submission, inspect the state of the batch queue and answer the following questions:
         - How many jobs are currently pending?
@@ -206,8 +205,7 @@ Recall that the cluster has 32 compute nodes, and that *myprogram* runs in $2 + 
     - Advance simulation time until your job has completed. You'll have to advance time by quite a lot. Imagine what it would be in the real world where, unlike in simulation, you can't fast-forward time (if you can, contact us immediately!)
     - What was your job's wait time? (you can infer it based on the time of submission and the time of completion, since you know the execution time)
 
-  2. Sneaky job submission
-
+  2. **Sneaky job submission**
     - Reset the time to zero, to pretend the above never happened.
     - Inspect the state of the queue and answer the following questions:
         - How many nodes are currently in used by running jobs?
@@ -228,12 +226,13 @@ can be helpful in practice! Sometimes, less is more (i.e., asking for fewer reso
 
 # TAB #4: Impact of job durations
 
-In the previous tabs, you were instructed to submit jobs that ask for 
-a long enough duration that *myprogram* completes successfully.  You may
-have asked for the exact duration needed, or you may have asked for more than needed. 
+In the previous tabs, you were instructed to submit jobs that ask for a
+long enough duration that *myprogram* completes successfully.  You may have
+asked for the exact duration needed, or you may have asked for more than
+needed.
 
 It turns out that many users, in practice ask for much more time that
-needed. This is because they do not know how long their program will run
+needed. This is because they do not know how long their programs will run
 (for instance, the program runs shorter or longer based on its input data).
 Furthermore, users many not know the speedup behavior of their programs. So
 although they may know how long the program would run on 1 node, they don't
@@ -243,33 +242,38 @@ This behavior has been studied by researchers (here is a [research
 article](https://citeseerx.ist.psu.edu/viewdoc/download?doi=10.1.1.9.5068&rep=rep1&type=pdf),
 if interested).
 
-The problem with asking for too much time is that it can increase a job's wait
-time (due to most batch schedulers implementing a strategy called "backfilling", which
-allows smaller/shorter jobs to jump ahead in the queue!).  
+The problem with asking for too much time is that it can increase a job's
+wait time. This is because most batch schedulers implementing a strategy called
+"backfilling", which allows smaller/shorter jobs to jump ahead in the
+queue!
 
 Let's witness first-hand the impact of the requested job duration using the
 simulation app at the bottom of this page.
 
 ### Simulation activity
 
-Recall that *myprogram* runs in $2 + 20/n$  on $n$ nodes.
+Recall that the cluster has 32 compute nodes, and that *myprogram* runs in $2 + 20/n$ hours  on $n$ nodes.  
 Use the app to do (at least) the following:
+
 
   1. Asking for just the right amount of time
     - Feel free to inspect the state of the queue, which will show that all nodes are currently busy.
-    - Submit a job asking for 4 nodes and just enough time to run *myprogram* 
-    - At what time did the job complete?
+    - Submit a job asking for 16 nodes and just enough time to run *myprogram* 
+    - What is the job's turn-around time?
   2. Asking for too much time
-    - Reset the simulation and resubmit the job, but now asking for 24 hours, pretending to be a user who doesn't know the program's speedup behavior and being conservative
-    - At what time did the job complete? 
+    - Reset the simulation time.
+    - Resubmit the job, but now asking for 22 hours, pretending to be a user who doesn't know the program's speedup behavior and conservatively asks for the sequential time
+    - What is the job's turn-around time? 
   3. Exploring
-    - Feel free to reset the simulation and resubmit the job with different durations, so see the behavior. The behavior is non-continuous: when asking for one more second, the job's wait time can jump by hours.
+    - Feel free to reset the simulation and resubmit the job with different durations, so see the behavior. The behavior is non-continuous: when asking for one more second, the job's wait time can jump by hours!
 
-SIMULATOR GOES HERE
+SIMULATOR GOES HERE: ./TestServer --node 32 --pp_name myprogram --pp_seqwork 7200 --pp_parwork 72000 --tracefile backfilling
+
 
 ### Take-away
 
-Jobs that ask for more time can have higher wait times. Therefore, if possible, a job should request just enough time for the user program to complete.
+Jobs that ask for more time can have higher wait times. Therefore, if possible, 
+a job should request just enough time for the user program to complete.
 
 
 ---
@@ -277,49 +281,47 @@ Jobs that ask for more time can have higher wait times. Therefore, if possible, 
 # TAB #5: Impact of the number of nodes
 
 Because we know that *myprogram* runs in $2 + 2/n$ hours on $n$ nodes, we
-can always ask for the exact duration needed, which is always beneficial .
+can always ask for the exact duration needed, 
+which is never detrimental and often beneficial.
 But what about the number of nodes?  When submitting a job, should we ask
-for 1 node, 2 nodes, more? In a previous tab you submitted a job that asked
+for 1 node, 2 nodes, more? In an earlier tab you submitted a job that asked
 for whatever number of nodes was currently idle, which is one possible
-strategy (and that number may be zero, then what?).
+strategy. But that number may be zero, so then what? That was the case
+in the previous tab, and the activity just said "ask for 16 nodes". But would
+17 nodes have led to some benefit? Or would it have instead been a worse choice?
 
-Formally, our goal is to minimize *turn-around time*, which is the sum of
-the queue wait time and the execution time.  Asking for more nodes can
+Formally, our goal is to *minimize turn-around time*.  Asking for more nodes can
 increase wait time (because we need to wait for that many nodes to become
-available, and also because of backfilling, as mentioned in the previous
-tab). But asking for more nodes will shorten execution time.  There is thus
-a sweet spot, which, unfortunately, depends on the state of the queue (that
-is, on your competitors).
-
-Let try this out with the simulated application at the bottom of
-this page, which is similar to that in the previous tab. 
+available).  But asking for more nodes will shorten execution time because
+parallelism is good.  There is thus  a sweet spot. This sweet spot, unfortunately, depends on the state of the queue, that is,
+on your competitors, which is out of your control. So all 
+users of batch-scheduled platforms try to optimize their turn-around
+times on a daily basis, but are mostly in the dark.  Let get a sense for this in simulation...
 
 ### Simulation activity
 
-Recall that *myprogram* runs in $2 + 20/n$  on $n$ nodes.
+Recall that the cluster has 32 compute nodes, and that *myprogram* runs in $2 + 20/n$ hours  on $n$ nodes.  
 Use the app to do (at least) the following:
 
   1. Inspect the state of the queue. You should see that only 1 node is available right now. 
-  2. If you were to submit a 1-node job right now, when would *myprogram* complete? 
+  2. If you were to submit a 1-node job right now, why turn-around time would you experience? 
   3. Submit a 2-node job, asking for just enough time for *myprogram* to complete successfully.
-  4. When does this job complete? 
+  4. What is this job's turn-around time? 
   5. Reset the simulation and submit a 4-node job, asking for just enough time for *myprogram* to complete successfully.
-  6. When does this job complete?
-  5. Which option was better: using 1 node, 2 nodes, or 4 nodes? 
+  6. When is this job's turn-around time?
+  5. Which option was better: using 1 node, 2 nodes, or 4 nodes?
+  6. Is there any way you could have predicted this based on initial state of the batch queue?  
   7. Feel free to experiment with different numbers of nodes, so see which one is best.
 
-SIMULATOR GOES HERE
+
+SIMULATOR GOES HERE: ./TestServer --node 32 --pp_name myprogram --pp_seqwork 7200 --pp_parwork 72000 --tracefile choices
 
 ### Take-away 
 
 The question "how many nodes should I ask for to minimize turn-around time?"
 is not an easy one.  Asking for too few may hurt turn-around time because
 of long execution time. But asking for too many may hurt turn-around
-time because of long wait time.
+time because of long wait time. 
 
 
 ---
-
-NOTES:
-    - Batch scheduler provides estimated start times?
-

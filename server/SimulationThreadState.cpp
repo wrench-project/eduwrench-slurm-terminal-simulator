@@ -53,7 +53,7 @@ int randInt(int min, int max) {
     return rand() % (max - min + 1) + min;
 }
 
-void appendRightNowWorkloadJob(FILE *f, int num_nodes, int min_time, int max_time, int submit_time) {
+void appendWorkloadJob(FILE *f, int num_nodes, int min_time, int max_time, int submit_time) {
     static int id = 0;
     int run_time = randInt(min_time, max_time);
     std::string line = "";
@@ -65,13 +65,12 @@ void appendRightNowWorkloadJob(FILE *f, int num_nodes, int min_time, int max_tim
     line += "0 "; // cpu time used
     line += "0 "; // memory
     line += std::to_string(num_nodes) + " "; // requested num nodes
-    line += std::to_string(run_time + 120) + " ";
+    line += std::to_string(run_time + 120) + " "; // requested time
     line += "0 "; // requested memory
     line += "0 "; // status
     line += std::to_string(1 + rand() % 20) + " "; // user_id
     fprintf(f, "%s\n", line.c_str());
 }
-
 
 void createRightNowWorkload(FILE *f, int num_nodes) {
 
@@ -80,8 +79,6 @@ void createRightNowWorkload(FILE *f, int num_nodes) {
     if (num_nodes == 32) {
         // Space to leave: 4
         job_sizes = {7, 13, 14, 21, 26};
-    } else if (num_nodes == 20) {
-
     } else {
         std::cerr << "No rightnow workload scheme available for " << num_nodes << " nodes\n";
         std::cerr << "You could run the ./computeRightnowJobSizes script...\n";
@@ -90,32 +87,69 @@ void createRightNowWorkload(FILE *f, int num_nodes) {
 
     // Generate 20 jobs that arrive at time zero
     for (int i=0; i < job_sizes.size(); i++) {
-        appendRightNowWorkloadJob(f, job_sizes[i],
-                                  5000,
-                                  36000,
-                                  0);
+        appendWorkloadJob(f, job_sizes[i],
+                          5000,
+                          36000,
+                          0);
     }
     for (int i=job_sizes.size(); i < 15; i++) {
-        appendRightNowWorkloadJob(f, job_sizes[rand() % job_sizes.size()],
-                                  5000,
-                                  36000,
-                                  0);
+        appendWorkloadJob(f, job_sizes[rand() % job_sizes.size()],
+                          5000,
+                          36000,
+                          0);
     }
     // Generate 100 jobs that arrive later one after the other
     for (int i=0; i < 100; i++) {
-        appendRightNowWorkloadJob(f, job_sizes[rand() % job_sizes.size()],
-                                  5000,
-                                  36000,
-                                  7200 * (i+1));
+        appendWorkloadJob(f, job_sizes[rand() % job_sizes.size()],
+                          5000,
+                          36000,
+                          7200 * (i+1));
     }
 
 }
+
+void createBackfillingWorkload(FILE *f, int num_nodes) {
+
+    std::vector<int> job_sizes;
+
+    if (num_nodes != 32) {
+        std::cerr << "No backfilling workload scheme available for " << num_nodes << " nodes\n";
+        exit(1);
+    }
+
+    appendWorkloadJob(f, 16,10*3600,10*3600,1);
+    appendWorkloadJob(f, 16,6*3600,6*3600,0);
+    appendWorkloadJob(f, 32,8*3600,8*3600,0);
+    appendWorkloadJob(f, 16,100*3600,100*3600,0);
+
+}
+
+void createChoicesWorkload(FILE *f, int num_nodes) {
+
+    std::vector<int> job_sizes;
+
+    if (num_nodes != 32) {
+        std::cerr << "No choices workload scheme available for " << num_nodes << " nodes\n";
+        exit(1);
+    }
+
+    appendWorkloadJob(f, 31,10*3600,10*3600,0);
+    appendWorkloadJob(f, 30,0.5*3600,0.5*3600,0);
+    appendWorkloadJob(f, 28,8*3600,8*3600,0);
+//    appendWorkloadJob(f, 32,100*3600,100*3600,0);
+
+}
+
 
 void createTraceFile(std::string path, std::string scheme, int num_nodes) {
     // Create another invalid trace file
     auto trace_file  = fopen(path.c_str(), "w");
     if (scheme == "rightnow") {
         createRightNowWorkload(trace_file, num_nodes);
+    } else if (scheme == "backfilling") {
+        createBackfillingWorkload(trace_file, num_nodes);
+    } else if (scheme == "choices") {
+        createChoicesWorkload(trace_file, num_nodes);
     } else {
         throw std::invalid_argument("Unknown tracefile_scheme " + scheme);
     }
@@ -168,9 +202,9 @@ void SimulationThreadState::createAndLaunchSimulation(int main_argc, char **main
         std::string path_to_tracefile = "/tmp/tracefile.swf";
         createTraceFile(path_to_tracefile, tracefile_scheme, num_nodes);
         auto foo = new wrench::BatchComputeService("ComputeNode_0", nodes, "",
-                                        {{wrench::BatchComputeServiceProperty::BATCH_SCHEDULING_ALGORITHM,    "conservative_bf"},
-                                         {wrench::BatchComputeServiceProperty::SIMULATED_WORKLOAD_TRACE_FILE, path_to_tracefile}},
-                                        {});
+                                                   {{wrench::BatchComputeServiceProperty::BATCH_SCHEDULING_ALGORITHM,    "conservative_bf"},
+                                                    {wrench::BatchComputeServiceProperty::SIMULATED_WORKLOAD_TRACE_FILE, path_to_tracefile}},
+                                                   {});
         batch_service = simulation.add(foo);
     }
 
