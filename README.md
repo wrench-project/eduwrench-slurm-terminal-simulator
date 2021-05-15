@@ -2,13 +2,12 @@
 ## Prerequesites
 ### Server
 * C++ compiler
-* CMake
+* CMake (v3.8+)
 * nlohmann_json
 * pugixml
 * WRENCH
 ### Client
-* npm
-* nodejs
+* npm (Latest or at least v6.x+)
 
 ## Building the server
 As long as you have the prerequisite libraries installed, running the following should suffice.
@@ -44,3 +43,7 @@ Command line options for TestServer:
 Running the client at this point is pointing a Web browser to http://localhost or http://127.0.0.1
 
 Note that if the client was already running, then it will connect to the server, but timing between client and server will be non-sensical. 
+
+## Some Design Decisions
+
+Multi-threading of the server is needed since both WRENCH and the web server can each block the other from running. Due to something from WRENCH (most likely SimGrid), you cannot spawn threads from the web server when it starts but rather the main thread (the one in which the program is initially running on) will be running the simulation and spawns a thread which runs the web server. One way to start and stop the server might be to run the `simulation.launch` function in a loop until the entire server needs to close. To make sure that the simulation doesn't block, it will depend on an API call to end the main simulation loop where the API call to the `stop` endpoint can be called when leaving the page or closing it by using the built-in front-end function `unload`.
