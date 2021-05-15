@@ -32,12 +32,7 @@ Superuser permission may be required because the server listens on port 80. (For
 ```
 % cd server/build; sudo ./TestServer xxx xxx xxxx
 ```
-Command line options for TestServer:
-```
---port :  Port on which the web server is running on. Default is 80.
---nodes : Number of simulated nodes. Default is 2.
---cores : Number of simulated cores per node. Default is 1.
---tracefile <filename> : The tracefile to be used by the simulated server to simulate other users/background tasks.
+Command line options for TestServer: type `./TestServer --help`
 ```
 
 Running the client at this point is pointing a Web browser to http://localhost or http://127.0.0.1
