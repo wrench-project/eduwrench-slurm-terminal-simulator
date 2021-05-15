@@ -33,7 +33,6 @@ Superuser permission may be required because the server listens on port 80. (For
 % cd server/build; sudo ./TestServer xxx xxx xxxx
 ```
 Command line options for TestServer: type `./TestServer --help`
-```
 
 Running the client at this point is pointing a Web browser to http://localhost or http://127.0.0.1
 
