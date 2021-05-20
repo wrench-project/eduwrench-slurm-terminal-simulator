@@ -41,3 +41,13 @@ Note that if the client was already running, then it will connect to the server,
 ## Some Design Decisions
 
 Multi-threading of the server is needed since both WRENCH and the web server can each block the other from running. Due to something from WRENCH (most likely SimGrid), you cannot spawn threads from the web server when it starts but rather the main thread (the one in which the program is initially running on) will be running the simulation and spawns a thread which runs the web server. One way to start and stop the server might be to run the `simulation.launch` function in a loop until the entire server needs to close. To make sure that the simulation doesn't block, it will depend on an API call to end the main simulation loop where the API call to the `stop` endpoint can be called when leaving the page or closing it by using the built-in front-end function `unload`.
+
+# Docker
+
+The Dockerfile in the top-level directory specifies a Docker container for running
+the simulator/server. For instance:
+
+```
+docker run -p 8080:8080 --rm -it --workdir /home/wrench/slurm_terminal_simulator/ IMAGE ./run_it.sh localhost 8080 tab4
+```
+will start a Web server on localhost that listens to port 8080.
