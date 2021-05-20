@@ -1,10 +1,14 @@
 #!/bin/bash
+#
+# This script is used to run in one command the simulator/server for the
+# EduWRENCH pedagogic module focused on Slurm. It's used typically inside
+# a Docker container.
 
 set -e
 
-if [ "$#" -lt 2 ]; then
-    echo "Usage: $0 <hostname> <port> [server arguments...]"
-    echo "Example: $0 localhost 8080 --nodes 32 --tracefile rightnow"
+if [ "$#" -ne 3 ]; then
+    echo "Usage: $0 <hostname> <port> <tab2|...|tab5>"
+    echo "Example: $0 localhost 8080 tab3"
     exit 1
 fi
 
@@ -17,18 +21,24 @@ fi
 
 HOSTNAME=$1
 PORT=$2
+SCENARIO=$3
 
 SERVERARGS="--port $PORT "
 
-#Construct server arguments
-shift
-shift
-while test $# -gt 0
-do
-    SERVERARGS=$SERVERARGS" "$1
-    shift
-done
+case "$SCENARIO" in
 
+tab2)  SERVERARGS=$SERVERARGS" --node 32 --pp_name myprogram --pp_seqwork 7200 --pp_parwork 72000"
+    ;;
+tab3)  SERVERARGS=$SERVERARGS" --node 32 --pp_name myprogram --pp_seqwork 7200 --pp_parwork 72000"
+    ;;
+tab4)  SERVERARGS=$SERVERARGS" --node 32 --pp_name myprogram --pp_seqwork 7200 --pp_parwork 72000 --tracefile rightnow"
+    ;;
+tab5)  SERVERARGS=$SERVERARGS" --node 32 --pp_name myprogram --pp_seqwork 7200 --pp_parwork 72000 --tracefile backfilling"
+    ;;
+*) echo "Unknown scenario argument $SCENARIO"
+   exit 1
+   ;;
+esac
 
 # Set up the client
 printf "export class ServerAddress {\\n  constructor() {\n    this.address = \"$HOSTNAME:$PORT/api\";\n  }\n}\n" > client/server_address.js
