@@ -5,6 +5,7 @@
 import {Terminal} from './libs/xterm';
 import {FitAddon} from './libs/xterm-addon-fit';
 import {Filesystem} from './filesystem';
+import {ServerAddress} from './server_address';
 
 // Load terminal library
 const term = new Terminal();
@@ -61,9 +62,9 @@ window.onload = main;
 // Miscellaneous values
 let openedFile = "";
 
-// Server address: needs to be hardcoded
-//let serverAddress = "192.168.0.20/api";
-let serverAddress = "localhost/api";
+// Server address: needs to be hardcoded (see server_address.js)
+const serveraddress = new ServerAddress();
+let serverAddress = serveraddress.address;
 
 // Unsupported commands with error messages
 let unsupportedCommands = {};
