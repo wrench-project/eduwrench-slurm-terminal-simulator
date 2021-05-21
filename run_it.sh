@@ -28,7 +28,7 @@ case "$SCENARIO" in
 
 tab2)  SERVERARGS=$SERVERARGS" --node 32 --pp_name myprogram --pp_seqwork 7200 --pp_parwork 72000"
     ;;
-tab3)  SERVERARGS=$SERVERARGS" --node 32 --pp_name myprogram --pp_seqwork 7200 --pp_parwork 72000 --tracefile"
+tab3)  SERVERARGS=$SERVERARGS" --node 32 --pp_name myprogram --pp_seqwork 7200 --pp_parwork 72000"
     ;;
 tab4)  SERVERARGS=$SERVERARGS" --node 32 --pp_name myprogram --pp_seqwork 7200 --pp_parwork 72000 --tracefile rightnow"
     ;;

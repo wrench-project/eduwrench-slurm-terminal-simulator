@@ -145,7 +145,7 @@ docker pull wrenchproject/slurm-terminal
 and then run the simulation as:
 
 ```
-docker run -p 8080:80 --rm -it wrenchproject/slurm-terminal ./run_it.sh tab2
+docker run -p 8080:8080 --rm -it wrenchproject/slurm-terminal ./run_it.sh tab2
 ```
 
 You can now point your Web browser to ` http://localhost:8080`
@@ -191,7 +191,7 @@ docker pull wrenchproject/slurm-terminal
 and then run the simulation as:
 
 ```
-docker run -p 8080:80 --rm -it wrenchproject/slurm-terminal ./run_it.sh tab3
+docker run -p 8080:8080 --rm -it wrenchproject/slurm-terminal ./run_it.sh tab3
 ```
 
 You can now point your Web browser to ` http://localhost:8080`
@@ -250,7 +250,7 @@ docker pull wrenchproject/slurm-terminal
 and then run the simulation as:
 
 ```
-docker run -p 8080:80 --rm -it wrenchproject/slurm-terminal ./run_it.sh tab4
+docker run -p 8080:8080 --rm -it wrenchproject/slurm-terminal ./run_it.sh tab4
 ```
 
 You can now point your Web browser to ` http://localhost:8080`
@@ -316,7 +316,7 @@ docker pull wrenchproject/slurm-terminal
 and then run the simulation as:
 
 ```
-docker run -p 8080:80 --rm -it wrenchproject/slurm-terminal ./run_it.sh tab5
+docker run -p 8080:8080 --rm -it wrenchproject/slurm-terminal ./run_it.sh tab5
 ```
 
 You can now point your Web browser to ` http://localhost:8080`
@@ -375,7 +375,7 @@ docker pull wrenchproject/slurm-terminal
 and then run the simulation as:
 
 ```
-docker run -p 8080:80 --rm -it wrenchproject/slurm-terminal ./run_it.sh tab6
+docker run -p 8080:8080 --rm -it wrenchproject/slurm-terminal ./run_it.sh tab6
 ```
 
 You can now point your Web browser to ` http://localhost:8080`
