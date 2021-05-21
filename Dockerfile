@@ -1,3 +1,4 @@
+FROM wrenchproject/wrench:unstable
 
 MAINTAINER Henri Casanova <henric@hawaii.edu>
 
