@@ -47,7 +47,13 @@ Multi-threading of the server is needed since both WRENCH and the web server can
 The Dockerfile in the top-level directory specifies a Docker container for running
 the simulator/server. For instance:
 
+
 ```
-docker run -p 8080:8080 --rm -it --workdir /home/wrench/slurm_terminal_simulator/ IMAGE ./run_it.sh localhost 8080 tab4
+docker pull wrenchproject/slurm-terminal
 ```
-will start a Web server on localhost that listens to port 8080.
+will pull the Docker image, and 
+
+```
+docker run -p 8080:8080 --rm -it --workdir /home/wrench/slurm_terminal_simulator/ wrenchproject/slurm-terminal ./run_it.sh localhost 8080 tab4
+```
+will start a Docker container with a Web server on localhost that listens to port 8080. Simply point your browser to localhost:8080 and voila.
