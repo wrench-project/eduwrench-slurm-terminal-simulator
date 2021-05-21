@@ -27,7 +27,7 @@
     box-shadow: none;
 }
 
-.loader-backward {
+.loader-time-backward {
     border: 12px solid #333333;
     border-top: 12px solid #649acc;
     border-radius: 100%;
@@ -37,12 +37,21 @@
 }
 
 
-.loader-forward {
+.loader-time-forward {
     border: 12px solid #333333;
     border-top: 12px solid #649acc;
     border-radius: 100%;
     width: 40px;
     height: 40px;
+    animation: spin 1s linear infinite;
+}
+
+.loader-starting {
+    border: 14px solid #333333;
+    border-top: 14px solid #cc4949;
+    border-radius: 100%;
+    width: 80px;
+    height: 80px;
     animation: spin 1s linear infinite;
 }
 

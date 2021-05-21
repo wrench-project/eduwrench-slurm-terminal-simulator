@@ -154,12 +154,23 @@ void start(const Request& req, Response& res)
     time_start = get_time();
     res.set_header("access-control-allow-origin", "*");
 
+
+    // Stop simulation
+    simulation_thread_state->stopSimulation();
+    // Join with simulation thread
+    simulation_thread.join();
+
+    simulation_reset = true;
+
     json body;
     body["pp_name"] = pp_name;
     body["pp_seqwork"] = pp_seqwork;
     body["pp_parwork"] = pp_parwork;
     body["num_cluster_nodes"] = num_cluster_nodes;
+    res.set_header("access-control-allow-origin", "*");
     res.set_content(body.dump(), "application/json");
+
+    server.stop(); // will restart! like in a reset, in case this is a page reload
 }
 
 /**
@@ -173,14 +184,13 @@ void stop(const Request& req, Response& res)
     std::printf("Path: %s\nBody: %s\n\n", req.path.c_str(), req.body.c_str());
 
     // Stop the server
-    simulation_thread_state->stopServer();
+    simulation_thread_state->stopSimulation();
+
     // Join with the thread
     simulation_thread.join();
     // Erase the simulated state
-    delete simulation_thread_state;
-    // Create a new simulated state
-
     res.set_header("access-control-allow-origin", "*");
+    std::exit(0);
 }
 
 /**
@@ -194,7 +204,7 @@ void reset(const Request& req, Response& res)
     std::printf("Path: %s\nBody: %s\n\n", req.path.c_str(), req.body.c_str());
 
     // Stop simulation
-    simulation_thread_state->stopServer();
+    simulation_thread_state->stopSimulation();
     // Join with simulation thread
     simulation_thread.join();
 

@@ -17,7 +17,7 @@ public:
 
     bool cancelJob(const std::string& job_name) const;
 
-    void stopServer() const;
+    void stopSimulation() const;
 
     std::vector<std::string> getQueue() const;
 

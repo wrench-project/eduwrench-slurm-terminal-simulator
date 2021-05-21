@@ -59,12 +59,13 @@ let num_cluster_nodes;
 // Once HTML is loaded run main function
 window.onload = main;
 
+
 // Miscellaneous values
 let openedFile = "";
 
 // Server address: needs to be hardcoded (see server_address.js)
-const serveraddress = new ServerAddress();
-let serverAddress = serveraddress.address;
+let serverAddress = (new ServerAddress()).address;
+let serverTerminated = false;
 
 // Unsupported commands with error messages
 let unsupportedCommands = {};
@@ -77,6 +78,14 @@ unsupportedCommands["emacs"] = "(use the 'edit' command)";
 /**********************************************************************/
 /* HELPER FUNCTIONS                                                   */
 /**********************************************************************/
+
+async function killServer() {
+    serverTerminated = true;
+    let res = await fetch(`http://${serverAddress}/stop`, { method: 'POST'});
+    document.getElementById('webapp').style.display = "none";
+    document.getElementById('serverstopped').style.display = "";
+    clearInterval(updateClockTimer);
+}
 
 // Function that returns the prompt string, with control characters for color
 function prompt() {
@@ -341,28 +350,27 @@ async function getQueue() {
     let res = await fetch(`http://${serverAddress}/getQueue`, { method: 'POST' });
     res = await res.json();
 
-    console.log(res.queue);
     // All running first, sorted by name (i.e., arrival time)
     // All pending next, sorted by name (i.e., arrival time)
     res.queue.sort(function(a,b) {
-       let a_name = a.split(",")[1].split("_");
-       a_name = parseInt(a_name[a_name.length -1]);
-       let b_name = b.split(",")[1].split("_");
-       b_name = parseInt(b_name[b_name.length -1]);
-       let a_pending = parseInt(a.split(",")[4]) < 0;
-       let b_pending = parseInt(b.split(",")[4]) < 0;
+        let a_name = a.split(",")[1].split("_");
+        a_name = parseInt(a_name[a_name.length -1]);
+        let b_name = b.split(",")[1].split("_");
+        b_name = parseInt(b_name[b_name.length -1]);
+        let a_pending = parseInt(a.split(",")[4]) < 0;
+        let b_pending = parseInt(b.split(",")[4]) < 0;
 
-       if (a_pending && !b_pending) {
-           return 1;
-       }
-       if (!a_pending && b_pending) {
-           return -1;
-       }
-       if (a_name < b_name)  {
-           return -1;
-       } else {
-           return 1;
-       }
+        if (a_pending && !b_pending) {
+            return 1;
+        }
+        if (!a_pending && b_pending) {
+            return -1;
+        }
+        if (a_name < b_name)  {
+            return -1;
+        } else {
+            return 1;
+        }
 
     });
 
@@ -487,6 +495,16 @@ async function processCommand(commandLine) {
         } else {
             term.write("help: invalid number of arguments\r\n");
         }
+        return;
+    }
+
+    // Exit command
+    if (command === "exit") {
+        if (commandLineTokens.length !== 1) {
+            term.write("exit: invalid number of arguments\r\n");
+            return;
+        }
+        killServer();
         return;
     }
 
@@ -1070,6 +1088,7 @@ function printHelp(topic) {
         helpMessage += "(using the 'sleep' shell command, which returns quicker than you think and advances the simulated time!)";
     } else if (topic === "shell") {
         helpMessage += "This terminal supports simple versions of the following commands:\n\n";
+        helpMessage += "  - \u001B[1mexit\u001B[0m                 (exit and terminate the server)\n";
         helpMessage += "  - \u001B[1msleep [[h:]m:]s\u001B[0m      (block for pecified amount of time,\n";
         helpMessage += "                          ~10000x faster than real time)\n";
         helpMessage += "  - \u001B[1mclear\u001B[0m                (clear the terminal)\n";
@@ -1118,10 +1137,19 @@ async function resetSimulation() {
     let res = await fetch(`http://${serverAddress}/reset`, { method: 'POST'});
 
     // Sleep for 3s, which should be enough for the server to restart
-    await sleep(5000);
+    await sleep(3000);
 
-    // Do a start again
-    await fetch(`http://${serverAddress}/start`, { method: 'POST' });
+    // Do a start again, with a 1-second retry, up to 10 times
+    for (let trial = 1; trial < 10; trial++) {
+        // Do a start again
+        try {
+            await fetch(`http://${serverAddress}/start`, {method: 'POST'});
+        } catch (err) {
+            await sleep(1000);
+            continue;
+        }
+        break;
+    }
 
     // Reset the clock periodic activity
     // clock.innerText = `12:00:00 AM`;
@@ -1267,7 +1295,21 @@ async function updateClockAndQueryServer() {
     simTime.setTime(simTime.getTime() + 1000);
 
     // Query server for current time
-    let serverTime = await queryServer();
+    let serverTime;
+    try {
+        serverTime = await queryServer();
+    } catch (err) {
+        if (serverTerminated) {
+            document.getElementById('webapp').style.display = "none";
+            document.getElementById('serverstopped').style.display = "";
+        } else {
+            document.getElementById('webapp').style.display = "none";
+            document.getElementById('servererror').style.display = "";
+        }
+        clearInterval(updateClockTimer);
+        return;
+    }
+
     if(Math.abs(serverTime - simTime.getTime()) > 500) {
         simTime.setTime(serverTime);
     }
@@ -1294,22 +1336,8 @@ async function addTime(numSeconds) {
 /**
  * Entry function to run after the HTML has fully loaded.
  */
-function main() {
+async function main() {
 
-    // Set up functions which need to be updated every specified interval
-    updateClockTimer = setInterval(updateClockAndQueryServer, 1000);
-    // setInterval(()=> {resetButton.disabled = false;}, 5000);
-
-    // Initialize server clock and retrieve parallel program info
-    fetch(`http://${serverAddress}/start`, { method: 'POST' })
-        .then(res => res.json())
-        .then(res => {
-            pp_name = res["pp_name"];
-            pp_seqwork = res["pp_seqwork"];
-            pp_parwork = res["pp_parwork"];
-            num_cluster_nodes = res["num_cluster_nodes"];
-            initializeTerminal();
-        });
 
     // Get and set DOM elements
     clock = document.getElementById('clock');
@@ -1335,4 +1363,25 @@ function main() {
     slurmHoursInput.addEventListener("change", changeBatch, false);
     slurmMinutesInput.addEventListener("change", changeBatch, false);
     slurmSecondsInput.addEventListener("change", changeBatch, false);
+
+    resetButton.style.display="none";
+    document.getElementById('starting').style.display="";
+
+    // Initialize server clock and retrieve parallel program info
+    fetch(`http://${serverAddress}/start`, { method: 'POST' })
+        .then(res => res.json())
+        .then(async (res) => {
+            pp_name = res["pp_name"];
+            pp_seqwork = res["pp_seqwork"];
+            pp_parwork = res["pp_parwork"];
+            num_cluster_nodes = res["num_cluster_nodes"];
+            await sleep(5000); // ugly sleep
+            initializeTerminal();
+            resetButton.style.display="";
+            document.getElementById('starting').style.display="none";
+            // Set up functions which need to be updated every specified interval
+            updateClockTimer = setInterval(updateClockAndQueryServer, 1000);
+        });
+
+
 }

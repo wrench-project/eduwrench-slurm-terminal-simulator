@@ -234,7 +234,7 @@ bool SimulationThreadState::cancelJob(const std::string& job_name) const {
     return this->wms->cancelJob(job_name);
 }
 
-void SimulationThreadState::stopServer() const {
+void SimulationThreadState::stopSimulation() const {
     this->wms->stopServer();
 }
 

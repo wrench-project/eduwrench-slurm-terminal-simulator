@@ -6,81 +6,103 @@
     <script type="text/javascript" src="bundle.js"></script>
 </head>
 <body>
-<div id="header" class="container">
-    <div class="row">
-        <div class="col-12">
-            <h6>Simulated time</h6>
-        </div>
-    </div>
-    <div class="row">
-        <div class="col-4">
-            <div class="container" id="clock-area">
-                <h3 id="clock">12:00:00 AM</h3>
+<div id="webapp" class="container">
+    <div id="header" class="container">
+        <div class="row">
+            <div class="col-12">
+                <h6>Simulated time</h6>
             </div>
         </div>
-        <div class="col-5">
-        </div>
-        <div class="col-3">
-            <div class="row">
-                <div class="col">
-                    <button id="resetbutton" class="btn btn-secondary" type="button">Reset Time</button>
-                    <div class="container" id="fastforward" style="display: none;">
-                        <div class="loader-forward" ></div>
-                    </div>
-                    <div class="container" id="rewind" style="display: none;">
-                        <div class="loader-backward" ></div>
+        <div class="row">
+            <div class="col-4">
+                <div class="container" id="clock-area">
+                    <h3 id="clock">12:00:00 AM</h3>
+                </div>
+            </div>
+            <div class="col-5">
+            </div>
+            <div class="col-3">
+                <div class="row">
+                    <div class="col">
+                        <button id="resetbutton" class="btn btn-secondary" type="button">Reset Time</button>
+                        <div class="container" id="fastforward" style="display: none;">
+                            <div class="loader-time-forward" ></div>
+                        </div>
+                        <div class="container" id="rewind" style="display: none;">
+                            <div class="loader-time-backward" ></div>
+                        </div>
                     </div>
                 </div>
             </div>
         </div>
     </div>
+    <div class="container" id="terminalcontainer">
+        <div id="terminal" class="container"></div>
+    </div>
+    <div class="container" id="starting" style="display: none;margin-top: 4em">
+        <div class="row">
+        </div>
+        <div class="row">
+            <div class="col-5">
+            </div>
+            <div class="loader-starting" ></div>
+            <div class="col-5">
+            </div>
+        </div>
+    </div>
+
+    <div id="textArea" class="container">
+        <div class="row">
+            <div class="col-1"></div>
+            <div class="col-4">
+                <h3>Text Editor</h3>
+            </div>
+            <div class="col-6">
+                <div class="row">
+                    <div class="col">
+                        <button id="cancel" class="btn btn-secondary" type="button">Cancel</button>
+                    </div>
+                    <div class="col">
+                        <button id="exit" class="btn btn-secondary" type="button">Save and Exit</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="container">
+            <div id="textEditor" contenteditable="true" spellcheck="false"></div>
+            <div id="batchEditor" class="container">
+                <div style="text-align: center;" class="row justify-content-center">
+                    <div class="col-2">
+                        <h4>#Nodes</h4>
+                        <input id="slurmNodes" type="text" minlength="1" maxlength="4" size="4">
+                    </div>
+                    <div class="col-2">
+                        <h4>Hours</h4>
+                        <input id="slurmHours" type="text" minlength="1" maxlength="2" size="2">
+                    </div>
+                    <div class="col-2">
+                        <h4>Minutes</h4>
+                        <input id="slurmMinutes" type="text" minlength="1" maxlength="2" size="2">
+                    </div>
+                    <div class="col-2">
+                        <h4>Seconds</h4>
+                        <input id="slurmSeconds" type="text" minlength="1" maxlength="2" size="2">
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div id="footer" class="container"><br/></div>
 </div>
-<div class="container" id="terminalcontainer">
-    <div id="terminal" class="container"></div>
+<div id="serverstopped" class="container" style="display: none;">
+    <h3>Thanks for using this Web app.</h3>
+    <h3>The server has been stopped. You can restart it and reload this page to do it all again.</h3>
+</div>
+<div id="servererror" class="container" style="display: none;">
+    <h3>The server cannot be contacted... perhaps it was stopped or it has failed.</h3>
+    <h3>Restart the server and reload this page if you wish to use this Web app again.</h3>
 </div>
 
-<div id="textArea" class="container">
-    <div class="row">
-        <div class="col-1"></div>
-        <div class="col-4">
-            <h3>Text Editor</h3>
-        </div>
-        <div class="col-6">
-            <div class="row">
-                <div class="col">
-                    <button id="cancel" class="btn btn-secondary" type="button">Cancel</button>
-                </div>
-                <div class="col">
-                    <button id="exit" class="btn btn-secondary" type="button">Save and Exit</button>
-                </div>
-            </div>
-        </div>
-    </div>
-    <div class="container">
-        <div id="textEditor" contenteditable="true" spellcheck="false"></div>
-        <div id="batchEditor" class="container">
-            <div style="text-align: center;" class="row justify-content-center">
-                <div class="col-2">
-                    <h4>#Nodes</h4>
-                    <input id="slurmNodes" type="text" minlength="1" maxlength="4" size="4">
-                </div>
-                <div class="col-2">
-                    <h4>Hours</h4>
-                    <input id="slurmHours" type="text" minlength="1" maxlength="2" size="2">
-                </div>
-                <div class="col-2">
-                    <h4>Minutes</h4>
-                    <input id="slurmMinutes" type="text" minlength="1" maxlength="2" size="2">
-                </div>
-                <div class="col-2">
-                    <h4>Seconds</h4>
-                    <input id="slurmSeconds" type="text" minlength="1" maxlength="2" size="2">
-                </div>
-            </div>
-        </div>
-    </div>
-</div>
-<div id="footer" class="container"><br/></div>
 
 
 </body>
