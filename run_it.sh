@@ -29,11 +29,13 @@ case "$SCENARIO" in
 
 tab2)  SERVERARGS=$SERVERARGS" --node 32 --pp_name myprogram --pp_seqwork 7200 --pp_parwork 72000"
     ;;
-tab3)  SERVERARGS=$SERVERARGS" --node 32 --pp_name myprogram --pp_seqwork 7200 --pp_parwork 72000"
+tab3)  SERVERARGS=$SERVERARGS" --node 32 --pp_name myprogram --pp_seqwork 7200 --pp_parwork 72000 --tracefile"
     ;;
 tab4)  SERVERARGS=$SERVERARGS" --node 32 --pp_name myprogram --pp_seqwork 7200 --pp_parwork 72000 --tracefile rightnow"
     ;;
 tab5)  SERVERARGS=$SERVERARGS" --node 32 --pp_name myprogram --pp_seqwork 7200 --pp_parwork 72000 --tracefile backfilling"
+    ;;
+tab6)  SERVERARGS=$SERVERARGS" --node 32 --pp_name myprogram --pp_seqwork 7200 --pp_parwork 72000 --tracefile choices"
     ;;
 *) echo "Unknown scenario argument $SCENARIO"
    exit 1

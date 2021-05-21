@@ -10,10 +10,6 @@ WORKDIR /tmp
 RUN sudo apt update
 RUN sudo apt --assume-yes install npm
 
-# install WRENCH 
-#################################################
-#RUN git clone https://github.com/wrench-project/wrench.git && cd wrench && git checkout cefc0bf739d015b2329a62750a9d70085b65a3ae && cmake . && make -j 4 && sudo make install
-
 #################################################
 # WRENCH's user
 #################################################

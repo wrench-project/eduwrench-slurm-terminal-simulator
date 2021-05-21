@@ -135,7 +135,20 @@ do (at least) the following:
     - At what time did it fail? 
     - Did the job file about when you thought it would?
 
-SIMULATOR GOES HERE: ./TestServer --node 32 --pp_name myprogram --pp_seqwork 7200 --pp_parwork 72000 
+
+If you haven't done so already, pull the following Docker container:   
+
+```
+docker pull wrenchproject/slurm-terminal
+```
+
+and then run the simulation as:
+
+```
+docker run -p 8080:8080 --rm -it --workdir /home/wrench/slurm_terminal_simulator/ wrenchproject/slurm-terminal ./run_it.sh localhost 8080 tab2
+```
+
+You can now point your Web browser to ` http://localhost:8080`
 
 ---
 
@@ -148,7 +161,7 @@ The main goal of a batch scheduler is to place job requests in a *batch queue*, 
 
 The term **turn-around time** is typically used to denote the sum of the wait time and of the execution time. For instance, say you submit a job that executes for 2 hours, but that spent 10 hours in the batch queue before being able to execute. The job's turn-around time is 10 + 2 = 12 hours.  In other words, the turn-around time is the time between submission and completion. 
 
-In the previous tab, your jobs ran immediately because there was no other job in the system. So their wait time was zero, and their turn-around time was exactly equal to their execution time.  Let's change that and showcase another useful Slurm command:
+In the previous tab, your job ran immediately because there was no other job in the system. So their wait time was zero, and their turn-around time was exactly equal to their execution time.  Let's change that and showcase another useful Slurm command:
    - `squeue` is used to list all jobs currently in the systems, which are either pending (i.e., submitted but not running yet) or running.
 
 
@@ -169,12 +182,25 @@ Recall that the cluster has 32 compute nodes, and that *myprogram* runs in $2 + 
     - Verify your answers to the above questions by advancing the clock and checking content of the generated .out files.
 
 
-SIMULATOR GOES HERE: ./TestServer --node 32 --pp_name myprogram --pp_seqwork 7200 --pp_parwork 72000 
+If you haven't done so already, pull the following Docker container:   
+
+```
+docker pull wrenchproject/slurm-terminal
+```
+
+and then run the simulation as:
+
+```
+docker run -p 8080:8080 --rm -it --workdir /home/wrench/slurm_terminal_simulator/ wrenchproject/slurm-terminal ./run_it.sh localhost 8080 tab3
+```
+
+You can now point your Web browser to ` http://localhost:8080`
+
 
 
 ---
 
-# TAB #3: Job cancellation 
+# TAB #4: Job cancellation 
 
 ### The scancel commands
 
@@ -215,7 +241,20 @@ Recall that the cluster has 32 compute nodes, and that *myprogram* runs in $2 + 
     - Advance time until your job completes
     - Compare an contrast your job turn-around time with that in the previous question.
 
-SIMULATOR GOES HERE: ./TestServer --node 32 --pp_name myprogram --pp_seqwork 7200 --pp_parwork 72000 --tracefile rightnow
+If you haven't done so already, pull the following Docker container:
+
+```
+docker pull wrenchproject/slurm-terminal
+```
+
+and then run the simulation as:
+
+```
+docker run -p 8080:8080 --rm -it --workdir /home/wrench/slurm_terminal_simulator/ wrenchproject/slurm-terminal ./run_it.sh localhost 8080 tab4
+```
+
+You can now point your Web browser to ` http://localhost:8080`
+
 
 ### Take-away 
 
@@ -224,7 +263,7 @@ can be helpful in practice! Sometimes, less is more (i.e., asking for fewer reso
 
 ---
 
-# TAB #4: Impact of job durations
+# TAB #5: Impact of job durations
 
 In the previous tabs, you were instructed to submit jobs that ask for a
 long enough duration that *myprogram* completes successfully.  You may have
@@ -267,7 +306,20 @@ Use the app to do (at least) the following:
   3. Exploring
     - Feel free to reset the simulation and resubmit the job with different durations, so see the behavior. The behavior is non-continuous: when asking for one more second, the job's wait time can jump by hours!
 
-SIMULATOR GOES HERE: ./TestServer --node 32 --pp_name myprogram --pp_seqwork 7200 --pp_parwork 72000 --tracefile backfilling
+
+If you haven't done so already, pull the following Docker container:
+
+```
+docker pull wrenchproject/slurm-terminal
+```
+
+and then run the simulation as:
+
+```
+docker run -p 8080:8080 --rm -it --workdir /home/wrench/slurm_terminal_simulator/ wrenchproject/slurm-terminal ./run_it.sh localhost 8080 tab5
+```
+
+You can now point your Web browser to ` http://localhost:8080`
 
 
 ### Take-away
@@ -278,7 +330,7 @@ a job should request just enough time for the user program to complete.
 
 ---
 
-# TAB #5: Impact of the number of nodes
+# TAB #6: Impact of the number of nodes
 
 Because we know that *myprogram* runs in $2 + 2/n$ hours on $n$ nodes, we
 can always ask for the exact duration needed, 
@@ -314,7 +366,20 @@ Use the app to do (at least) the following:
   7. Feel free to experiment with different numbers of nodes, so see which one is best.
 
 
-SIMULATOR GOES HERE: ./TestServer --node 32 --pp_name myprogram --pp_seqwork 7200 --pp_parwork 72000 --tracefile choices
+If you haven't done so already, pull the following Docker container:
+
+```
+docker pull wrenchproject/slurm-terminal
+```
+
+and then run the simulation as:
+
+```
+docker run -p 8080:8080 --rm -it --workdir /home/wrench/slurm_terminal_simulator/ wrenchproject/slurm-terminal ./run_it.sh localhost 8080 tab6
+```
+
+You can now point your Web browser to ` http://localhost:8080`
+
 
 ### Take-away 
 
