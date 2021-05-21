@@ -10,7 +10,6 @@ WORKDIR /tmp
 RUN sudo apt update
 RUN sudo apt --assume-yes install npm
 
-#################################################
 # WRENCH's user
 #################################################
 
