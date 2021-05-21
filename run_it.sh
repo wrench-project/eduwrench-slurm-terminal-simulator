@@ -6,9 +6,8 @@
 
 set -e
 
-if [ "$#" -ne 3 ]; then
-    echo "Usage: $0 <hostname> <port> <tab2|...|tab5>"
-    echo "Example: $0 localhost 8080 tab3"
+if [ "$#" -ne 1 ]; then
+    echo "Usage: $0 <tab2|...|tab5>"
     exit 1
 fi
 
@@ -19,9 +18,9 @@ then
     exit 1
 fi
 
-HOSTNAME=$1
-PORT=$2
-SCENARIO=$3
+HOSTNAME=localhost
+PORT=80
+SCENARIO=$1
 
 SERVERARGS="--port $PORT "
 
