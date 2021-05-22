@@ -28,3 +28,4 @@ RUN cd slurm_terminal_simulator/client && npm ci && ./setup.sh
 RUN cd slurm_terminal_simulator/server && mkdir build && cd build && cmake -DCMAKE_MODULE_PATH=/home/wrench/slurm_terminal_simulator/server/CMakeModules .. && make -j 4 
 
 WORKDIR /home/wrench/slurm_terminal_simulator
+

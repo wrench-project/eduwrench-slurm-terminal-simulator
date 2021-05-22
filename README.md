@@ -54,6 +54,6 @@ docker pull wrenchproject/slurm-terminal
 will pull the Docker image, and 
 
 ```
-docker run -p 8080:8080 --rm -it --workdir /home/wrench/slurm_terminal_simulator/ wrenchproject/slurm-terminal ./run_it.sh localhost 8080 tab4
+docker run -p 8080:8080 --rm -it wrenchproject/slurm-terminal ./run_it.sh tab4
 ```
 will start a Docker container with a Web server on localhost that listens to port 8080. Simply point your browser to localhost:8080 and voila.
