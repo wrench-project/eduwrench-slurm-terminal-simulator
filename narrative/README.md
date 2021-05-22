@@ -136,16 +136,10 @@ do (at least) the following:
     - Did the job file about when you thought it would?
 
 
-If you haven't done so already, pull the following Docker container:   
+Just run the following Docker container:   
 
 ```
-docker pull wrenchproject/slurm-terminal
-```
-
-and then run the simulation as:
-
-```
-docker run -p 8080:8080 --rm -it wrenchproject/slurm-terminal ./run_it.sh tab2
+docker run -p 8080:8080 --rm -it wrenchproject/eduwrench-slurm-terminal ./run_it.sh tab2
 ```
 
 You can now point your Web browser to ` http://localhost:8080`
@@ -184,14 +178,10 @@ Recall that the cluster has 32 compute nodes, and that *myprogram* runs in $2 + 
 
 If you haven't done so already, pull the following Docker container:   
 
-```
-docker pull wrenchproject/slurm-terminal
-```
-
-and then run the simulation as:
+Just run the following Docker container:   
 
 ```
-docker run -p 8080:8080 --rm -it wrenchproject/slurm-terminal ./run_it.sh tab3
+docker run -p 8080:8080 --rm -it wrenchproject/eduwrench-slurm-terminal ./run_it.sh tab3
 ```
 
 You can now point your Web browser to ` http://localhost:8080`
@@ -241,16 +231,10 @@ Recall that the cluster has 32 compute nodes, and that *myprogram* runs in $2 + 
     - Advance time until your job completes
     - Compare an contrast your job turn-around time with that in the previous question.
 
-If you haven't done so already, pull the following Docker container:
+Just run the following Docker container:   
 
 ```
-docker pull wrenchproject/slurm-terminal
-```
-
-and then run the simulation as:
-
-```
-docker run -p 8080:8080 --rm -it wrenchproject/slurm-terminal ./run_it.sh tab4
+docker run -p 8080:8080 --rm -it wrenchproject/eduwrench-slurm-terminal ./run_it.sh tab4
 ```
 
 You can now point your Web browser to ` http://localhost:8080`
@@ -307,16 +291,10 @@ Use the app to do (at least) the following:
     - Feel free to reset the simulation and resubmit the job with different durations, so see the behavior. The behavior is non-continuous: when asking for one more second, the job's wait time can jump by hours!
 
 
-If you haven't done so already, pull the following Docker container:
+Just run the following Docker container:   
 
 ```
-docker pull wrenchproject/slurm-terminal
-```
-
-and then run the simulation as:
-
-```
-docker run -p 8080:8080 --rm -it wrenchproject/slurm-terminal ./run_it.sh tab5
+docker run -p 8080:8080 --rm -it wrenchproject/eduwrench-slurm-terminal ./run_it.sh tab2
 ```
 
 You can now point your Web browser to ` http://localhost:8080`
@@ -366,16 +344,10 @@ Use the app to do (at least) the following:
   7. Feel free to experiment with different numbers of nodes, so see which one is best.
 
 
-If you haven't done so already, pull the following Docker container:
+Just run the following Docker container:   
 
 ```
-docker pull wrenchproject/slurm-terminal
-```
-
-and then run the simulation as:
-
-```
-docker run -p 8080:8080 --rm -it wrenchproject/slurm-terminal ./run_it.sh tab6
+docker run -p 8080:8080 --rm -it wrenchproject/eduwrench-slurm-terminal ./run_it.sh tab6
 ```
 
 You can now point your Web browser to ` http://localhost:8080`
