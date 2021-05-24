@@ -19,7 +19,7 @@ then
 fi
 
 HOSTNAME=localhost
-PORT=8080
+PORT=8808
 SCENARIO=$1
 
 SERVERARGS="--port $PORT "

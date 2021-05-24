@@ -139,10 +139,10 @@ do (at least) the following:
 Just run the following Docker container:   
 
 ```
-docker run -p 8080:8080 --rm -it wrenchproject/eduwrench-slurm-terminal ./run_it.sh tab2
+docker run -p 8808:8808 --rm -it wrenchproject/eduwrench-slurm-terminal ./run_it.sh tab2
 ```
 
-You can now point your Web browser to ` http://localhost:8080`
+You can now point your Web browser to ` http://localhost:8808`
 
 ---
 
@@ -181,10 +181,10 @@ If you haven't done so already, pull the following Docker container:
 Just run the following Docker container:   
 
 ```
-docker run -p 8080:8080 --rm -it wrenchproject/eduwrench-slurm-terminal ./run_it.sh tab3
+docker run -p 8808:8808 --rm -it wrenchproject/eduwrench-slurm-terminal ./run_it.sh tab3
 ```
 
-You can now point your Web browser to ` http://localhost:8080`
+You can now point your Web browser to ` http://localhost:8808`
 
 
 
@@ -234,10 +234,10 @@ Recall that the cluster has 32 compute nodes, and that *myprogram* runs in $2 + 
 Just run the following Docker container:   
 
 ```
-docker run -p 8080:8080 --rm -it wrenchproject/eduwrench-slurm-terminal ./run_it.sh tab4
+docker run -p 8808:8808 --rm -it wrenchproject/eduwrench-slurm-terminal ./run_it.sh tab4
 ```
 
-You can now point your Web browser to ` http://localhost:8080`
+You can now point your Web browser to ` http://localhost:8808`
 
 
 ### Take-away 
@@ -294,10 +294,10 @@ Use the app to do (at least) the following:
 Just run the following Docker container:   
 
 ```
-docker run -p 8080:8080 --rm -it wrenchproject/eduwrench-slurm-terminal ./run_it.sh tab2
+docker run -p 8808:8808 --rm -it wrenchproject/eduwrench-slurm-terminal ./run_it.sh tab2
 ```
 
-You can now point your Web browser to ` http://localhost:8080`
+You can now point your Web browser to ` http://localhost:8808`
 
 
 ### Take-away
@@ -347,10 +347,10 @@ Use the app to do (at least) the following:
 Just run the following Docker container:   
 
 ```
-docker run -p 8080:8080 --rm -it wrenchproject/eduwrench-slurm-terminal ./run_it.sh tab6
+docker run -p 8808:8808 --rm -it wrenchproject/eduwrench-slurm-terminal ./run_it.sh tab6
 ```
 
-You can now point your Web browser to ` http://localhost:8080`
+You can now point your Web browser to ` http://localhost:8808`
 
 
 ### Take-away 

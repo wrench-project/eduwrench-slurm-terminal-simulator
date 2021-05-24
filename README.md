@@ -48,6 +48,6 @@ The Dockerfile in the top-level directory specifies a Docker container for runni
 the simulator/server. For instance:
 
 ```
-docker run -p 8080:8080 --rm -it wrenchproject/eduwrench-slurm-terminal ./run_it.sh tab4
+docker run -p 8808:8808 --rm -it wrenchproject/eduwrench-slurm-terminal ./run_it.sh tab4
 ```
-will start a Docker container with a Web server for the simulation in Tab 4 on localhost that listens to port 8080. Simply point your browser to localhost:8080 and voila. 
+will start a Docker container with a Web server for the simulation in Tab 4 on localhost that listens to port 8808. Simply point your browser to localhost:8808 and voila. 
