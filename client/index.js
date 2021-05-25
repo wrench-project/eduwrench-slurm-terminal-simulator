@@ -1143,8 +1143,10 @@ async function resetSimulation() {
     for (let trial = 1; trial < 10; trial++) {
         // Do a start again
         try {
-            await fetch(`http://${serverAddress}/start`, {method: 'POST'});
+            let res = await fetch(`http://${serverAddress}/start`, {method: 'POST'});
+            console.log(res.status);
         } catch (err) {
+            await fetch(`http://${serverAddress}/start`, {method: 'POST'});
             await sleep(1000);
             continue;
         }
@@ -1237,7 +1239,7 @@ async function handleEvents(events) {
     // Loop through array of events
     for(const e of events) {
         // Parse through event
-        console.log(e);
+        //console.log(e);
         let eParse = e.split(" ");
         let time = Math.round(parseFloat(eParse[0]));
         let status = eParse[1];

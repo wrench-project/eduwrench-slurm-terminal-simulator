@@ -615,7 +615,7 @@ function resetTime() {
     let toRemove = [];
     for (const key in this.contents) {
         if (this.contents[key].name.endsWith(".err") || this.contents[key].name.endsWith(".out")) {
-            console.log(this.contents[key]);
+            //console.log(this.contents[key]);
             if (this.contents[key].deletable) {
                 toRemove.push(key);
             }

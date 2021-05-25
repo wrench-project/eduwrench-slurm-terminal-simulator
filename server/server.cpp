@@ -157,6 +157,7 @@ void start(const Request& req, Response& res)
 
     // Stop simulation
     simulation_thread_state->stopSimulation();
+    
     // Join with simulation thread
     simulation_thread.join();
 
