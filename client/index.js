@@ -1136,8 +1136,8 @@ async function resetSimulation() {
     // Sends a POST request to the server
     let res = await fetch(`http://${serverAddress}/reset`, { method: 'POST'});
 
-    // Sleep for 3s, which should be enough for the server to restart
-    await sleep(3000);
+    // Sleep for 4s, which should be enough for the server to restart
+    await sleep(4000);
 
     // Do a start again, with a 1-second retry, up to 10 times
     for (let trial = 1; trial < 10; trial++) {
