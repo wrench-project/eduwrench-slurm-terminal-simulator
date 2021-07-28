@@ -519,7 +519,7 @@ async function processCommand(commandLine) {
         let unit = 1;
         for (let i=tokens.length-1; i >= 0; i--) {
             const parsed = parseInt(tokens[i]);
-            if (isNaN(parsed)) {
+            if (isNaN(parsed) or (parsed < 1)) {
                 term.write("sleep: invalid argument\r\n");
                 return;
             }

@@ -155,9 +155,18 @@ You can now point your Web browser to ` http://localhost:8808`
 
 The main goal of a batch scheduler is to place job requests in a *batch queue*, in which they wait for available resources. This is because resources are *space-shared*, i.e., not two jobs run can use the same compute node.  Note that Slurm can be configured not to enforce this requirement, but in all that follow we assume that it does (which is typical in production systems). 
 
-The term **turn-around time** is typically used to denote the sum of the wait time and of the execution time. For instance, say you submit a job that executes for 2 hours, but that spent 10 hours in the batch queue before being able to execute. The job's turn-around time is 10 + 2 = 12 hours.  In other words, the turn-around time is the time between submission and completion. 
+The term **turn-around time** is typically used to denote the sum of the
+wait time and of the execution time. For instance, say you submit a job
+that executes for 2 hours, but that spent 10 hours in the batch queue
+before being able to execute. The job's turn-around time is 10 + 2 = 12
+hours.  In other words, the turn-around time is the time between submission
+and completion.
 
-In the previous tab, your job ran immediately because there was no other job in the system. So their wait time was zero, and their turn-around time was exactly equal to their execution time.  Let's change that and showcase another useful Slurm command:
+In the previous tab, your job ran immediately because there was no other
+job in the system. So their wait time was zero, and their turn-around time
+was exactly equal to their execution time.  Let's change that and showcase
+another useful Slurm command:
+
    - `squeue` is used to list all jobs currently in the systems, which are either pending (i.e., submitted but not running yet) or running.
 
 
