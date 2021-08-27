@@ -515,11 +515,17 @@ async function processCommand(commandLine) {
             return;
         }
         let tokens = commandLineTokens[1].split(":");
+        if (tokens.length > 3) {
+            term.write("sleep: invalid argument\r\n");
+            return;
+        }
+        console.log(tokens);
         let timeToSleep = 0;
         let unit = 1;
         for (let i=tokens.length-1; i >= 0; i--) {
             const parsed = parseInt(tokens[i]);
-            if (isNaN(parsed) || (parsed < 1)) {
+            console.log("parsed = " + parsed);
+            if (isNaN(parsed) || (parsed < 0)) {
                 term.write("sleep: invalid argument\r\n");
                 return;
             }
