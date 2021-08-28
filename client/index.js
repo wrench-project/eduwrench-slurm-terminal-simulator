@@ -260,6 +260,25 @@ function changeBatch() {
     let slurmMinuteIsNaN = isNaN(slurmMinute);
     let slurmSecondsIsNaN = isNaN(slurmSeconds);
 
+    // If not Nan, reject some values
+    if (slurmNodes < 1) {
+        slurmNodesIsNaN = true;
+    }
+    if (slurmHour < 0) {
+        slurmHourIsNaN = true;
+    }
+    if (slurmMinute < 0) {
+        slurmMinuteIsNaN = true;
+    }
+    if (slurmSeconds < 0) {
+        slurmMinuteIsNaN = true;
+    }
+    if ((slurmHour === 0) && (slurmMinute === 0) && (slurmSeconds === 0)) {
+        slurmHourIsNaN = true;
+        slurmMinuteIsNaN = true;
+        slurmSecondsIsNaN = true;
+    }
+
     // Update background color if Nan
     slurmNodesInput.style.backgroundColor   = (slurmNodesIsNaN   ? "#FF3333" : "#FFFFFF");
     slurmHoursInput.style.backgroundColor   = (slurmHourIsNaN    ? "#FF3333" : "#FFFFFF");
