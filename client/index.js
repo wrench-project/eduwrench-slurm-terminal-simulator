@@ -1119,6 +1119,7 @@ function printHelp(topic) {
         helpMessage += "  - \u001B[1mclear\u001B[0m                (clear the terminal)\n";
         helpMessage += "  - \u001B[1mpwd\u001B[0m                  (show working directory)\n";
         helpMessage += "  - \u001B[1mcd <path>\u001B[0m            (change working directory)\n";
+        helpMessage += "  - \u001B[1mmkdir <dirname>\u001B[0m      (create a new directory)\n";
         helpMessage += "  - \u001B[1mls [-l] [path]\u001B[0m       (list files, -l for full info))\n";
         helpMessage += "  - \u001B[1mcat <path to file>\u001B[0m   (show file content)\n";
         helpMessage += "  - \u001B[1mcp <path> <path>\u001B[0m     (copy files)\n";
