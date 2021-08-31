@@ -1114,7 +1114,7 @@ function printHelp(topic) {
     } else if (topic === "shell") {
         helpMessage += "This terminal supports simple versions of the following commands:\n\n";
         helpMessage += "  - \u001B[1mexit\u001B[0m                 (exit and terminate the server)\n";
-        helpMessage += "  - \u001B[1msleep [[h:]m:]s\u001B[0m      (block for specified amount of time,\n";
+        helpMessage += "  - \u001B[1msleep [[h:]m:]s\u001B[0m      (block for some time,\n";
         helpMessage += "                          ~10000x faster than real time)\n";
         helpMessage += "  - \u001B[1mclear\u001B[0m                (clear the terminal)\n";
         helpMessage += "  - \u001B[1mpwd\u001B[0m                  (show working directory)\n";
