@@ -17,6 +17,10 @@
     padding: 10px;
 }
 
+#clock {
+    font-family: monospace
+}
+
 #batchEditor {
     padding-top: 1%;
     display: none;

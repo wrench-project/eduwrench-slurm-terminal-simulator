@@ -544,13 +544,14 @@ async function processCommand(commandLine) {
         for (let i=tokens.length-1; i >= 0; i--) {
             const parsed = parseInt(tokens[i]);
             console.log("parsed = " + parsed);
-            if (isNaN(parsed) || (parsed < 0)) {
+            if (isNaN(parsed) || (parsed < 0) || ((unit === 3600) && (parsed > 100)) || ((unit === 60) && (parsed > 10000)) || ((unit === 1) && (parsed > 1000000))) {
                 term.write("sleep: invalid argument\r\n");
                 return;
             }
             timeToSleep += unit*parsed;
             unit *= 60;
         }
+        console.log("timeToSleep: " + timeToSleep);
         if (timeToSleep > 5000) {
             term.setOption("disableStdin", true);
             resetButton.style.display = "none";
@@ -1180,8 +1181,7 @@ async function resetSimulation() {
     }
 
     // Reset the clock periodic activity
-    // clock.innerText = `12:00:00 AM`;
-    clock.innerText = `12:00:00 AM`;
+    clock.innerText = `01/01 12:00:00 AM`;
     updateClockTimer = setInterval(updateClockAndQueryServer, 1000);
 
     // Update file system
@@ -1302,6 +1302,11 @@ async function handleEvents(events) {
  */
 function updateClock() {
     // Convert to 12 hour system (Can change it back to 24 hour system)
+    let month = simTime.getUTCMonth();
+    month = (month === 0 ? 1 : month)
+    month = (month < 10 ? "0"+month : month);
+    let day = simTime.getUTCDate();
+    day = (day < 10 ? "0"+day : day);
     let hour = simTime.getUTCHours();
     let AMPM = 'AM';
     if(hour > 11) {
@@ -1312,7 +1317,8 @@ function updateClock() {
     } else if(hour === 0) {
         hour = 12;
     }
-    clock.innerText = `${hour}${simTime.toISOString().substr(13,6)} ${AMPM}`;
+
+    clock.innerText = `${month}/${day} ${hour}${simTime.toISOString().substr(13,6)} ${AMPM}`;
 }
 
 /**
