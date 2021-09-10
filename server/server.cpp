@@ -133,7 +133,9 @@ void getQueue(const Request& req, Response& res)
 
     json body;
     body["time"] = get_time() - time_start;
-    body["queue"] = simulation_thread_state->getQueue();;
+    body["queue"] = simulation_thread_state->getQueue();
+
+    std::cerr << body["queue"] << "\n";
 
     res.set_header("access-control-allow-origin", "*");
     res.set_content(body.dump(), "application/json");

@@ -397,6 +397,7 @@ async function getQueue() {
     // Writes the table headers
     term.write('\rJOBNAME   USER       NODES  START TIME      REQ TIME   STATUS\r\n');
 
+
     for(const q of res.queue) {
         // Writes to terminal each job within the queue
         let q_parse = q.split(",");
@@ -439,10 +440,27 @@ async function getQueue() {
         // Format the requested time
         {
             // Finds out the time and correctly generates the UTC time
-            let t = new Date(0);
-            t.setSeconds(Math.round(parseFloat(rTime)));
-            rTime = padZero(t.getUTCHours()) + ":" + padZero(t.getUTCMinutes()) +
-                ":" + padZero(t.getUTCSeconds()) + "  ";
+            let total_seconds = Math.round(parseFloat(rTime));
+//            console.log("TOTAL= " + total_seconds);
+            
+            let hours = Math.round(parseFloat(total_seconds / 3600.0));
+            if (hours < 10) {
+              hours = " 0" + hours;
+            } else if (hours < 100) {
+              hours = " " + hours;
+            } else {
+              hours = "" + hours;
+            }
+
+            let minutes = Math.round(parseFloat(((total_seconds - 3600 * hours) / 60.0)));
+            minutes = (minutes < 10 ? "0"+minutes : minutes);
+
+            let seconds = total_seconds - minutes * 60 - hours * 3600;
+            seconds = (seconds < 10 ? "0"+seconds : seconds);
+
+
+            //rTime = padZero(t.getUTCHours()) + ":" + padZero(t.getUTCMinutes()) + ":" + padZero(t.getUTCSeconds()) + "  ";
+            rTime = hours + ":" + minutes + ":" + seconds;
         }
         // Write to terminal the job
         term.write(`${jobName} ${user} ${nodes} ${sTime} ${rTime} ${status}` + "\r\n");

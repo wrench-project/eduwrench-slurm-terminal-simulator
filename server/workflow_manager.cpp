@@ -105,7 +105,7 @@ namespace wrench {
             {
                 // Retrieve event by going through sec increments.
                 auto event = this->waitForNextEvent(1.0);
-                WRENCH_INFO("TICK");
+//                WRENCH_INFO("TICK");
                 this->simulationTime = wrench::Simulation::getCurrentSimulatedDate();
 
                 // Checks if there was a job event during the time period
