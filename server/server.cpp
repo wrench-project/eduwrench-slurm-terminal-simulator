@@ -135,8 +135,6 @@ void getQueue(const Request& req, Response& res)
     body["time"] = get_time() - time_start;
     body["queue"] = simulation_thread_state->getQueue();
 
-    std::cerr << body["queue"] << "\n";
-
     res.set_header("access-control-allow-origin", "*");
     res.set_content(body.dump(), "application/json");
 }
@@ -170,6 +168,7 @@ void start(const Request& req, Response& res)
     body["pp_seqwork"] = pp_seqwork;
     body["pp_parwork"] = pp_parwork;
     body["num_cluster_nodes"] = num_cluster_nodes;
+    body["num_seconds_to_sleep_before_anything"] = 5;
     res.set_header("access-control-allow-origin", "*");
     res.set_content(body.dump(), "application/json");
 

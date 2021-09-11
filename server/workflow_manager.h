@@ -21,7 +21,8 @@ namespace wrench {
             const std::set<std::shared_ptr<StorageService>> &storage_services,
             const std::string &hostname,
             const int node_count,
-            const int core_count
+            const int core_count,
+            std::vector<std::tuple<int,int>> background_jobs
         );
 
         std::string addJob(const double& requested_duration,
@@ -87,6 +88,9 @@ namespace wrench {
         std::mutex queue_mutex;
         int node_count;
         int core_count;
+
+        std::vector<std::tuple<int,int>> background_jobs;
+
     };
 }
 

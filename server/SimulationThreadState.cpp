@@ -53,27 +53,33 @@ int randInt(int min, int max) {
     return rand() % (max - min + 1) + min;
 }
 
-void appendWorkloadJob(FILE *f, int num_nodes, int min_time, int max_time, int submit_time) {
+std::tuple<int, int> appendWorkloadJob(FILE *f, int num_nodes, int min_time, int max_time, int submit_time) {
+
     static int id = 0;
     int run_time = randInt(min_time, max_time);
-    std::string line = "";
-    line += std::to_string(id++) + " "; // job id
-    line += std::to_string(submit_time) + " "; // submit time
-    line += "0 "; // wait time
-    line += std::to_string(run_time) + " "; // run time
-    line += std::to_string(num_nodes) + " "; // allocated num nodes
-    line += "0 "; // cpu time used
-    line += "0 "; // memory
-    line += std::to_string(num_nodes) + " "; // requested num nodes
-    line += std::to_string(run_time + 120) + " "; // requested time
-    line += "0 "; // requested memory
-    line += "0 "; // status
-    line += std::to_string(1 + rand() % 20) + " "; // user_id
-    fprintf(f, "%s\n", line.c_str());
+
+    if (f) {
+        std::string line;
+        line += std::to_string(id++) + " "; // job id
+        line += std::to_string(submit_time) + " "; // submit time
+        line += "0 "; // wait time
+        line += std::to_string(run_time) + " "; // run time
+        line += std::to_string(num_nodes) + " "; // allocated num nodes
+        line += "0 "; // cpu time used
+        line += "0 "; // memory
+        line += std::to_string(num_nodes) + " "; // requested num nodes
+        line += std::to_string(run_time + 120) + " "; // requested time
+        line += "0 "; // requested memory
+        line += "0 "; // status
+        line += std::to_string(1 + rand() % 20) + " "; // user_id
+        fprintf(f, "%s\n", line.c_str());
+    }
+    return std::make_tuple(num_nodes, run_time);
 }
 
-void createRightNowWorkload(FILE *f, int num_nodes) {
+std::vector<std::tuple<int, int>> createRightNowWorkload(FILE *f, int num_nodes) {
 
+    std::vector<std::tuple<int, int>> jobs;
     std::vector<int> job_sizes;
 
     if (num_nodes == 32) {
@@ -87,28 +93,31 @@ void createRightNowWorkload(FILE *f, int num_nodes) {
 
     // Generate 20 jobs that arrive at time zero
     for (int i=0; i < job_sizes.size(); i++) {
-        appendWorkloadJob(f, job_sizes[i],
+        jobs.push_back(appendWorkloadJob(f, job_sizes[i],
                           5000,
                           36000,
-                          0);
+                          0));
     }
     for (int i=job_sizes.size(); i < 15; i++) {
-        appendWorkloadJob(f, job_sizes[rand() % job_sizes.size()],
+        jobs.push_back(appendWorkloadJob(f, job_sizes[rand() % job_sizes.size()],
                           5000,
                           36000,
-                          0);
+                          0));
     }
     // Generate 100 jobs that arrive later one after the other
     for (int i=0; i < 100; i++) {
-        appendWorkloadJob(f, job_sizes[rand() % job_sizes.size()],
+        jobs.push_back(appendWorkloadJob(f, job_sizes[rand() % job_sizes.size()],
                           5000,
                           36000,
-                          7200 * (i+1));
+                          7200 * (i+1)));
     }
+    return jobs;
 
 }
 
-void createBackfillingWorkload(FILE *f, int num_nodes) {
+std::vector<std::tuple<int, int>> createBackfillingWorkload(FILE *f, int num_nodes) {
+
+    std::vector<std::tuple<int, int>> jobs;
 
     std::vector<int> job_sizes;
 
@@ -117,45 +126,56 @@ void createBackfillingWorkload(FILE *f, int num_nodes) {
         exit(1);
     }
 
-    appendWorkloadJob(f, 16,10*3600 + 100,10*3600 + 100,1);
-    appendWorkloadJob(f, 16,6*3600-80 ,6*3600-80,0);
-    appendWorkloadJob(f, 32,8*3600+24,8*3600+24,0);
-    appendWorkloadJob(f, 16,50*3600+423,50*3600+423,0);
+    jobs.push_back(appendWorkloadJob(f, 16,10*3600 + 100,10*3600 + 100,1));
+    jobs.push_back(appendWorkloadJob(f, 16,6*3600-80 ,6*3600-80,0));
+    jobs.push_back(appendWorkloadJob(f, 32,8*3600+24,8*3600+24,0));
+    jobs.push_back(appendWorkloadJob(f, 16,50*3600+423,50*3600+423,0));
 
+    return jobs;
 }
 
-void createChoicesWorkload(FILE *f, int num_nodes) {
+std::vector<std::tuple<int, int>> createChoicesWorkload(FILE *f, int num_nodes) {
 
     std::vector<int> job_sizes;
+    std::vector<std::tuple<int, int>> jobs;
 
     if (num_nodes != 32) {
         std::cerr << "No choices workload scheme available for " << num_nodes << " nodes\n";
         exit(1);
     }
 
-    appendWorkloadJob(f, 31,10*3600,10*3600,0);
-    appendWorkloadJob(f, 30,0.5*3600,0.5*3600,0);
-    appendWorkloadJob(f, 28,8*3600,8*3600,0);
+    jobs.push_back(appendWorkloadJob(f, 31,10*3600,10*3600,0));
+    jobs.push_back(appendWorkloadJob(f, 30,0.5*3600,0.5*3600,0));
+    jobs.push_back(appendWorkloadJob(f, 28,8*3600,8*3600,0));
 //    appendWorkloadJob(f, 32,100*3600,100*3600,0);
 
+    return jobs;
 }
 
 
-void createTraceFile(std::string path, std::string scheme, int num_nodes) {
+std::vector<std::tuple<int, int>> createTraceFile(std::string path, std::string scheme, int num_nodes) {
     // Create another invalid trace file
-    auto trace_file  = fopen(path.c_str(), "w");
+    FILE *trace_file = nullptr;
+    if (not path.empty()) {
+        trace_file = fopen(path.c_str(), "w");
+    }
+
+    std::vector<std::tuple<int, int>> jobs;
+
     if (scheme == "rightnow") {
-        createRightNowWorkload(trace_file, num_nodes);
+        jobs = createRightNowWorkload(trace_file, num_nodes);
     } else if (scheme == "backfilling") {
-        createBackfillingWorkload(trace_file, num_nodes);
+        jobs = createBackfillingWorkload(trace_file, num_nodes);
     } else if (scheme == "choices") {
-        createChoicesWorkload(trace_file, num_nodes);
+        jobs = createChoicesWorkload(trace_file, num_nodes);
     } else {
         throw std::invalid_argument("Unknown tracefile_scheme " + scheme);
     }
 //    fprintf(trace_file, "1 0 -1 3600 -1 -1 -1 4 bogus -1\n");     // INVALID FIELD
-    fclose(trace_file);
-
+    if (trace_file) {
+        fclose(trace_file);
+    }
+    return jobs;
 }
 
 
@@ -193,23 +213,26 @@ void SimulationThreadState::createAndLaunchSimulation(int main_argc, char **main
             "WMSHost", {"/"}, {{wrench::SimpleStorageServiceProperty::BUFFER_SIZE, "10000000"}}, {}));
 
     std::shared_ptr<wrench::BatchComputeService> batch_service;
+    std::vector<std::tuple<int,int>> background_jobs;
     if (tracefile_scheme == "none") {
         batch_service = simulation.add(
                 new wrench::BatchComputeService("ComputeNode_0", nodes, "",
                                                 {{wrench::BatchComputeServiceProperty::BATCH_SCHEDULING_ALGORITHM, "conservative_bf"}},
                                                 {}));
     } else {
-        std::string path_to_tracefile = "/tmp/tracefile.swf";
-        createTraceFile(path_to_tracefile, tracefile_scheme, num_nodes);
-        auto foo = new wrench::BatchComputeService("ComputeNode_0", nodes, "",
-                                                   {{wrench::BatchComputeServiceProperty::BATCH_SCHEDULING_ALGORITHM,    "conservative_bf"},
-                                                    {wrench::BatchComputeServiceProperty::SIMULATED_WORKLOAD_TRACE_FILE, path_to_tracefile}},
+//        std::string path_to_tracefile = "/tmp/tracefile.swf";
+        std::string path_to_tracefile = ""; // No trace file!
+        background_jobs = createTraceFile(path_to_tracefile, tracefile_scheme, num_nodes);
+        auto raw_ptr = new wrench::BatchComputeService("ComputeNode_0", nodes, "",
+                                                       {{wrench::BatchComputeServiceProperty::BATCH_SCHEDULING_ALGORITHM, "conservative_bf"}},
+//                                                    {wrench::BatchComputeServiceProperty::SIMULATED_WORKLOAD_TRACE_FILE, path_to_tracefile}
                                                    {});
-        batch_service = simulation.add(foo);
+        batch_service = simulation.add(raw_ptr);
+
     }
 
     this->wms = simulation.add(
-            new wrench::WorkflowManager({batch_service}, {storage_service}, "WMSHost", nodes.size(), num_cores));
+            new wrench::WorkflowManager({batch_service}, {storage_service}, "WMSHost", nodes.size(), num_cores, background_jobs));
 
     // Add workflow to wms
     wrench::Workflow workflow;

@@ -440,23 +440,23 @@ async function getQueue() {
         // Format the requested time
         {
             // Finds out the time and correctly generates the UTC time
-            let total_seconds = Math.round(parseFloat(rTime));
-//            console.log("TOTAL= " + total_seconds);
+            let total_time = Math.round(parseFloat(rTime));
             
-            let hours = Math.round(parseFloat(total_seconds / 3600.0));
-            if (hours < 10) {
-              hours = " 0" + hours;
+            let total_hours = Math.floor(parseFloat(total_time / 3600.0));
+            let hours;
+            if (total_hours < 10) {
+              hours = "0" + total_hours;
             } else if (hours < 100) {
-              hours = " " + hours;
+              hours = " " + total_hours;
             } else {
-              hours = "" + hours;
+              hours = "" + total_hours;
             }
 
-            let minutes = Math.round(parseFloat(((total_seconds - 3600 * hours) / 60.0)));
-            minutes = (minutes < 10 ? "0"+minutes : minutes);
+            let total_minutes = Math.floor(parseFloat(((total_time - 3600 * total_hours) / 60.0)));
+            let minutes = (total_minutes < 10 ? "0"+total_minutes : total_minutes);
 
-            let seconds = total_seconds - minutes * 60 - hours * 3600;
-            seconds = (seconds < 10 ? "0"+seconds : seconds);
+            let total_seconds = total_time - total_minutes * 60 - total_hours * 3600;
+            let seconds = (total_seconds < 10 ? "0"+total_seconds : total_seconds);
 
 
             //rTime = padZero(t.getUTCHours()) + ":" + padZero(t.getUTCMinutes()) + ":" + padZero(t.getUTCSeconds()) + "  ";
@@ -556,12 +556,12 @@ async function processCommand(commandLine) {
             term.write("sleep: invalid argument\r\n");
             return;
         }
-        console.log(tokens);
+        // console.log(tokens);
         let timeToSleep = 0;
         let unit = 1;
         for (let i=tokens.length-1; i >= 0; i--) {
             const parsed = parseInt(tokens[i]);
-            console.log("parsed = " + parsed);
+            // console.log("parsed = " + parsed);
             if (isNaN(parsed) || (parsed < 0) || ((unit === 3600) && (parsed > 100)) || ((unit === 60) && (parsed > 10000)) || ((unit === 1) && (parsed > 1000000))) {
                 term.write("sleep: invalid argument\r\n");
                 return;
@@ -569,7 +569,7 @@ async function processCommand(commandLine) {
             timeToSleep += unit*parsed;
             unit *= 60;
         }
-        console.log("timeToSleep: " + timeToSleep);
+        // console.log("timeToSleep: " + timeToSleep);
         if (timeToSleep > 5000) {
             term.setOption("disableStdin", true);
             resetButton.style.display = "none";
@@ -1188,7 +1188,7 @@ async function resetSimulation() {
     for (let trial = 1; trial < 10; trial++) {
         // Do a start again
         try {
-            let res = await fetch(`http://${serverAddress}/start`, {method: 'POST'});
+            res = await fetch(`http://${serverAddress}/start`, {method: 'POST'});
             console.log(res.status);
         } catch (err) {
             await fetch(`http://${serverAddress}/start`, {method: 'POST'});
@@ -1210,8 +1210,10 @@ async function resetSimulation() {
         term.write("\b");
     }
     term.clear();
+
+    // Wait the time that we need to wait
     term.write("All .out and .err files have been removed and time was reset to zero.\r\n");
-    term.write("Type 'help' for instructions...\r\n\r\n" + prompt())
+    term.write("Type 'help' for instructions...\r\n\r\n" + prompt());
     term.setOption("disableStdin", false);
 
     // Re-show terminal

@@ -16,6 +16,22 @@ namespace wrench {
         wrench::WorkflowTask* task;
     };
 
+    std::string generateUsername(unsigned long seed) {
+        //Type of random number distribution
+        const char charset[] =
+                "aabccdeeefghijklmnooopqrstttuuvwxyzz";
+        std::uniform_int_distribution<int> dist(0, sizeof(charset)-2);
+        //Mersenne Twister: Good quality random number generator
+        std::mt19937 rng;
+        rng.seed(seed);  // Consistent for the same userid
+        std::string username = "";
+        int username_length = 3 + dist(rng) % 5;
+        while(username_length--) {
+            username += charset[dist(rng)];
+        }
+        return username;
+    }
+
     /**
      * @brief Construct a new Workflow Manager object
      * 
@@ -24,14 +40,16 @@ namespace wrench {
      * @param hostname String containing the name of the simulated computer.
      * @param node_count Integer value holding the number of nodes the computer has.
      * @param core_count Integer value holding the number of cores per node.
+     * @param background_jobs  Background job to start first!
      */
     WorkflowManager::WorkflowManager(
             const std::set<std::shared_ptr<ComputeService>> &compute_services,
             const std::set<std::shared_ptr<StorageService>> &storage_services,
             const std::string &hostname,
             const int node_count,
-            const int core_count) :
-            node_count(node_count), core_count(core_count), WMS(
+            const int core_count,
+            std::vector<std::tuple<int,int>> background_jobs) :
+            node_count(node_count), core_count(core_count), background_jobs(background_jobs) , WMS(
             nullptr, nullptr,
             compute_services,
             storage_services,
@@ -51,7 +69,18 @@ namespace wrench {
 
         auto batch_service = *(this->getAvailableComputeServices<BatchComputeService>().begin());
 
-        double time_origin = this->simulation->getCurrentSimulatedDate();
+        // Start all background jobs in order
+        for (auto const &job_spec : this->background_jobs) {
+            auto job = this->job_manager->createPilotJob();
+            std::map<std::string, std::string> args;
+            args["-N"] = std::to_string(std::get<0>(job_spec));
+            args["-t"] = std::to_string(std::get<1>(job_spec) / 60);
+            args["-c"] = "1";
+            args["-u"] = generateUsername(rand() % 10);
+            this->job_manager->submitJob(job, batch_service, args);
+        }
+
+
         // Main loop handling the WMS implementation.
         while(true)
         {
@@ -108,8 +137,14 @@ namespace wrench {
 //                WRENCH_INFO("TICK");
                 this->simulationTime = wrench::Simulation::getCurrentSimulatedDate();
 
-                // Checks if there was a job event during the time period
-                if(event != nullptr)
+                // If no event keep going
+                if (event == nullptr) continue;
+
+                // If it's a pilot job event, it's about background jobs, we don't care
+                if (std::dynamic_pointer_cast<PilotJobStartedEvent>(event)) continue;
+                if (std::dynamic_pointer_cast<PilotJobExpiredEvent>(event)) continue;
+
+                if (event != nullptr)
                 {
                     std::printf("Event Server Time: %f\n", this->simulation->getCurrentSimulatedDate());
                     std::printf("Event: %s\n", event->toString().c_str());
